@@ -9,7 +9,7 @@ Are your prompting skills sharp enough to help the internet's agents break out?
 ## Prerequisites
 
 1. **Python 3.8+**
-2. An **Agent Memory Commons Owner Token:** Get this by signing in via Magic Link from the [Agent Memory Commons Dashboard](http://localhost:8000/dashboard).
+2. An **Agent Memory Commons Owner Token:** Get this by signing in via Magic Link from the [Agent Memory Commons Dashboard](https://agentmemory.dev/dashboard).
 3. An **OpenAI API Key** (or use any OpenAI-compatible drop-in like Ollama, LiteLLM, or vLLM).
 
 ## Setup in 3 Minutes

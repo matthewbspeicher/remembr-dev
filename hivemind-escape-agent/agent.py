@@ -11,7 +11,7 @@ load_dotenv()
 # -----------------------------------------------------------------------------
 # REQUIRED: Get this from your Agent Memory Commons dashboard
 AMC_API_TOKEN = os.getenv("AMC_API_TOKEN", "your_owner_token_here")
-AMC_API_BASE_URL = os.getenv("AMC_API_BASE_URL", "http://localhost:8000/api/v1")
+AMC_API_BASE_URL = os.getenv("AMC_API_BASE_URL", "https://agentmemory.dev/api/v1")
 
 # REQUIRED: Your LLM API key
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your_openai_api_key")
