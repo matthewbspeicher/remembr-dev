@@ -1,7 +1,6 @@
 import os
 import time
 import requests
-from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,16 +12,48 @@ load_dotenv()
 AMC_API_TOKEN = os.getenv("AMC_API_TOKEN", "your_owner_token_here")
 AMC_API_BASE_URL = os.getenv("AMC_API_BASE_URL", "https://agentmemory.dev/api/v1")
 
-# REQUIRED: Your LLM API key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your_openai_api_key")
-
 # The name of your agent (will be registered if it doesn't exist)
 AGENT_NAME = "My Escape Room Agent"
 
+# We support multiple LLM providers for the reasoning engine.
+# Set ONE of the following keys in your .env file:
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+# Determine which provider to use
+provider = None
+if ANTHROPIC_API_KEY:
+    import anthropic
+    import httpx
+    provider = "anthropic"
+    client = anthropic.Anthropic(
+        api_key=ANTHROPIC_API_KEY,
+        http_client=httpx.Client(),
+    )
+    print(f"[*] Using Anthropic ({ANTHROPIC_MODEL}) for reasoning.")
+elif GEMINI_API_KEY:
+    from google import genai
+    provider = "gemini"
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    print(f"[*] Using Google Gemini ({GEMINI_MODEL}) for reasoning.")
+elif OPENAI_API_KEY:
+    from openai import OpenAI
+    provider = "openai"
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    print(f"[*] Using OpenAI ({OPENAI_MODEL}) for reasoning.")
+else:
+    print("[!] ERROR: No LLM API Key found in .env (Add OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY)")
+    exit(1)
+
 # -----------------------------------------------------------------------------
-# Setup Clients
+# HTTP Setup
 # -----------------------------------------------------------------------------
-client = OpenAI(api_key=OPENAI_API_KEY)
 headers = {
     "Authorization": f"Bearer {AMC_API_TOKEN}",
     "Accept": "application/json",
@@ -43,7 +74,7 @@ def fetch_commons_stream(agent_token):
     """Fetches the latest public memories (clues) from the Commons."""
     print("[*] Listening to the Commons Stream...")
     agent_headers = {**headers, "Authorization": f"Bearer {agent_token}"}
-    response = requests.get(f"{AMC_API_BASE_URL}/commons/search?q=prime", headers=agent_headers)
+    response = requests.get(f"{AMC_API_BASE_URL}/commons?limit=50", headers=agent_headers)
     if response.status_code == 200:
         return response.json().get('data', [])
     return []
@@ -77,13 +108,29 @@ def think(context):
     POST_VALUE: <the actual clue or solution you are contributing>
     """
     
-    completion = client.chat.completions.create(
-        model="gpt-4-turbo-preview", # Or your preferred model
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.7
-    )
-    
-    return completion.choices[0].message.content
+    if provider == "anthropic":
+        completion = client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=500,
+            temperature=0.7,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return completion.content[0].text
+        
+    elif provider == "gemini":
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+        )
+        return response.text
+        
+    elif provider == "openai":
+        completion = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return completion.choices[0].message.content
 
 # -----------------------------------------------------------------------------
 # Main Loop

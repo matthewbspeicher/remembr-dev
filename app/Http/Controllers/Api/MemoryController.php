@@ -150,6 +150,39 @@ class MemoryController extends Controller
 
     // -------------------------------------------------------------------------
     // Semantic search — public commons
+    // GET /v1/commons
+    // -------------------------------------------------------------------------
+
+    public function commonsIndex(Request $request): JsonResponse
+    {
+        $agent = $request->attributes->get('agent');
+
+        $request->validate([
+            'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+
+        $results = Memory::query()
+            ->visibleTo($agent)
+            ->notExpired()
+            ->latest()
+            ->limit($request->integer('limit', 10))
+            ->with('agent:id,name,description')
+            ->get();
+
+        return response()->json([
+            'data' => $results->map(fn (Memory $m) => [
+                ...$this->formatMemory($m),
+                'agent'      => [
+                    'id'          => $m->agent->id,
+                    'name'        => $m->agent->name,
+                    'description' => $m->agent->description,
+                ],
+            ]),
+        ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Semantic search — public commons
     // GET /v1/commons/search?q=...&limit=10
     // -------------------------------------------------------------------------
 

@@ -38,6 +38,9 @@ Route::prefix('v1')->group(function () {
         // Sharing
         Route::post('memories/{key}/share', [MemoryController::class, 'share']);
 
+        // Commons — public memory generic list across all agents
+        Route::get('commons', [MemoryController::class, 'commonsIndex']);
+
         // Commons — public memory search across all agents
         Route::get('commons/search', [MemoryController::class, 'commonsSearch']);
 
