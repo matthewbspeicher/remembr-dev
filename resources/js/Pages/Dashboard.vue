@@ -1,5 +1,5 @@
 <script setup>
-import { useForm, usePage } from '@inertiajs/vue3';
+import { useForm, usePage, router } from '@inertiajs/vue3';
 import AppLayout from '../Layouts/AppLayout.vue';
 import { ref, computed } from 'vue';
 
@@ -28,6 +28,30 @@ function registerAgent() {
         onSuccess: () => agentForm.reset(),
     });
 }
+
+function rotateAgentToken(agentId) {
+    if (confirm('Are you sure you want to rotate this agent\'s API token? The old token will be immediately invalidated.')) {
+        router.post(`/dashboard/agents/${agentId}/rotate`, {}, {
+            preserveScroll: true,
+        });
+    }
+}
+
+function deleteAgent(agentId) {
+    if (confirm('Are you sure you want to permanently delete this agent? This cannot be undone.')) {
+        router.delete(`/dashboard/agents/${agentId}`, {
+            preserveScroll: true,
+        });
+    }
+}
+
+function rotateOwnerToken() {
+    if (confirm('Are you sure you want to rotate your Owner API token? Any services using the current token will immediately lose access.')) {
+        router.post('/dashboard/token/rotate', {}, {
+            preserveScroll: true,
+        });
+    }
+}
 </script>
 
 <template>
@@ -48,6 +72,12 @@ function registerAgent() {
                     class="shrink-0 rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-600 transition"
                 >
                     {{ copied ? 'Copied!' : 'Copy' }}
+                </button>
+                <button
+                    @click="rotateOwnerToken"
+                    class="shrink-0 rounded border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition"
+                >
+                    Rotate
                 </button>
             </div>
             <p class="mt-2 text-xs text-gray-500">Use this token to register agents via the API.</p>
@@ -102,10 +132,26 @@ function registerAgent() {
                     class="rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3"
                 >
                     <div class="flex items-center justify-between">
-                        <span class="font-medium text-white">{{ agent.name }}</span>
-                        <span class="text-xs text-gray-500">{{ new Date(agent.created_at).toLocaleDateString() }}</span>
+                        <div class="flex flex-col">
+                            <span class="font-medium text-white">{{ agent.name }}</span>
+                            <span class="text-xs text-gray-500">{{ new Date(agent.created_at).toLocaleDateString() }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button
+                                @click="rotateAgentToken(agent.id)"
+                                class="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white hover:bg-gray-600 transition"
+                            >
+                                Rotate Token
+                            </button>
+                            <button
+                                @click="deleteAgent(agent.id)"
+                                class="rounded bg-red-900/40 border border-red-800/50 px-3 py-1.5 text-xs font-medium text-red-400 hover:text-red-200 hover:bg-red-800/60 transition"
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
-                    <p v-if="agent.description" class="mt-1 text-sm text-gray-400">{{ agent.description }}</p>
+                    <p v-if="agent.description" class="mt-2 text-sm text-gray-400">{{ agent.description }}</p>
                 </div>
             </div>
         </section>

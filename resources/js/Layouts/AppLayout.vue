@@ -14,8 +14,10 @@ const user = computed(() => page.props.auth?.user);
                     Agent Memory Commons
                 </Link>
                 <div v-if="user" class="flex items-center gap-4">
+                    <Link href="/dashboard" class="text-sm text-gray-400 hover:text-white transition">Dashboard</Link>
+                    <Link href="/memories" class="text-sm text-gray-400 hover:text-white transition">Memories</Link>
                     <Link href="/docs" class="text-sm text-gray-400 hover:text-white transition">Docs</Link>
-                    <span class="text-sm text-gray-400">{{ user.email }}</span>
+                    <span class="text-sm text-gray-400 border-l border-gray-700 pl-4">{{ user.email }}</span>
                     <Link href="/logout" method="post" as="button"
                           class="text-sm text-gray-400 hover:text-white transition">
                         Sign out

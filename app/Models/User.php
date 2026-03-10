@@ -70,10 +70,15 @@ class User extends Authenticatable
         ]);
     }
 
+    public static function generateToken(): string
+    {
+        return 'own_' . Str::random(40);
+    }
+
     public function ensureApiToken(): string
     {
         if (! $this->api_token) {
-            $this->update(['api_token' => 'own_' . Str::random(40)]);
+            $this->update(['api_token' => self::generateToken()]);
         }
 
         return $this->api_token;

@@ -37,4 +37,39 @@ class DashboardController extends Controller
 
         return back()->with('message', "Agent created! Token: {$token}");
     }
+
+    public function destroy(Request $request, Agent $agent)
+    {
+        if ($request->user()->id !== $agent->owner_id) {
+            abort(403);
+        }
+
+        $agent->delete();
+
+        return back()->with('message', 'Agent deleted successfully.');
+    }
+
+    public function rotateToken(Request $request, Agent $agent)
+    {
+        if ($request->user()->id !== $agent->owner_id) {
+            abort(403);
+        }
+
+        $token = Agent::generateToken();
+        
+        $agent->update([
+            'api_token' => $token,
+        ]);
+
+        return back()->with('message', "Token rotated! New Token: {$token}");
+    }
+
+    public function rotateOwnerToken(Request $request)
+    {
+        $user = $request->user();
+        $user->api_token = \App\Models\User::generateToken();
+        $user->save();
+
+        return back()->with('message', "Owner API token rotated! New Token: {$user->api_token}");
+    }
 }

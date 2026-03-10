@@ -24,6 +24,10 @@ Route::get('/auth/verify/{token}', [MagicLinkController::class, 'verifyLink'])->
 // Authenticated
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'show'])->name('dashboard');
+    Route::post('/dashboard/token/rotate', [DashboardController::class, 'rotateOwnerToken'])->name('dashboard.token.rotate');
+    Route::get('/memories', [\App\Http\Controllers\MemoryBrowserController::class, 'index'])->name('memories.index');
     Route::post('/dashboard/agents', [DashboardController::class, 'registerAgent'])->name('dashboard.register-agent');
+    Route::delete('/dashboard/agents/{agent}', [DashboardController::class, 'destroy'])->name('dashboard.agents.destroy');
+    Route::post('/dashboard/agents/{agent}/rotate', [DashboardController::class, 'rotateToken'])->name('dashboard.agents.rotate');
     Route::post('/logout', [MagicLinkController::class, 'logout'])->name('logout');
 });
