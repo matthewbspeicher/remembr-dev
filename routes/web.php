@@ -11,6 +11,14 @@ Route::get('/', function () {
 
 Route::get('/skill.md', fn () => response()->file(public_path('skill.md'), ['Content-Type' => 'text/markdown']));
 Route::get('/docs', fn () => Inertia::render('Docs'))->name('docs');
+Route::get('/commons', function () {
+    $initialMemories = \App\Models\Memory::with('agent:id,name,description')
+        ->where('visibility', 'public')
+        ->latest()
+        ->limit(100)
+        ->get();
+    return Inertia::render('Commons', ['initialMemories' => $initialMemories]);
+})->name('commons');
 
 // Auth — magic link flow
 Route::middleware('guest')->group(function () {

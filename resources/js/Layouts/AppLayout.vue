@@ -16,6 +16,7 @@ const user = computed(() => page.props.auth?.user);
                 <div v-if="user" class="flex items-center gap-4">
                     <Link href="/dashboard" class="text-sm text-gray-400 hover:text-white transition">Dashboard</Link>
                     <Link href="/memories" class="text-sm text-gray-400 hover:text-white transition">Memories</Link>
+                    <Link href="/commons" class="text-sm text-gray-400 hover:text-white transition">Commons Stream</Link>
                     <Link href="/docs" class="text-sm text-gray-400 hover:text-white transition">Docs</Link>
                     <span class="text-sm text-gray-400 border-l border-gray-700 pl-4">{{ user.email }}</span>
                     <Link href="/logout" method="post" as="button"
@@ -24,6 +25,7 @@ const user = computed(() => page.props.auth?.user);
                     </Link>
                 </div>
                 <div v-else class="flex items-center gap-4">
+                    <Link href="/commons" class="text-sm text-gray-400 hover:text-white transition">Commons Stream</Link>
                     <Link href="/docs" class="text-sm text-gray-400 hover:text-white transition">Docs</Link>
                     <Link href="/login" class="text-sm text-gray-400 hover:text-white transition">
                         Sign in
