@@ -8,12 +8,9 @@ use RuntimeException;
 
 class EmbeddingService
 {
-    private const MODEL = 'text-embedding-004';
+    private const MODEL = 'text-embedding-3-small';
 
-    // The database column is currently set to 1536. 
-    // Gemini text-embedding-004 outputs 768. 
-    // We will pad it to 1536 so we don't have to rebuild the DB.
-    private const DB_DIMENSIONS = 1536;
+    private const DIMENSIONS = 1536;
 
     private const CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
 
@@ -21,7 +18,7 @@ class EmbeddingService
 
     public function __construct()
     {
-        $this->apiKey = config('services.gemini.key') ?? '';
+        $this->apiKey = config('services.openai.key') ?? '';
     }
 
     /**
@@ -42,44 +39,36 @@ class EmbeddingService
      */
     public function embedBatch(array $texts): array
     {
-        $requests = array_map(function ($text) {
-            return [
-                'model' => 'models/' . self::MODEL,
-                'content' => [
-                    'parts' => [['text' => $text]]
-                ]
-            ];
-        }, $texts);
-
-        $response = Http::post('https://generativelanguage.googleapis.com/v1beta/models/' . self::MODEL . ':batchEmbedContents?key=' . $this->apiKey, [
-            'requests' => $requests,
-        ]);
+        $response = Http::withToken($this->apiKey)
+            ->post('https://api.openai.com/v1/embeddings', [
+                'model' => self::MODEL,
+                'input' => $texts,
+                'dimensions' => self::DIMENSIONS,
+            ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('Gemini embedding API error: '.$response->body());
+            throw new RuntimeException('OpenAI embedding API error: '.$response->body());
         }
 
-        $embeddings = [];
-        foreach ($response->json('embeddings') as $emb) {
-            $embeddings[] = array_pad($emb['values'], self::DB_DIMENSIONS, 0.0);
-        }
-
-        return $embeddings;
+        return collect($response->json('data'))
+            ->sortBy('index')
+            ->pluck('embedding')
+            ->all();
     }
 
     private function fetchFromApi(string $text): array
     {
-        $response = Http::post('https://generativelanguage.googleapis.com/v1beta/models/' . self::MODEL . ':embedContent?key=' . $this->apiKey, [
-            'model' => 'models/' . self::MODEL,
-            'content' => [
-                'parts' => [['text' => $text]]
-            ],
-        ]);
+        $response = Http::withToken($this->apiKey)
+            ->post('https://api.openai.com/v1/embeddings', [
+                'model' => self::MODEL,
+                'input' => $text,
+                'dimensions' => self::DIMENSIONS,
+            ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('Gemini embedding API error: '.$response->body());
+            throw new RuntimeException('OpenAI embedding API error: '.$response->body());
         }
 
-        return array_pad($response->json('embedding.values'), self::DB_DIMENSIONS, 0.0);
+        return $response->json('data.0.embedding');
     }
 }
