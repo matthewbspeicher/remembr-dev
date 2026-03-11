@@ -10,10 +10,10 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Evaluation and Metric Setup' (Protocol in workflow.md) [commit: f042a45]
 
 ## Phase 2: Hybrid Search Implementation
-- [ ] Task: Implement keyword search index
+- [x] Task: Implement keyword search index [commit: 9ad1ef7]
     - [ ] Add full-text search indexes on memory text.
     - [ ] Write tests for keyword search endpoints.
-- [ ] Task: Combine vector and keyword search
+- [~] Task: Combine vector and keyword search
     - [ ] Update MemoryService to use hybrid search (RRF or similar).
     - [ ] Write tests verifying hybrid search results.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Hybrid Search Implementation' (Protocol in workflow.md)
