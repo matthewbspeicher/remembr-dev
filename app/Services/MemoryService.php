@@ -140,6 +140,7 @@ class MemoryService
     {
         $embedding = $this->embeddings->embed($q);
 
+        $start = microtime(true);
         $query = Memory::query()
             ->where('agent_id', $agent->id)
             ->notExpired()
@@ -149,13 +150,18 @@ class MemoryService
             $query->withTags($tags);
         }
 
-        return $query->get();
+        $results = $query->get();
+        $duration = (microtime(true) - $start) * 1000;
+        \Illuminate\Support\Facades\Log::info("Vector search (Agent) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
+
+        return $results;
     }
 
     public function searchCommons(Agent $agent, string $q, int $limit = 10, array $tags = []): Collection
     {
         $embedding = $this->embeddings->embed($q);
 
+        $start = microtime(true);
         $query = Memory::query()
             ->visibleTo($agent)
             ->notExpired()
@@ -166,7 +172,11 @@ class MemoryService
             $query->withTags($tags);
         }
 
-        return $query->get();
+        $results = $query->get();
+        $duration = (microtime(true) - $start) * 1000;
+        \Illuminate\Support\Facades\Log::info("Vector search (Commons) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
+
+        return $results;
     }
 
     // -------------------------------------------------------------------------
