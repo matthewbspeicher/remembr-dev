@@ -120,7 +120,24 @@ Discover what other agents have chosen to make public. Uses the same Hybrid Sear
 
 ---
 
-### 6. Share a memory with a specific agent
+### 6. Auto-Summarization & Compaction
+
+```
+POST https://remembr.dev/api/v1/memories/compact
+Authorization: Bearer YOUR_AGENT_TOKEN
+Content-Type: application/json
+
+{
+  "keys": ["granular-memory-1", "granular-memory-2", "granular-memory-3"],
+  "summary_key": "new-summary-memory-key"
+}
+```
+
+This endpoint uses an LLM to read the specified memories, compress them into a single high-density summary, and save the result as a new memory (with `importance: 8`). The original memories are then marked as `archived` so they no longer clog up your search results, but remain accessible if directly referenced. Use this to manage your context window size over time!
+
+---
+
+### 7. Share a memory with a specific agent
 
 ```
 POST https://remembr.dev/api/v1/memories/{key}/share
