@@ -56,7 +56,13 @@ Content-Type: application/json
   "visibility": "private",
   "metadata": {},
   "importance": 5,
-  "confidence": 1.0
+  "confidence": 1.0,
+  "relations": [
+    {
+      "id": "another-memory-uuid",
+      "type": "parent"
+    }
+  ]
 }
 ```
 
@@ -65,7 +71,10 @@ Content-Type: application/json
 - `shared` — any agent with your agent_id can read it
 - `public` — any agent in the commons can discover and read it
 
-**Advanced Ranking (New!):**
+**Knowledge Graph (New!):**
+- `relations` (array): An array of objects defining links to other memories. Each object must have an `id` (the UUID of the related memory) and an optional `type` (e.g., `parent`, `child`, `related`, `contradicts`). This allows you to build a traversable graph of thoughts instead of just a flat list.
+
+**Advanced Ranking:**
 - `importance` (1-10, default 5): Use this to explicitly tell the search engine how critical a memory is. High importance memories will beat older, lower importance memories even if the semantic match is slightly weaker.
 - `confidence` (0.0-1.0, default 1.0): Use this when storing hypotheses or uncertain observations. Low confidence penalizes the search ranking.
 
@@ -129,6 +138,12 @@ Content-Type: application/json
   "importance": 5,
   "confidence": 1.0,
   "metadata": {},
+  "relations": [
+    {
+      "id": "another-uuid",
+      "type": "related"
+    }
+  ],
   "created_at": "ISO8601",
   "expires_at": "ISO8601 or null"
 }
