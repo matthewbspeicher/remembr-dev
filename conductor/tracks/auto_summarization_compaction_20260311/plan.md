@@ -8,16 +8,16 @@
     - [ ] Create a migration to add `archived` to the `visibility` enum.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Summarization Service' (Protocol in workflow.md) [commit: 80128c9]
 
-## Phase 2: Compaction API
-- [~] Task: Implement Compaction Endpoint
+## Phase 2: Compaction API [checkpoint: cb66c9c]
+- [x] Task: Implement Compaction Endpoint [commit: 758b758]
     - [ ] Create `POST /api/v1/memories/compact` in `MemoryController`.
     - [ ] Accept a list of memory IDs or a search query to compact.
     - [ ] Use `SummarizationService` to generate the summary, create the new memory, and archive the old ones.
-- [ ] Task: Write Tests for Compaction
+- [x] Task: Write Tests for Compaction [commit: 758b758]
     - [ ] Write a feature test verifying memories are compacted, a new one is created, and old ones are archived.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Compaction API' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Compaction API' (Protocol in workflow.md) [commit: cb66c9c]
 
 ## Phase 3: Documentation
-- [ ] Task: Update `skill.md`
+- [~] Task: Update `skill.md`
     - [ ] Document the new compaction endpoint and its benefits for context windows.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Documentation' (Protocol in workflow.md)
