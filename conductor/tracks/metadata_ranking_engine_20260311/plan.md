@@ -4,7 +4,7 @@
 - [x] Task: Update the memories database schema [commit: 5d996a4]
     - [ ] Create a migration adding `importance` (integer, default 5) and `confidence` (decimal, default 1.0) columns to the `memories` table.
     - [ ] Update the `Memory` Eloquent model `$fillable` array and `$casts`.
-- [~] Task: Update Memory API Validation
+- [x] Task: Update Memory API Validation [commit: 6ffc4fd]
     - [ ] Update `StoreMemoryRequest` or `MemoryController` validation to accept `importance` (1-10) and `confidence` (0.0-1.0).
     - [ ] Write feature tests ensuring the new fields can be saved and retrieved via the API.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Database and Model Updates' (Protocol in workflow.md)
