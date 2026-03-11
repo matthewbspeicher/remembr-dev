@@ -93,7 +93,7 @@ describe('POST /v1/agents/register', function () {
 
 describe('POST /v1/memories', function () {
 
-    it('stores a private memory', function () {
+    it('stores a private memory with default importance and confidence', function () {
         $agent = makeAgent(makeOwner());
 
         $response = $this->postJson('/api/v1/memories', [
@@ -107,9 +107,35 @@ describe('POST /v1/memories', function () {
                 'key' => 'user-preference',
                 'value' => 'The user prefers dark mode.',
                 'visibility' => 'private',
+                'importance' => 5,
+                'confidence' => 1.0,
             ]);
 
         expect(Memory::where('agent_id', $agent->id)->count())->toBe(1);
+    });
+
+    it('stores a memory with custom importance and confidence', function () {
+        $agent = makeAgent(makeOwner());
+
+        $response = $this->postJson('/api/v1/memories', [
+            'key' => 'allergy-info',
+            'value' => 'The user is severely allergic to peanuts.',
+            'importance' => 10,
+            'confidence' => 0.95,
+        ], withAgent($agent));
+
+        $response->assertCreated()
+            ->assertJsonFragment([
+                'importance' => 10,
+                'confidence' => 0.95,
+            ]);
+
+        $this->assertDatabaseHas('memories', [
+            'agent_id' => $agent->id,
+            'key' => 'allergy-info',
+            'importance' => 10,
+            'confidence' => 0.95,
+        ]);
     });
 
     it('stores a public memory', function () {

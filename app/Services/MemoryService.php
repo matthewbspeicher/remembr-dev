@@ -49,6 +49,8 @@ class MemoryService
                 'embedding' => '['.implode(',', $embedding).']',
                 'metadata' => $metadata,
                 'visibility' => $data['visibility'] ?? 'private',
+                'importance' => $data['importance'] ?? 5,
+                'confidence' => $data['confidence'] ?? 1.0,
                 'expires_at' => $data['expires_at'] ?? null,
             ]
         );
