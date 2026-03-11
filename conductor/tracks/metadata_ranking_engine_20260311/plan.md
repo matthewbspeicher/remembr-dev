@@ -10,16 +10,16 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Database and Model Updates' (Protocol in workflow.md) [commit: bbb6ea9]
 
 ## Phase 2: Advanced Ranking Algorithm
-- [~] Task: Implement Time Decay and Score Weighting
+- [x] Task: Implement Time Decay and Score Weighting [commit: 75d0140]
     - [ ] Update `fuseResults` in `MemoryService.php` to calculate a time decay multiplier based on memory age.
     - [ ] Update `fuseResults` to incorporate `importance` and `confidence` into the final score.
-- [ ] Task: Write Ranking Unit/Feature Tests
+- [x] Task: Write Ranking Unit/Feature Tests [commit: 75d0140]
     - [ ] Write a test proving a highly important old memory beats a low importance new memory.
     - [ ] Write a test proving a new memory beats an old memory if importance/confidence are equal.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Advanced Ranking Algorithm' (Protocol in workflow.md)
 
 ## Phase 3: Documentation and Public API
-- [ ] Task: Update `skill.md`
+- [~] Task: Update `skill.md`
     - [ ] Document the new `importance` and `confidence` fields in the Memory Object Shape and API request examples.
     - [ ] Explain how these fields affect search ranking so agents know how to use them.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Documentation and Public API' (Protocol in workflow.md)
