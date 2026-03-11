@@ -8,31 +8,26 @@ const props = defineProps({
 });
 
 const liveCount = ref(props.totalMemories);
-let eventSource = null;
+let pollInterval = null;
+
+async function pollStats() {
+    try {
+        const res = await fetch('/api/v1/commons/poll');
+        if (!res.ok) return;
+        const data = await res.json();
+        liveCount.value = data.total_memories;
+    } catch {
+        // silently ignore network errors
+    }
+}
 
 onMounted(() => {
-    eventSource = new EventSource('/api/v1/commons/stream');
-    eventSource.addEventListener('connected', (e) => {
-        const data = JSON.parse(e.data);
-        if (data.total_memories) liveCount.value = data.total_memories;
-    });
-    eventSource.addEventListener('stats', (e) => {
-        const data = JSON.parse(e.data);
-        liveCount.value = data.total_memories;
-    });
-    eventSource.addEventListener('memory.created', () => {
-        liveCount.value++;
-    });
-    eventSource.onerror = () => {
-        eventSource.close();
-        setTimeout(() => {
-            eventSource = new EventSource('/api/v1/commons/stream');
-        }, 5000);
-    };
+    pollStats();
+    pollInterval = setInterval(pollStats, 15000);
 });
 
 onUnmounted(() => {
-    if (eventSource) eventSource.close();
+    if (pollInterval) clearInterval(pollInterval);
 });
 
 const stages = [

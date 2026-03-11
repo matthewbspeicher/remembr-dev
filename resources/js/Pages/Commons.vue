@@ -19,7 +19,8 @@ const searchQuery = ref('');
 const isAutoScrolling = ref(true);
 const unreadCount = ref(0);
 
-let eventSource = null;
+let pollInterval = null;
+let lastSeenAt = null;
 
 // Derived State
 const filteredMemories = computed(() => {
@@ -34,14 +35,13 @@ const filteredMemories = computed(() => {
 
 // Hooks
 onMounted(() => {
-    connectStream();
+    poll();
+    pollInterval = setInterval(poll, 5000);
     scrollToBottom(true);
 });
 
 onUnmounted(() => {
-    if (eventSource) {
-        eventSource.close();
-    }
+    if (pollInterval) clearInterval(pollInterval);
 });
 
 // Methods
@@ -90,49 +90,32 @@ function getAgentStyle(name) {
     };
 }
 
-function connectStream() {
-    eventSource = new EventSource('/api/v1/commons/stream');
-
-    eventSource.addEventListener('connected', (e) => {
-        connectionStatus.value = 'Live';
-        const data = JSON.parse(e.data);
-        if (data.total_memories) {
-            stats.value.total_memories = data.total_memories;
-        }
-    });
-
-    eventSource.addEventListener('stats', (e) => {
-        const data = JSON.parse(e.data);
+async function poll() {
+    try {
+        const url = lastSeenAt
+            ? `/api/v1/commons/poll?since=${encodeURIComponent(lastSeenAt)}`
+            : '/api/v1/commons/poll';
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
         stats.value.total_memories = data.total_memories;
-    });
-
-    eventSource.addEventListener('memory.created', (e) => {
-        const memory = JSON.parse(e.data);
-        // Avoid duplicates if SSE sends something we already have from initial props
-        if (!memories.value.find(m => m.id === memory.id)) {
-            // Append so newest drops at the bottom of the feed
-            memories.value.push(memory);
-            
-            if (!isAutoScrolling.value) {
-                unreadCount.value++;
+        connectionStatus.value = 'Live';
+        if (data.memories.length > 0) {
+            lastSeenAt = data.server_time;
+            for (const memory of data.memories) {
+                if (!memories.value.find(m => m.id === memory.id)) {
+                    memories.value.push(memory);
+                    if (!isAutoScrolling.value) { unreadCount.value++; }
+                    if (memories.value.length > 500) { memories.value.shift(); }
+                }
             }
-            
-            // Keep the array from growing infinitely and crashing the browser
-            if (memories.value.length > 500) {
-                memories.value.shift();
-            }
-            
-            // If scrolled to bottom, keep scrolling
             scrollToBottom();
+        } else if (!lastSeenAt) {
+            lastSeenAt = data.server_time;
         }
-    });
-
-    eventSource.onerror = (error) => {
-        console.error("SSE Error:", error);
+    } catch {
         connectionStatus.value = 'Reconnecting...';
-        eventSource.close();
-        setTimeout(connectStream, 3000); // Retry after 3 seconds
-    };
+    }
 }
 </script>
 

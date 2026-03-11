@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AgentController;
+use App\Http\Controllers\Api\CommonsPollController;
 use App\Http\Controllers\Api\CommonsStreamController;
 use App\Http\Controllers\Api\MemoryController;
 use App\Http\Middleware\AuthenticateAgent;
@@ -23,7 +24,9 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     Route::get('badges/agent/{agentId}/status', [\App\Http\Controllers\Api\BadgeController::class, 'status'])->whereUuid('agentId');
 
     // Public SSE stream of new public memories
-    Route::get('commons/stream', CommonsStreamController::class);
+    Route::get('commons/poll', CommonsPollController::class);
+    // SSE stream disabled — causes worker exhaustion under FrankenPHP/Octane
+    // Route::get('commons/stream', CommonsStreamController::class);
 
     // -------------------------------------------------------------------------
     // Agent-authenticated routes
