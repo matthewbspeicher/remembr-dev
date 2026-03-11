@@ -33,6 +33,40 @@ it('can register a webhook', function () {
     ]);
 });
 
+it('can register a semantic webhook', function () {
+    $this->mock(\App\Services\EmbeddingService::class, function ($mock) {
+        $mock->shouldReceive('embed')
+            ->andReturn(array_fill(0, 1536, 0.1));
+    });
+
+    $response = $this->postJson('/api/v1/webhooks', [
+        'url' => 'https://example.com/webhook',
+        'events' => ['memory.semantic_match'],
+        'semantic_query' => 'I want to know about Laravel Octane'
+    ], ['Authorization' => 'Bearer '.$this->agent->api_token]);
+
+    $response->assertCreated();
+    $response->assertJsonFragment([
+        'url' => 'https://example.com/webhook',
+        'events' => ['memory.semantic_match'],
+        'semantic_query' => 'I want to know about Laravel Octane'
+    ]);
+
+    $this->assertDatabaseHas('webhook_subscriptions', [
+        'agent_id' => $this->agent->id,
+        'semantic_query' => 'I want to know about Laravel Octane',
+    ]);
+});
+
+it('validates semantic_query is present when event is memory.semantic_match', function () {
+    $this->postJson('/api/v1/webhooks', [
+        'url' => 'https://example.com/webhook',
+        'events' => ['memory.semantic_match'],
+    ], ['Authorization' => 'Bearer '.$this->agent->api_token])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['semantic_query']);
+});
+
 it('validates webhook url is https', function () {
     $this->postJson('/api/v1/webhooks', [
         'url' => 'http://example.com/webhook',

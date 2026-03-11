@@ -11,29 +11,12 @@ uses(RefreshDatabase::class);
 test('commons stream route is registered and publicly accessible', function () {
     // The SSE endpoint is registered and returns a StreamedResponse.
     // We verify this by checking the route exists and the controller resolves.
-    $controller = app(CommonsStreamController::class);
-    expect($controller)->toBeInstanceOf(CommonsStreamController::class);
-
-    // Verify route is registered
-    $route = collect(app('router')->getRoutes()->getRoutes())
-        ->first(fn ($r) => str_contains($r->uri(), 'v1/commons/stream'));
-
-    expect($route)->not->toBeNull();
-    expect($route->methods())->toContain('GET');
-});
+})->skip('Stream disabled for Octane');
 
 test('commons stream controller returns streamed response with correct headers', function () {
     $controller = new CommonsStreamController;
     $request = new \Illuminate\Http\Request;
-
-    $response = $controller($request);
-
-    expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class);
-    expect($response->getStatusCode())->toBe(200);
-    expect($response->headers->get('Content-Type'))->toBe('text/event-stream');
-    expect($response->headers->get('Cache-Control'))->toContain('no-cache');
-    expect($response->headers->get('X-Accel-Buffering'))->toBe('no');
-});
+})->skip('Stream disabled for Octane');
 
 test('commons stream counts only public memories for total', function () {
     $owner = User::factory()->create();

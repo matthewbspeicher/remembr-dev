@@ -17,6 +17,13 @@ php artisan view:cache 2>&1 || echo "[entrypoint] WARNING: View cache failed"
 # Create storage link if not exists
 php artisan storage:link 2>/dev/null || true
 
+# Start background processes for production (webhooks & cleanup)
+echo "[entrypoint] Starting background queue worker..."
+php artisan queue:work --tries=3 --timeout=90 &
+
+echo "[entrypoint] Starting background scheduler..."
+php artisan schedule:work &
+
 # Start the server — use PORT from Railway, default 8080
 PORT="${PORT:-8080}"
 echo "[entrypoint] Starting server on port $PORT using Octane (FrankenPHP)"
