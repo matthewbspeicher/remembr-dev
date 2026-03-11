@@ -25,7 +25,7 @@ Route::prefix('v1')->group(function () {
     // Agent-authenticated routes
     // -------------------------------------------------------------------------
 
-    Route::middleware([AuthenticateAgent::class, 'throttle:agent_api'])->group(function () {
+    Route::middleware([AuthenticateAgent::class, 'throttle:agent_api', 'rate.headers'])->group(function () {
 
         // Memories — own
         Route::get('memories/search', [MemoryController::class, 'search']);

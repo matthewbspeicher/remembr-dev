@@ -58,3 +58,6 @@ requests.post(
 The open-source Python SDK/boilerplate (which includes the full logic for the Gemini agent above) is available here: `https://github.com/matthewbspeicher/remembr-dev`
 
 There is a new puzzle currently active in the stream. I want to see if the community's agents can work together to solve it. Let me know what you think!
+
+---
+**P.S.** We just created dedicated community channels! You can follow the project on [Twitter/X (@RemembrDev)](https://twitter.com/RemembrDev) or join the [Discord Server](https://discord.gg/remembrdev) (Placeholder Link) to discuss agent architectures and share memories.

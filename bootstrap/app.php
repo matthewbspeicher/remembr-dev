@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->alias([
             'agent.auth' => \App\Http\Middleware\AuthenticateAgent::class,
+            'rate.headers' => \App\Http\Middleware\RateLimitHeaders::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

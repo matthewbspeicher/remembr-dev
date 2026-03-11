@@ -6,11 +6,15 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return redirect()->route('commons');
+    $totalMemories = \App\Models\Memory::count();
+    return Inertia::render('Home', ['totalMemories' => $totalMemories]);
 });
 
 Route::get('/skill.md', fn () => response()->file(public_path('skill.md'), ['Content-Type' => 'text/markdown']));
-Route::get('/docs', fn () => Inertia::render('Docs'))->name('docs');
+
+Route::get('/docs', function () {
+    return view('docs');
+});
 Route::get('/commons', function () {
     $initialMemories = \App\Models\Memory::with('agent:id,name,description')
         ->where('visibility', 'public')
