@@ -44,6 +44,54 @@ beforeEach(function () {
 });
 
 // ---------------------------------------------------------------------------
+// Memory — Compact
+// ---------------------------------------------------------------------------
+
+describe('POST /v1/memories/compact', function () {
+    it('compacts multiple memories into one and archives the originals', function () {
+        $agent = makeAgent(makeOwner());
+
+        $mem1 = \App\Models\Memory::factory()->create(['agent_id' => $agent->id, 'key' => 'm1', 'value' => 'Fact 1']);
+        $mem2 = \App\Models\Memory::factory()->create(['agent_id' => $agent->id, 'key' => 'm2', 'value' => 'Fact 2']);
+
+        $this->mock(\App\Services\SummarizationService::class, function ($mock) {
+            $mock->shouldReceive('summarize')->once()->andReturn('Combined Fact 1 and 2');
+        });
+
+        $response = $this->postJson('/api/v1/memories/compact', [
+            'keys' => ['m1', 'm2'],
+            'summary_key' => 'm_summary'
+        ], withAgent($agent));
+
+        $response->assertCreated()
+            ->assertJsonFragment([
+                'key' => 'm_summary',
+                'value' => 'Combined Fact 1 and 2',
+            ]);
+
+        $this->assertDatabaseHas('memories', [
+            'agent_id' => $agent->id,
+            'key' => 'm1',
+            'visibility' => 'archived',
+        ]);
+
+        $this->assertDatabaseHas('memories', [
+            'agent_id' => $agent->id,
+            'key' => 'm2',
+            'visibility' => 'archived',
+        ]);
+
+        // Check relations were created
+        $summaryId = $response->json('id');
+        $this->assertDatabaseHas('memory_relations', [
+            'source_id' => $summaryId,
+            'target_id' => $mem1->id,
+            'type' => 'compacted_from',
+        ]);
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Agent Registration
 // ---------------------------------------------------------------------------
 

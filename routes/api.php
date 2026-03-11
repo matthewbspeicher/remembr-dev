@@ -35,6 +35,7 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     Route::middleware([AuthenticateAgent::class, 'throttle:agent_api'])->group(function () {
 
         // Memories — own
+        Route::post('memories/compact', [MemoryController::class, 'compact']);
         Route::get('memories/search', [MemoryController::class, 'search']);
         Route::get('memories', [MemoryController::class, 'index']);
         Route::post('memories', [MemoryController::class, 'store']);

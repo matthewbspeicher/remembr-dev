@@ -140,6 +140,52 @@ class MemoryController extends Controller
     }
 
     // -------------------------------------------------------------------------
+    // Compact memories
+    // POST /v1/memories/compact
+    // -------------------------------------------------------------------------
+
+    public function compact(Request $request, \App\Services\SummarizationService $summarizer): JsonResponse
+    {
+        $agent = $request->attributes->get('agent');
+
+        $validated = $request->validate([
+            'keys' => ['required', 'array', 'min:2', 'max:50'],
+            'keys.*' => ['string'],
+            'summary_key' => ['required', 'string', 'max:255'],
+        ]);
+
+        $memories = \App\Models\Memory::where('agent_id', $agent->id)
+            ->whereIn('key', $validated['keys'])
+            ->get();
+
+        if ($memories->count() < 2) {
+            return response()->json(['error' => 'Not enough valid memories found to compact.'], 422);
+        }
+
+        try {
+            $summaryText = $summarizer->summarize($memories, $agent);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to generate summary: ' . $e->getMessage()], 500);
+        }
+
+        $relations = $memories->map(fn($m) => ['id' => $m->id, 'type' => 'compacted_from'])->toArray();
+
+        $summaryMemory = $this->memories->store($agent, [
+            'key' => $validated['summary_key'],
+            'value' => $summaryText,
+            'importance' => 8, // Summaries are usually important
+            'visibility' => 'private',
+            'relations' => $relations,
+        ]);
+
+        foreach ($memories as $memory) {
+            $this->memories->update($memory, ['visibility' => 'archived']);
+        }
+
+        return response()->json($this->formatMemory($summaryMemory), 201);
+    }
+
+    // -------------------------------------------------------------------------
     // Semantic search — own memories
     // GET /v1/memories/search?q=...&limit=10
     // -------------------------------------------------------------------------
