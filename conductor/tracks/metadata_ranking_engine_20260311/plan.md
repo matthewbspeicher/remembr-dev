@@ -1,16 +1,16 @@
 # Implementation Plan: Memory Metadata and Ranking Engine
 
-## Phase 1: Database and Model Updates
+## Phase 1: Database and Model Updates [checkpoint: bbb6ea9]
 - [x] Task: Update the memories database schema [commit: 5d996a4]
     - [ ] Create a migration adding `importance` (integer, default 5) and `confidence` (decimal, default 1.0) columns to the `memories` table.
     - [ ] Update the `Memory` Eloquent model `$fillable` array and `$casts`.
 - [x] Task: Update Memory API Validation [commit: 6ffc4fd]
     - [ ] Update `StoreMemoryRequest` or `MemoryController` validation to accept `importance` (1-10) and `confidence` (0.0-1.0).
     - [ ] Write feature tests ensuring the new fields can be saved and retrieved via the API.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Database and Model Updates' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Database and Model Updates' (Protocol in workflow.md) [commit: bbb6ea9]
 
 ## Phase 2: Advanced Ranking Algorithm
-- [ ] Task: Implement Time Decay and Score Weighting
+- [~] Task: Implement Time Decay and Score Weighting
     - [ ] Update `fuseResults` in `MemoryService.php` to calculate a time decay multiplier based on memory age.
     - [ ] Update `fuseResults` to incorporate `importance` and `confidence` into the final score.
 - [ ] Task: Write Ranking Unit/Feature Tests
