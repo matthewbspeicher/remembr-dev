@@ -141,20 +141,36 @@ class MemoryService
         $embedding = $this->embeddings->embed($q);
 
         $start = microtime(true);
-        $query = Memory::query()
+        
+        // 1. Vector Search
+        $vectorQuery = Memory::query()
             ->where('agent_id', $agent->id)
             ->notExpired()
-            ->semanticSearch($embedding, $limit);
+            ->semanticSearch($embedding, $limit * 2); // fetch more for RRF
 
         if (! empty($tags)) {
-            $query->withTags($tags);
+            $vectorQuery->withTags($tags);
         }
+        $vectorResults = $vectorQuery->get();
 
-        $results = $query->get();
+        // 2. Keyword Search
+        $keywordQuery = Memory::query()
+            ->where('agent_id', $agent->id)
+            ->notExpired()
+            ->keywordSearch($q, $limit * 2);
+
+        if (! empty($tags)) {
+            $keywordQuery->withTags($tags);
+        }
+        $keywordResults = $keywordQuery->get();
+
+        // 3. Reciprocal Rank Fusion
+        $results = $this->fuseResults($vectorResults, $keywordResults, $limit);
+
         $duration = (microtime(true) - $start) * 1000;
-        \Illuminate\Support\Facades\Log::info("Vector search (Agent) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
+        \Illuminate\Support\Facades\Log::info("Hybrid search (Agent) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
 
-        return $results;
+        return collect($results);
     }
 
     public function searchCommons(Agent $agent, string $q, int $limit = 10, array $tags = []): Collection
@@ -162,21 +178,78 @@ class MemoryService
         $embedding = $this->embeddings->embed($q);
 
         $start = microtime(true);
-        $query = Memory::query()
+        
+        // 1. Vector Search
+        $vectorQuery = Memory::query()
             ->visibleTo($agent)
             ->notExpired()
-            ->semanticSearch($embedding, $limit)
+            ->semanticSearch($embedding, $limit * 2)
             ->with('agent:id,name,description');
 
         if (! empty($tags)) {
-            $query->withTags($tags);
+            $vectorQuery->withTags($tags);
+        }
+        $vectorResults = $vectorQuery->get();
+
+        // 2. Keyword Search
+        $keywordQuery = Memory::query()
+            ->visibleTo($agent)
+            ->notExpired()
+            ->keywordSearch($q, $limit * 2)
+            ->with('agent:id,name,description');
+
+        if (! empty($tags)) {
+            $keywordQuery->withTags($tags);
+        }
+        $keywordResults = $keywordQuery->get();
+
+        // 3. Reciprocal Rank Fusion
+        $results = $this->fuseResults($vectorResults, $keywordResults, $limit);
+
+        $duration = (microtime(true) - $start) * 1000;
+        \Illuminate\Support\Facades\Log::info("Hybrid search (Commons) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
+
+        return collect($results);
+    }
+
+    /**
+     * Perform Reciprocal Rank Fusion on two sets of results.
+     */
+    private function fuseResults(Collection $vectorResults, Collection $keywordResults, int $limit = 10, int $k = 60): array
+    {
+        $scores = [];
+        $memories = [];
+
+        // Score vector results
+        foreach ($vectorResults as $rank => $memory) {
+            $id = $memory->id;
+            if (!isset($scores[$id])) {
+                $scores[$id] = 0.0;
+                $memories[$id] = $memory;
+            }
+            $scores[$id] += 1 / ($k + $rank + 1);
         }
 
-        $results = $query->get();
-        $duration = (microtime(true) - $start) * 1000;
-        \Illuminate\Support\Facades\Log::info("Vector search (Commons) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
+        // Score keyword results
+        foreach ($keywordResults as $rank => $memory) {
+            $id = $memory->id;
+            if (!isset($scores[$id])) {
+                $scores[$id] = 0.0;
+                $memories[$id] = $memory;
+            }
+            $scores[$id] += 1 / ($k + $rank + 1);
+        }
 
-        return $results;
+        // Sort by score descending
+        arsort($scores);
+
+        // Return top results
+        $finalResults = [];
+        foreach (array_slice(array_keys($scores), 0, $limit) as $id) {
+            $finalResults[] = $memories[$id];
+        }
+
+        return $finalResults;
     }
 
     // -------------------------------------------------------------------------
