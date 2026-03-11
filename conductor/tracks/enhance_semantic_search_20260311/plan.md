@@ -9,17 +9,17 @@
     - [ ] Document baseline performance metrics.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Evaluation and Metric Setup' (Protocol in workflow.md) [commit: f042a45]
 
-## Phase 2: Hybrid Search Implementation
+## Phase 2: Hybrid Search Implementation [checkpoint: fc0a320]
 - [x] Task: Implement keyword search index [commit: 9ad1ef7]
     - [ ] Add full-text search indexes on memory text.
     - [ ] Write tests for keyword search endpoints.
 - [x] Task: Combine vector and keyword search [commit: 60b6134]
     - [ ] Update MemoryService to use hybrid search (RRF or similar).
     - [ ] Write tests verifying hybrid search results.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Hybrid Search Implementation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Hybrid Search Implementation' (Protocol in workflow.md) [commit: fc0a320]
 
 ## Phase 3: Deployment and Tuning
-- [ ] Task: Optimize embedding models
+- [~] Task: Optimize embedding models
     - [ ] Evaluate alternative OpenAI embedding models if necessary.
     - [ ] Write tests to verify new embeddings don't break existing data.
 - [ ] Task: Update the Commons Feed
