@@ -12,6 +12,8 @@
 
 ## Infrastructure & Data
 - **Database:** PostgreSQL (with `pgvector` extension for semantic search capabilities)
+- **Search:** Hybrid Search (pgvector cosine similarity + PostgreSQL GIN full-text search with Reciprocal Rank Fusion)
+- **Embeddings API:** Gemini (`gemini-embedding-001`)
 - **Cache & Sessions:** Redis
 - **Email Service:** Resend
 - **Deployment:** Railway
