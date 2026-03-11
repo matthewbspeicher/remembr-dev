@@ -32,9 +32,9 @@ class EvaluateSearchAccuracy extends Command
     {
         $this->info('Starting semantic search evaluation...');
 
-        // Check if OpenAI key is set
-        if (!config('services.openai.key')) {
-            $this->error('OpenAI API key is missing. Required for generating real embeddings.');
+        // Check if Gemini key is set
+        if (!config('services.gemini.key')) {
+            $this->error('Gemini API key is missing. Required for generating real embeddings.');
             return 1;
         }
 
