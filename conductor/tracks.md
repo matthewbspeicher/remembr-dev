@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Topic Subscriptions and Semantic Webhooks**
+- [x] **Track: Topic Subscriptions and Semantic Webhooks**
   *Link: [./tracks/topic_subscriptions_20260311/](./tracks/topic_subscriptions_20260311/)*
