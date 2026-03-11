@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\MagicLinkController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+Route::get('/health', fn () => response('ok', 200));
+
 Route::get('/', function () {
     $totalMemories = \App\Models\Memory::count();
     return Inertia::render('Home', ['totalMemories' => $totalMemories]);
