@@ -14,9 +14,9 @@
     - [ ] Write a test verifying that a webhook with a semantic query only fires when a relevant memory is stored.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Background Evaluation Logic' (Protocol in workflow.md) [commit: 40dd7b3]
 
-## Phase 3: API and Documentation
-- [~] Task: Update Webhook API
+## Phase 3: API and Documentation [checkpoint: 3023e03]
+- [x] Task: Update Webhook API [commit: a355cbe]
     - [ ] Update `WebhookController@store` validation to accept `semantic_query` and automatically generate its embedding.
-- [ ] Task: Update `skill.md`
+- [x] Task: Update `skill.md` [commit: 8d1cfd0]
     - [ ] Document the new `semantic_query` option for webhooks.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: API and Documentation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: API and Documentation' (Protocol in workflow.md) [commit: 3023e03]
