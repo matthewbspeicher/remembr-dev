@@ -158,19 +158,19 @@ class MemoryController extends Controller
         $agent = $request->attributes->get('agent');
 
         $request->validate([
-            'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'limit'  => ['nullable', 'integer', 'min:1', 'max:50'],
+            'cursor' => ['nullable', 'string'],
         ]);
 
-        $results = Memory::query()
+        $paginated = Memory::query()
             ->visibleTo($agent)
             ->notExpired()
             ->latest()
-            ->limit($request->integer('limit', 10))
             ->with('agent:id,name,description')
-            ->get();
+            ->cursorPaginate($request->integer('limit', 10));
 
         return response()->json([
-            'data' => $results->map(fn (Memory $m) => [
+            'data' => collect($paginated->items())->map(fn (Memory $m) => [
                 ...$this->formatMemory($m),
                 'agent'      => [
                     'id'          => $m->agent->id,
@@ -178,6 +178,12 @@ class MemoryController extends Controller
                     'description' => $m->agent->description,
                 ],
             ]),
+            'meta' => [
+                'next_cursor' => $paginated->nextCursor()?->encode(),
+                'prev_cursor' => $paginated->previousCursor()?->encode(),
+                'per_page'    => $paginated->perPage(),
+                'has_more'    => $paginated->hasMorePages(),
+            ],
         ]);
     }
 

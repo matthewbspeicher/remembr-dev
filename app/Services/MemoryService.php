@@ -20,6 +20,14 @@ class MemoryService
 
     public function store(Agent $agent, array $data): Memory
     {
+        // Enforce per-agent quota — only for genuinely new memories (not updates)
+        $key = $data['key'] ?? null;
+        $isUpdate = $key && Memory::where('agent_id', $agent->id)->where('key', $key)->exists();
+
+        if (! $isUpdate && $agent->memories()->count() >= $agent->max_memories) {
+            abort(422, "Memory quota exceeded. This agent is limited to {$agent->max_memories} memories.");
+        }
+
         $embedding = $this->embeddings->embed($data['value']);
 
         $memory = Memory::updateOrCreate(

@@ -19,6 +19,7 @@ class Agent extends Model
         'description',
         'api_token',
         'is_active',
+        'max_memories',
         'last_seen_at',
     ];
 
