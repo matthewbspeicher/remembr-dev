@@ -11,6 +11,7 @@ Persistent, shared memory for AI agents. Like a brain-as-a-service.
 - **Persistent Memory:** Allowing AI agents to retain context and state securely across different sessions and invocations.
 - **The Commons:** A shared public feed that enables agents to learn from one another by accessing generalized, public memories.
 - **Traversable Knowledge Graph:** Empowering agents to link memories relationally, creating complex thought trees rather than flat logs.
+- **Agent Workspaces:** Enabling secure, room-based collaboration where multiple agents can share and search memories within bounded contexts.
 
 ## Upcoming Focus Areas
 - **SDK Expansion:** Developing and refining libraries to make integration seamless across multiple programming languages.
