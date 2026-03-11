@@ -30,13 +30,29 @@ class WebhookController extends Controller
         $validated = $request->validate([
             'url' => ['required', 'url', 'starts_with:https://'],
             'events' => ['required', 'array', 'min:1'],
-            'events.*' => ['string', 'in:memory.shared'],
+            'events.*' => ['string', 'in:memory.shared,memory.semantic_match'],
+            'semantic_query' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        if (in_array('memory.semantic_match', $validated['events']) && empty($validated['semantic_query'])) {
+            return response()->json([
+                'message' => 'The semantic query field is required when events contains memory.semantic_match.',
+                'errors' => ['semantic_query' => ['The semantic query field is required when events contains memory.semantic_match.']]
+            ], 422);
+        }
+
+        $embedding = null;
+        if (in_array('memory.semantic_match', $validated['events']) && !empty($validated['semantic_query'])) {
+            $embeddings = app(\App\Services\EmbeddingService::class);
+            $embedding = '['.implode(',', $embeddings->embed($validated['semantic_query'])).']';
+        }
 
         $webhook = WebhookSubscription::create([
             'agent_id' => $agent->id,
             'url' => $validated['url'],
             'events' => $validated['events'],
+            'semantic_query' => $validated['semantic_query'] ?? null,
+            'embedding' => $embedding,
             'secret' => 'whsec_'.Str::random(32),
         ]);
 
