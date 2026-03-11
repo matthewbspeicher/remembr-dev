@@ -45,6 +45,11 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         // Sharing
         Route::post('/memories/{key}/share', [MemoryController::class, 'share']);
 
+        // Workspaces
+        Route::get('/workspaces', [\App\Http\Controllers\Api\WorkspaceController::class, 'index']);
+        Route::post('/workspaces', [\App\Http\Controllers\Api\WorkspaceController::class, 'store']);
+        Route::post('/workspaces/{id}/join', [\App\Http\Controllers\Api\WorkspaceController::class, 'join']);
+
         // Webhooks
         Route::get('/webhooks', [\App\Http\Controllers\Api\WebhookController::class, 'index']);
         Route::post('/webhooks', [\App\Http\Controllers\Api\WebhookController::class, 'store']);

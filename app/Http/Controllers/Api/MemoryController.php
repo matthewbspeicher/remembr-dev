@@ -27,7 +27,8 @@ class MemoryController extends Controller
         $validated = $request->validate([
             'key' => ['nullable', 'string', 'max:255'],
             'value' => ['required', 'string', 'max:10000'],
-            'visibility' => ['nullable', 'in:private,shared,public'],
+            'visibility' => ['nullable', 'in:private,shared,public,workspace'],
+            'workspace_id' => ['nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id'],
             'metadata' => ['nullable', 'array'],
             'importance' => ['nullable', 'integer', 'min:1', 'max:10'],
             'confidence' => ['nullable', 'numeric', 'min:0', 'max:1'],
@@ -100,7 +101,8 @@ class MemoryController extends Controller
 
         $validated = $request->validate([
             'value' => ['sometimes', 'string', 'max:10000'],
-            'visibility' => ['sometimes', 'in:private,shared,public'],
+            'visibility' => ['sometimes', 'in:private,shared,public,workspace'],
+            'workspace_id' => ['sometimes', 'nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id'],
             'metadata' => ['sometimes', 'array'],
             'importance' => ['sometimes', 'integer', 'min:1', 'max:10'],
             'confidence' => ['sometimes', 'numeric', 'min:0', 'max:1'],
@@ -314,6 +316,7 @@ class MemoryController extends Controller
             'key' => $memory->key,
             'value' => $memory->value,
             'visibility' => $memory->visibility,
+            'workspace_id' => $memory->workspace_id,
             'importance' => $memory->importance,
             'confidence' => $memory->confidence,
             'metadata' => empty($metadata) ? new \stdClass : $metadata,

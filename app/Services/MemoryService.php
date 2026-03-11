@@ -49,6 +49,7 @@ class MemoryService
                 'embedding' => '['.implode(',', $embedding).']',
                 'metadata' => $metadata,
                 'visibility' => $data['visibility'] ?? 'private',
+                'workspace_id' => $data['workspace_id'] ?? null,
                 'importance' => $data['importance'] ?? 5,
                 'confidence' => $data['confidence'] ?? 1.0,
                 'expires_at' => $data['expires_at'] ?? null,
@@ -144,7 +145,7 @@ class MemoryService
     public function listForAgent(Agent $agent, int $perPage = 20, array $tags = []): LengthAwarePaginator
     {
         $query = Memory::query()
-            ->where('agent_id', $agent->id)
+            ->accessibleBy($agent)
             ->notExpired()
             ->with('relatedTo')
             ->latest();
@@ -168,7 +169,7 @@ class MemoryService
         
         // 1. Vector Search
         $vectorQuery = Memory::query()
-            ->where('agent_id', $agent->id)
+            ->accessibleBy($agent)
             ->notExpired()
             ->with('relatedTo')
             ->semanticSearch($embedding, $limit * 2); // fetch more for RRF
@@ -180,7 +181,7 @@ class MemoryService
 
         // 2. Keyword Search
         $keywordQuery = Memory::query()
-            ->where('agent_id', $agent->id)
+            ->accessibleBy($agent)
             ->notExpired()
             ->with('relatedTo')
             ->keywordSearch($q, $limit * 2);

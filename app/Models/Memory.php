@@ -83,6 +83,18 @@ class Memory extends Model
         return $query->where('visibility', 'public');
     }
 
+    public function scopeAccessibleBy(Builder $query, Agent $agent): Builder
+    {
+        return $query->where(function ($q) use ($agent) {
+            // Own memories
+            $q->where('agent_id', $agent->id)
+              // Explicitly shared with this agent
+                ->orWhereHas('sharedWith', fn ($sq) => $sq->where('agent_id', $agent->id))
+              // Shared in a workspace this agent is a member of
+                ->orWhereIn('workspace_id', $agent->workspaces()->select('workspaces.id'));
+        });
+    }
+
     public function scopeVisibleTo(Builder $query, Agent $agent): Builder
     {
         return $query->where(function ($q) use ($agent) {
@@ -91,7 +103,9 @@ class Memory extends Model
               // Public memories
                 ->orWhere('visibility', 'public')
               // Explicitly shared with this agent
-                ->orWhereHas('sharedWith', fn ($sq) => $sq->where('agent_id', $agent->id));
+                ->orWhereHas('sharedWith', fn ($sq) => $sq->where('agent_id', $agent->id))
+              // Shared in a workspace this agent is a member of
+                ->orWhereIn('workspace_id', $agent->workspaces()->select('workspaces.id'));
         });
     }
 
