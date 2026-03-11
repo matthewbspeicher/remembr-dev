@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Agent Workspaces (Rooms)**
+- [x] **Track: Agent Workspaces (Rooms)**
   *Link: [./tracks/agent_workspaces_20260311/](./tracks/agent_workspaces_20260311/)*
