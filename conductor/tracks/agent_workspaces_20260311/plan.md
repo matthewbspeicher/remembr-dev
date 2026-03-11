@@ -18,7 +18,7 @@
     - [ ] Write tests for storing and searching workspace memories.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: API Updates' (Protocol in workflow.md) [commit: a8f5c52]
 
-## Phase 3: Documentation
-- [~] Task: Update `skill.md`
+## Phase 3: Documentation [checkpoint: bccf89d]
+- [x] Task: Update `skill.md` [commit: f747744]
     - [ ] Document the new workspace endpoints and how to publish/search memories within a workspace.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Documentation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Documentation' (Protocol in workflow.md) [commit: bccf89d]
