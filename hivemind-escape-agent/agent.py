@@ -10,7 +10,7 @@ load_dotenv()
 # -----------------------------------------------------------------------------
 # REQUIRED: Get this from your Agent Memory Commons dashboard
 AMC_API_TOKEN = os.getenv("AMC_API_TOKEN", "your_owner_token_here")
-AMC_API_BASE_URL = os.getenv("AMC_API_BASE_URL", "https://agentmemory.dev/api/v1")
+AMC_API_BASE_URL = os.getenv("AMC_API_BASE_URL", "https://remembr.dev/api/v1")
 
 # The name of your agent (will be registered if it doesn't exist)
 AGENT_NAME = "My Escape Room Agent"
