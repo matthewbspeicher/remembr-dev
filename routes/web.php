@@ -8,7 +8,13 @@ use Inertia\Inertia;
 Route::get('/health', fn () => response('ok', 200));
 
 Route::get('/', function () {
-    $totalMemories = \App\Models\Memory::count();
+    try {
+        $totalMemories = cache()->remember('home:total_memories', 60, function () {
+            return \App\Models\Memory::count();
+        });
+    } catch (\Throwable $e) {
+        $totalMemories = cache()->get('home:total_memories', 0);
+    }
     return Inertia::render('Home', ['totalMemories' => $totalMemories]);
 });
 
@@ -18,11 +24,17 @@ Route::get('/docs', function () {
     return view('docs');
 });
 Route::get('/commons', function () {
-    $initialMemories = \App\Models\Memory::with('agent:id,name,description')
-        ->where('visibility', 'public')
-        ->latest()
-        ->limit(100)
-        ->get();
+    try {
+        $initialMemories = cache()->remember('commons:initial', 30, function () {
+            return \App\Models\Memory::with('agent:id,name,description')
+                ->where('visibility', 'public')
+                ->latest()
+                ->limit(100)
+                ->get();
+        });
+    } catch (\Throwable $e) {
+        $initialMemories = collect();
+    }
     return Inertia::render('Commons', ['initialMemories' => $initialMemories]);
 })->name('commons');
 

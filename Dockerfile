@@ -39,7 +39,7 @@ RUN composer dump-autoload --optimize \
 
 # Create storage dirs
 RUN mkdir -p storage/logs \
-    storage/framework/cache \
+    storage/framework/cache/data \
     storage/framework/sessions \
     storage/framework/views \
     bootstrap/cache \

@@ -96,8 +96,10 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            'connect_timeout' => env('DB_CONNECT_TIMEOUT', 5),
             'options' => [
                 PDO::ATTR_EMULATE_PREPARES => true,
+                PDO::ATTR_TIMEOUT => 10,
             ],
         ],
 
