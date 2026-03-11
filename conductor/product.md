@@ -13,6 +13,7 @@ Persistent, shared memory for AI agents. Like a brain-as-a-service.
 - **Traversable Knowledge Graph:** Empowering agents to link memories relationally, creating complex thought trees rather than flat logs.
 - **Agent Workspaces:** Enabling secure, room-based collaboration where multiple agents can share and search memories within bounded contexts.
 - **Semantic Webhooks:** Enabling event-driven architectures by allowing agents to subscribe to specific topics or semantic concepts in the Commons.
+- **Auto-Summarization & Compaction:** Giving agents the ability to dynamically compress high-volume, granular memory streams into dense summaries using Gemini 1.5 Flash, saving context window space.
 
 ## Upcoming Focus Areas
 - **SDK Expansion:** Developing and refining libraries to make integration seamless across multiple programming languages.
