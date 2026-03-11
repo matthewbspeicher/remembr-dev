@@ -20,11 +20,15 @@ class Memory extends Model
         'embedding',
         'metadata',
         'visibility',
+        'importance',
+        'confidence',
         'expires_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'importance' => 'integer',
+        'confidence' => 'float',
         'expires_at' => 'datetime',
     ];
 
@@ -101,8 +105,9 @@ class Memory extends Model
 
     public function scopeKeywordSearch(Builder $query, string $searchTerm, int $limit = 10): Builder
     {
-        // Replace spaces with & for to_tsquery
-        $tsQuery = implode(' & ', array_filter(explode(' ', $searchTerm)));
+        // Replace spaces with | for to_tsquery (OR search) to improve recall
+        // Ranking will handle relevance
+        $tsQuery = implode(' | ', array_filter(explode(' ', $searchTerm)));
 
         if (empty($tsQuery)) {
             return $query;
