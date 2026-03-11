@@ -47,6 +47,20 @@ class Memory extends Model
             ->withPivot('created_at');
     }
 
+    public function relatedTo(): BelongsToMany
+    {
+        return $this->belongsToMany(Memory::class, 'memory_relations', 'source_id', 'target_id')
+            ->withPivot('type')
+            ->withTimestamps();
+    }
+
+    public function relatedFrom(): BelongsToMany
+    {
+        return $this->belongsToMany(Memory::class, 'memory_relations', 'target_id', 'source_id')
+            ->withPivot('type')
+            ->withTimestamps();
+    }
+
     // -------------------------------------------------------------------------
     // Scopes
     // -------------------------------------------------------------------------
