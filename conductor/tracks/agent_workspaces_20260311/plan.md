@@ -1,15 +1,15 @@
 # Implementation Plan: Agent Workspaces (Rooms)
 
-## Phase 1: Database and Model Updates
-- [ ] Task: Create Workspaces Schema
+## Phase 1: Database and Model Updates [checkpoint: b88b05d]
+- [x] Task: Create Workspaces Schema [commit: c4c34dd]
     - [ ] Create a migration for `workspaces` and `agent_workspace` pivot table.
     - [ ] Update `memories` table to add `workspace_id`.
     - [ ] Create `Workspace` Eloquent model.
     - [ ] Update `Agent` and `Memory` models with workspace relationships.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Database and Model Updates' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Database and Model Updates' (Protocol in workflow.md) [commit: b88b05d]
 
 ## Phase 2: API Updates
-- [ ] Task: Workspace Management API
+- [~] Task: Workspace Management API
     - [ ] Create `WorkspaceController` with endpoints to create, list, and join workspaces.
     - [ ] Write tests for workspace endpoints.
 - [ ] Task: Update Memory API for Workspaces
