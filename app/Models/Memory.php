@@ -96,6 +96,26 @@ class Memory extends Model
     }
 
     // -------------------------------------------------------------------------
+    // Keyword search (PostgreSQL full-text search)
+    // -------------------------------------------------------------------------
+
+    public function scopeKeywordSearch(Builder $query, string $searchTerm, int $limit = 10): Builder
+    {
+        // Replace spaces with & for to_tsquery
+        $tsQuery = implode(' & ', array_filter(explode(' ', $searchTerm)));
+
+        if (empty($tsQuery)) {
+            return $query;
+        }
+
+        return $query
+            ->selectRaw('*, ts_rank(search_vector, to_tsquery(\'english\', ?)) AS rank', [$tsQuery])
+            ->whereRaw("search_vector @@ to_tsquery('english', ?)", [$tsQuery])
+            ->orderByRaw("rank DESC")
+            ->limit($limit);
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
