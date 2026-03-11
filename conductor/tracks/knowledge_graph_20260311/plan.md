@@ -15,7 +15,7 @@
     - [ ] Write a test verifying relations are returned in the memory resource.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: API Updates for Linking' (Protocol in workflow.md) [commit: 991d649]
 
-## Phase 3: Documentation
-- [~] Task: Update `skill.md`
+## Phase 3: Documentation [checkpoint: 38953b2]
+- [x] Task: Update `skill.md` [commit: 451c382]
     - [ ] Document the new `relations` field and how agents can use it to build a knowledge graph.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Documentation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Documentation' (Protocol in workflow.md)
