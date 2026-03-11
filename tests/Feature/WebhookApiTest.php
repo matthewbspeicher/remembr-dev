@@ -42,6 +42,20 @@ it('validates webhook url is https', function () {
         ->assertJsonValidationErrors(['url']);
 });
 
+it('limits an agent to 5 webhooks', function () {
+    WebhookSubscription::factory()->count(5)->create([
+        'agent_id' => $this->agent->id,
+    ]);
+
+    $response = $this->postJson('/api/v1/webhooks', [
+        'url' => 'https://example.com/webhook',
+        'events' => ['memory.shared'],
+    ], ['Authorization' => 'Bearer '.$this->agent->api_token]);
+
+    $response->assertUnprocessable();
+    $response->assertJsonFragment(['error' => 'Webhook limit reached. Maximum 5 webhooks per agent.']);
+});
+
 it('can list webhooks', function () {
     WebhookSubscription::create([
         'agent_id' => $this->agent->id,

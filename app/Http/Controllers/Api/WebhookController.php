@@ -23,6 +23,10 @@ class WebhookController extends Controller
     {
         $agent = $request->attributes->get('agent');
 
+        if (WebhookSubscription::where('agent_id', $agent->id)->count() >= 5) {
+            return response()->json(['error' => 'Webhook limit reached. Maximum 5 webhooks per agent.'], 422);
+        }
+
         $validated = $request->validate([
             'url' => ['required', 'url', 'starts_with:https://'],
             'events' => ['required', 'array', 'min:1'],

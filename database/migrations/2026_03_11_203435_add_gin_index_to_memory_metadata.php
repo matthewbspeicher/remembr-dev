@@ -7,11 +7,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('CREATE INDEX memories_metadata_gin_idx ON memories USING GIN (metadata jsonb_path_ops);');
+        DB::statement("CREATE INDEX memories_tags_gin_idx ON memories USING GIN ((metadata->'tags'));");
     }
 
     public function down(): void
     {
-        DB::statement('DROP INDEX IF EXISTS memories_metadata_gin_idx;');
+        DB::statement('DROP INDEX IF EXISTS memories_tags_gin_idx;');
     }
 };

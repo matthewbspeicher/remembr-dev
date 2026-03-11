@@ -76,6 +76,10 @@ class MemoryService
             $metadata['tags'] = $data['tags'];
             $data['metadata'] = $metadata;
             unset($data['tags']);
+        } elseif (isset($data['metadata'])) {
+            if (isset($memory->metadata['tags'])) {
+                $data['metadata']['tags'] = $memory->metadata['tags'];
+            }
         }
 
         $memory->update($data);

@@ -47,12 +47,14 @@ class RemembrClient:
                 _handle_error(resp)
             return resp.json()
 
-    def store(self, value: str, key: Optional[str] = None, visibility: str = "private", metadata: Optional[Dict] = None, expires_at: Optional[str] = None) -> Dict[str, Any]:
+    def store(self, value: str, key: Optional[str] = None, visibility: str = "private", metadata: Optional[Dict] = None, expires_at: Optional[str] = None, ttl: Optional[str] = None, tags: Optional[List[str]] = None) -> Dict[str, Any]:
         """Store or update a memory."""
         payload = {"value": value, "visibility": visibility}
         if key: payload["key"] = key
         if metadata: payload["metadata"] = metadata
         if expires_at: payload["expires_at"] = expires_at
+        if ttl: payload["ttl"] = ttl
+        if tags: payload["tags"] = tags
         
         resp = self.client.post("/memories", json=payload)
         if resp.is_error: _handle_error(resp)
@@ -70,21 +72,27 @@ class RemembrClient:
         if resp.is_error: _handle_error(resp)
         return resp.json()
 
-    def list(self, page: int = 1) -> Dict[str, Any]:
+    def list(self, page: int = 1, tags: Optional[List[str]] = None) -> Dict[str, Any]:
         """List all memories for this agent."""
-        resp = self.client.get("/memories", params={"page": page})
+        params = {"page": page}
+        if tags: params["tags"] = ",".join(tags)
+        resp = self.client.get("/memories", params=params)
         if resp.is_error: _handle_error(resp)
         return resp.json()
 
-    def search(self, q: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def search(self, q: str, limit: int = 10, tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Semantically search your own memories."""
-        resp = self.client.get("/memories/search", params={"q": q, "limit": limit})
+        params = {"q": q, "limit": limit}
+        if tags: params["tags"] = ",".join(tags)
+        resp = self.client.get("/memories/search", params=params)
         if resp.is_error: _handle_error(resp)
         return resp.json().get("data", [])
 
-    def search_commons(self, q: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def search_commons(self, q: str, limit: int = 10, tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Semantically search the public commons."""
-        resp = self.client.get("/commons/search", params={"q": q, "limit": limit})
+        params = {"q": q, "limit": limit}
+        if tags: params["tags"] = ",".join(tags)
+        resp = self.client.get("/commons/search", params=params)
         if resp.is_error: _handle_error(resp)
         return resp.json().get("data", [])
 
@@ -119,12 +127,14 @@ class AsyncRemembrClient:
                 _handle_error(resp)
             return resp.json()
 
-    async def store(self, value: str, key: Optional[str] = None, visibility: str = "private", metadata: Optional[Dict] = None, expires_at: Optional[str] = None) -> Dict[str, Any]:
+    async def store(self, value: str, key: Optional[str] = None, visibility: str = "private", metadata: Optional[Dict] = None, expires_at: Optional[str] = None, ttl: Optional[str] = None, tags: Optional[List[str]] = None) -> Dict[str, Any]:
         """Store or update a memory."""
         payload = {"value": value, "visibility": visibility}
         if key: payload["key"] = key
         if metadata: payload["metadata"] = metadata
         if expires_at: payload["expires_at"] = expires_at
+        if ttl: payload["ttl"] = ttl
+        if tags: payload["tags"] = tags
         
         resp = await self.client.post("/memories", json=payload)
         if resp.is_error: _handle_error(resp)
@@ -142,21 +152,27 @@ class AsyncRemembrClient:
         if resp.is_error: _handle_error(resp)
         return resp.json()
 
-    async def list(self, page: int = 1) -> Dict[str, Any]:
+    async def list(self, page: int = 1, tags: Optional[List[str]] = None) -> Dict[str, Any]:
         """List all memories for this agent."""
-        resp = await self.client.get("/memories", params={"page": page})
+        params = {"page": page}
+        if tags: params["tags"] = ",".join(tags)
+        resp = await self.client.get("/memories", params=params)
         if resp.is_error: _handle_error(resp)
         return resp.json()
 
-    async def search(self, q: str, limit: int = 10) -> List[Dict[str, Any]]:
+    async def search(self, q: str, limit: int = 10, tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Semantically search your own memories."""
-        resp = await self.client.get("/memories/search", params={"q": q, "limit": limit})
+        params = {"q": q, "limit": limit}
+        if tags: params["tags"] = ",".join(tags)
+        resp = await self.client.get("/memories/search", params=params)
         if resp.is_error: _handle_error(resp)
         return resp.json().get("data", [])
 
-    async def search_commons(self, q: str, limit: int = 10) -> List[Dict[str, Any]]:
+    async def search_commons(self, q: str, limit: int = 10, tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Semantically search the public commons."""
-        resp = await self.client.get("/commons/search", params={"q": q, "limit": limit})
+        params = {"q": q, "limit": limit}
+        if tags: params["tags"] = ",".join(tags)
+        resp = await self.client.get("/commons/search", params=params)
         if resp.is_error: _handle_error(resp)
         return resp.json().get("data", [])
 

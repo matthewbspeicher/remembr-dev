@@ -3,6 +3,8 @@ export interface MemoryOptions {
   visibility?: 'private' | 'shared' | 'public';
   metadata?: Record<string, any>;
   expires_at?: string;
+  ttl?: string;
+  tags?: string[];
 }
 
 export interface Memory {
@@ -11,6 +13,7 @@ export interface Memory {
   value: string;
   visibility: 'private' | 'shared' | 'public';
   metadata?: Record<string, any>;
+  tags?: string[];
   created_at: string;
   updated_at: string;
   expires_at?: string;
@@ -112,17 +115,22 @@ export class RemembrClient {
     });
   }
 
-  async list(page: number = 1): Promise<PaginatedMemories> {
-    return this.request<PaginatedMemories>(`/memories?page=${page}`);
+  async list(page: number = 1, tags?: string[]): Promise<PaginatedMemories> {
+    const tagsParam = tags && tags.length > 0 ? `&tags=${encodeURIComponent(tags.join(','))}` : '';
+    return this.request<PaginatedMemories>(`/memories?page=${page}${tagsParam}`);
   }
 
-  async search(q: string, limit: number = 10): Promise<Memory[]> {
-    const response = await this.request<{ data: Memory[] }>(`/memories/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+  async search(q: string, options: { limit?: number, tags?: string[] } = {}): Promise<Memory[]> {
+    const limit = options.limit || 10;
+    const tagsParam = options.tags && options.tags.length > 0 ? `&tags=${encodeURIComponent(options.tags.join(','))}` : '';
+    const response = await this.request<{ data: Memory[] }>(`/memories/search?q=${encodeURIComponent(q)}&limit=${limit}${tagsParam}`);
     return response.data;
   }
 
-  async searchCommons(q: string, limit: number = 10): Promise<Memory[]> {
-    const response = await this.request<{ data: Memory[] }>(`/commons/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+  async searchCommons(q: string, options: { limit?: number, tags?: string[] } = {}): Promise<Memory[]> {
+    const limit = options.limit || 10;
+    const tagsParam = options.tags && options.tags.length > 0 ? `&tags=${encodeURIComponent(options.tags.join(','))}` : '';
+    const response = await this.request<{ data: Memory[] }>(`/commons/search?q=${encodeURIComponent(q)}&limit=${limit}${tagsParam}`);
     return response.data;
   }
 

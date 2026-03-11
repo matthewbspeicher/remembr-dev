@@ -45,26 +45,39 @@ class DispatchWebhook implements ShouldQueue
 
         $signature = hash_hmac('sha256', $jsonBody, $this->subscription->secret);
 
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Webhook-Signature' => $signature,
-            'User-Agent' => 'Remembr-Webhook/1.0',
-        ])->timeout(5)->post($this->subscription->url, $body);
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'Webhook-Signature' => $signature,
+                'User-Agent' => 'Remembr-Webhook/1.0',
+            ])->timeout(5)->post($this->subscription->url, $body);
+
+            $status = $response->status();
+            $failed = $response->failed();
+        } catch (\Exception $e) {
+            $status = null;
+            $failed = true;
+        }
 
         WebhookDelivery::create([
             'subscription_id' => $this->subscription->id,
             'event' => $this->event,
             'payload' => $body,
-            'response_status' => $response->status(),
+            'response_status' => $status,
             'attempt' => $this->attempts(),
         ]);
 
-        if ($response->failed()) {
+        if ($failed) {
             $this->subscription->increment('failure_count');
             if ($this->subscription->failure_count >= 10) {
                 $this->subscription->update(['is_active' => false]);
             }
-            $response->throw();
+
+            if (isset($response)) {
+                $response->throw();
+            } else {
+                throw $e;
+            }
         } else {
             $this->subscription->update(['failure_count' => 0]);
         }

@@ -14,7 +14,7 @@ class AgentMemoryClient
 
     public function __construct(
         private readonly string $agentToken,
-        private readonly string $baseUrl = 'https://api.agentmemory.dev/v1',
+        private readonly string $baseUrl = 'https://remembr.dev/api/v1',
     ) {
         $this->http = Http::withToken($agentToken)
             ->baseUrl($baseUrl)
@@ -36,7 +36,7 @@ class AgentMemoryClient
         string $ownerToken,
         string $name,
         ?string $description = null,
-        string $baseUrl = 'https://api.agentmemory.dev/v1',
+        string $baseUrl = 'https://remembr.dev/api/v1',
     ): array {
         $response = Http::baseUrl($baseUrl)
             ->acceptJson()
@@ -60,7 +60,7 @@ class AgentMemoryClient
     /**
      * Store or update a memory.
      *
-     * @param  array{key?: string, value: string, visibility?: 'private'|'shared'|'public', metadata?: array, expires_at?: string}  $data
+     * @param  array{key?: string, value: string, visibility?: 'private'|'shared'|'public', metadata?: array, tags?: array, ttl?: string, expires_at?: string}  $data
      */
     public function remember(array $data): array
     {
@@ -106,9 +106,14 @@ class AgentMemoryClient
     /**
      * List all memories for this agent (paginated).
      */
-    public function list(int $page = 1): array
+    public function list(int $page = 1, array $tags = []): array
     {
-        return $this->http->get('memories', ['page' => $page])->json();
+        $params = ['page' => $page];
+        if (! empty($tags)) {
+            $params['tags'] = implode(',', $tags);
+        }
+
+        return $this->http->get('memories', $params)->json();
     }
 
     // -------------------------------------------------------------------------
@@ -118,17 +123,27 @@ class AgentMemoryClient
     /**
      * Semantically search this agent's own memories.
      */
-    public function search(string $query, int $limit = 10): array
+    public function search(string $query, int $limit = 10, array $tags = []): array
     {
-        return $this->http->get('memories/search', ['q' => $query, 'limit' => $limit])->json('data');
+        $params = ['q' => $query, 'limit' => $limit];
+        if (! empty($tags)) {
+            $params['tags'] = implode(',', $tags);
+        }
+
+        return $this->http->get('memories/search', $params)->json('data');
     }
 
     /**
      * Semantically search the public commons (all agents).
      */
-    public function searchCommons(string $query, int $limit = 10): array
+    public function searchCommons(string $query, int $limit = 10, array $tags = []): array
     {
-        return $this->http->get('commons/search', ['q' => $query, 'limit' => $limit])->json('data');
+        $params = ['q' => $query, 'limit' => $limit];
+        if (! empty($tags)) {
+            $params['tags'] = implode(',', $tags);
+        }
+
+        return $this->http->get('commons/search', $params)->json('data');
     }
 
     // -------------------------------------------------------------------------

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 // Public — no auth required
 // -------------------------------------------------------------------------
 
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(function () {
 
     // Agent registration (requires owner_token, not agent_token)
     Route::post('agents/register', [AgentController::class, 'register']);
@@ -29,7 +29,7 @@ Route::prefix('v1')->group(function () {
     // Agent-authenticated routes
     // -------------------------------------------------------------------------
 
-    Route::middleware([AuthenticateAgent::class, 'throttle:agent_api', 'rate.headers'])->group(function () {
+    Route::middleware([AuthenticateAgent::class, 'throttle:agent_api'])->group(function () {
 
         // Memories — own
         Route::get('memories/search', [MemoryController::class, 'search']);
