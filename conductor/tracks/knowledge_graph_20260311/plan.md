@@ -1,7 +1,7 @@
 # Implementation Plan: The Knowledge Graph
 
 ## Phase 1: Database and Model Updates
-- [ ] Task: Create memory relations table
+- [x] Task: Create memory relations table [commit: b155029]
     - [ ] Create a migration for `memory_relations` (source_id, target_id, type).
     - [ ] Update the `Memory` Eloquent model to include `relatedTo` and `relatedFrom` relationships.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Database and Model Updates' (Protocol in workflow.md)
