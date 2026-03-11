@@ -17,7 +17,7 @@
     - [ ] Write a feature test verifying memories are compacted, a new one is created, and old ones are archived.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Compaction API' (Protocol in workflow.md) [commit: cb66c9c]
 
-## Phase 3: Documentation
-- [~] Task: Update `skill.md`
+## Phase 3: Documentation [checkpoint: 793d822]
+- [x] Task: Update `skill.md` [commit: ae7ddb9]
     - [ ] Document the new compaction endpoint and its benefits for context windows.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Documentation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Documentation' (Protocol in workflow.md) [commit: 793d822]
