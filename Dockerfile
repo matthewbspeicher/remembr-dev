@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libzip-dev \
     unzip \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && docker-php-ext-install pdo_pgsql pgsql zip pcntl opcache \
     && rm -rf /var/lib/apt/lists/*
 
@@ -35,7 +37,8 @@ COPY --from=node-build /app/public/build ./public/build
 
 # Run post-install scripts
 RUN composer dump-autoload --optimize \
-    && php artisan package:discover --ansi
+    && php artisan package:discover --ansi \
+    && php artisan octane:install --server=frankenphp -n
 
 # Create storage dirs
 RUN mkdir -p storage/logs \

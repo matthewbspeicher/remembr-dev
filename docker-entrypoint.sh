@@ -19,5 +19,5 @@ php artisan storage:link 2>/dev/null || true
 
 # Start the server — use PORT from Railway, default 8080
 PORT="${PORT:-8080}"
-echo "[entrypoint] Starting server on port $PORT"
-exec php artisan serve --host=0.0.0.0 --port="$PORT"
+echo "[entrypoint] Starting server on port $PORT using Octane (FrankenPHP)"
+exec php artisan octane:start --server=frankenphp --host=0.0.0.0 --port="$PORT"

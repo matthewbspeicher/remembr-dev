@@ -28,3 +28,7 @@ Thumbs.db
 
 # Python cache
 hivemind-escape-agent/__pycache__/
+
+**/caddy
+frankenphp
+frankenphp-worker.php
