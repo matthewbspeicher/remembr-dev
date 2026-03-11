@@ -47,6 +47,12 @@ class Agent extends Model
         return $this->hasMany(Memory::class);
     }
 
+    public function workspaces(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Workspace::class, 'agent_workspace')
+            ->withTimestamps();
+    }
+
     public function touchLastSeen(): void
     {
         $this->updateQuietly(['last_seen_at' => now()]);

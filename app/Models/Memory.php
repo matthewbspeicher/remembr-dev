@@ -15,6 +15,7 @@ class Memory extends Model
 
     protected $fillable = [
         'agent_id',
+        'workspace_id',
         'key',
         'value',
         'embedding',
@@ -39,6 +40,11 @@ class Memory extends Model
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function workspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class);
     }
 
     public function sharedWith(): BelongsToMany
