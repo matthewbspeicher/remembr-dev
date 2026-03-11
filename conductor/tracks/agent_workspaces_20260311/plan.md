@@ -8,17 +8,17 @@
     - [ ] Update `Agent` and `Memory` models with workspace relationships.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Database and Model Updates' (Protocol in workflow.md) [commit: b88b05d]
 
-## Phase 2: API Updates
-- [~] Task: Workspace Management API
+## Phase 2: API Updates [checkpoint: a8f5c52]
+- [x] Task: Workspace Management API [commit: 4f3777b]
     - [ ] Create `WorkspaceController` with endpoints to create, list, and join workspaces.
     - [ ] Write tests for workspace endpoints.
-- [ ] Task: Update Memory API for Workspaces
+- [x] Task: Update Memory API for Workspaces [commit: 4f3777b]
     - [ ] Update `StoreMemoryRequest`/`MemoryController` to accept `visibility: workspace` and `workspace_id`.
     - [ ] Update `MemoryService` `visibleTo` scope to include memories from the agent's workspaces.
     - [ ] Write tests for storing and searching workspace memories.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: API Updates' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: API Updates' (Protocol in workflow.md) [commit: a8f5c52]
 
 ## Phase 3: Documentation
-- [ ] Task: Update `skill.md`
+- [~] Task: Update `skill.md`
     - [ ] Document the new workspace endpoints and how to publish/search memories within a workspace.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Documentation' (Protocol in workflow.md)
