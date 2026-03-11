@@ -157,31 +157,33 @@ return [
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 
-        'default' => [
+        'default' => array_merge([
             'url' => env('REDIS_URL'),
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
             'database' => env('REDIS_DB', '0'),
-            'max_retries' => env('REDIS_MAX_RETRIES', 3),
-            'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
-            'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
-            'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
-        ],
+            'read_write_timeout' => env('REDIS_RW_TIMEOUT', 5),
+            'timeout' => env('REDIS_TIMEOUT', 5),
+        ], env('REDIS_SCHEME', '') === 'tls' ? [
+            'scheme' => 'tls',
+            'ssl' => ['verify_peer' => false],
+        ] : []),
 
-        'cache' => [
+        'cache' => array_merge([
             'url' => env('REDIS_URL'),
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
-            'database' => env('REDIS_CACHE_DB', '1'),
-            'max_retries' => env('REDIS_MAX_RETRIES', 3),
-            'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
-            'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
-            'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
-        ],
+            'database' => env('REDIS_CACHE_DB', '0'),
+            'read_write_timeout' => env('REDIS_RW_TIMEOUT', 5),
+            'timeout' => env('REDIS_TIMEOUT', 5),
+        ], env('REDIS_SCHEME', '') === 'tls' ? [
+            'scheme' => 'tls',
+            'ssl' => ['verify_peer' => false],
+        ] : []),
 
     ],
 
