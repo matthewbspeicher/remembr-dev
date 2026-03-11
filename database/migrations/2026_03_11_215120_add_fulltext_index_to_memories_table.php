@@ -12,6 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::statement("SET maintenance_work_mem TO '256MB'");
         DB::statement("ALTER TABLE memories ADD COLUMN search_vector tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(value, ''))) STORED");
         DB::statement("CREATE INDEX memories_search_vector_idx ON memories USING GIN(search_vector)");
     }
