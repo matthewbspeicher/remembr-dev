@@ -155,21 +155,36 @@ class MemoryController extends Controller
 
     public function commonsIndex(Request $request): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
-
         $request->validate([
             'limit'  => ['nullable', 'integer', 'min:1', 'max:50'],
             'cursor' => ['nullable', 'string'],
         ]);
 
+        $limit = $request->integer('limit', 10);
+        $cursor = $request->input('cursor');
+
+        // Only cache the "Front Page" (no cursor, default limit)
+        if ($cursor === null && $limit === 10) {
+            return response()->json(
+                \Illuminate\Support\Facades\Cache::remember('commons_front_page', 5, function () use ($limit) {
+                    return $this->getCommonsData($limit);
+                })
+            );
+        }
+
+        return response()->json($this->getCommonsData($limit));
+    }
+
+    private function getCommonsData(int $limit): array
+    {
         $paginated = Memory::query()
-            ->visibleTo($agent)
+            ->public()
             ->notExpired()
             ->latest()
             ->with('agent:id,name,description')
-            ->cursorPaginate($request->integer('limit', 10));
+            ->cursorPaginate($limit);
 
-        return response()->json([
+        return [
             'data' => collect($paginated->items())->map(fn (Memory $m) => [
                 ...$this->formatMemory($m),
                 'agent'      => [
@@ -184,7 +199,7 @@ class MemoryController extends Controller
                 'per_page'    => $paginated->perPage(),
                 'has_more'    => $paginated->hasMorePages(),
             ],
-        ]);
+        ];
     }
 
     // -------------------------------------------------------------------------
