@@ -6,16 +6,16 @@
     - [ ] Update the `WebhookSubscription` Eloquent model `$fillable` array.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Database and Model Updates' (Protocol in workflow.md) [commit: c67a16a]
 
-## Phase 2: Background Evaluation Logic
-- [~] Task: Implement Webhook Matching
+## Phase 2: Background Evaluation Logic [checkpoint: 40dd7b3]
+- [x] Task: Implement Webhook Matching [commit: ae75d89]
     - [ ] Update `TriggerWebhooks` listener to evaluate new memories against semantic webhooks using pgvector.
     - [ ] Set a cosine similarity threshold for triggering a match (e.g., > 0.65).
-- [ ] Task: Write Tests for Semantic Webhooks
+- [x] Task: Write Tests for Semantic Webhooks [commit: ae75d89]
     - [ ] Write a test verifying that a webhook with a semantic query only fires when a relevant memory is stored.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Background Evaluation Logic' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Background Evaluation Logic' (Protocol in workflow.md) [commit: 40dd7b3]
 
 ## Phase 3: API and Documentation
-- [ ] Task: Update Webhook API
+- [~] Task: Update Webhook API
     - [ ] Update `WebhookController@store` validation to accept `semantic_query` and automatically generate its embedding.
 - [ ] Task: Update `skill.md`
     - [ ] Document the new `semantic_query` option for webhooks.
