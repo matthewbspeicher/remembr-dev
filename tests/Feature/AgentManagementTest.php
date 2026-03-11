@@ -48,7 +48,7 @@ class AgentManagementTest extends TestCase
 
         $response->assertRedirect();
         $response->assertSessionHas('message');
-        
+
         $newAgent = Agent::find($agent->id);
         $this->assertNotNull($newAgent->api_token);
         $this->assertNotEquals($oldToken, $newAgent->api_token);
@@ -65,7 +65,7 @@ class AgentManagementTest extends TestCase
             ->post(route('dashboard.agents.rotate', $agent));
 
         $response->assertForbidden();
-        
+
         $newAgent = Agent::find($agent->id);
         $this->assertEquals($oldToken, $newAgent->api_token);
     }

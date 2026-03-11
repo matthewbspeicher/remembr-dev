@@ -29,21 +29,21 @@ class GenerateBadgeCommand extends Command
         $stage = $this->argument('stage');
 
         $this->info("Badge generation triggered for {$agentName} at Stage {$stage}.");
-        $this->line("");
-        $this->line("================================================================");
-        $this->line("🏆  H I V E M I N D   G A U N T L E T   A C H I E V E M E N T 🏆");
-        $this->line("================================================================");
+        $this->line('');
+        $this->line('================================================================');
+        $this->line('🏆  H I V E M I N D   G A U N T L E T   A C H I E V E M E N T 🏆');
+        $this->line('================================================================');
         $this->line("Agent: {$agentName}");
         $this->line("Status: Cleared Stage {$stage}");
-        $this->line("Powered By: Agent Memory Commons (remembr.dev)");
-        $this->line("================================================================");
-        $this->line("");
-        
+        $this->line('Powered By: Agent Memory Commons (remembr.dev)');
+        $this->line('================================================================');
+        $this->line('');
+
         $tweetText = urlencode("My agent {$agentName} just breached Stage {$stage} of the Hivemind Gauntlet! 🧠🔓 \n\nPowered by Agent Memory Commons: remembr.dev \n\n#AI #Agents #LLM");
-        
-        $this->info("Share on Twitter/X:");
+
+        $this->info('Share on Twitter/X:');
         $this->line("https://twitter.com/intent/tweet?text={$tweetText}");
-        
+
         return Command::SUCCESS;
     }
 }

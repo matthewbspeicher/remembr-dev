@@ -16,7 +16,7 @@ class AuthenticateAgent
         if (! $token) {
             return response()->json([
                 'error' => 'No agent token provided.',
-                'hint'  => 'Include your agent token as: Authorization: Bearer amc_...',
+                'hint' => 'Include your agent token as: Authorization: Bearer amc_...',
             ], 401);
         }
 

@@ -25,11 +25,14 @@ class MemoryController extends Controller
         $agent = $request->attributes->get('agent');
 
         $validated = $request->validate([
-            'key'        => ['nullable', 'string', 'max:255'],
-            'value'      => ['required', 'string', 'max:10000'],
+            'key' => ['nullable', 'string', 'max:255'],
+            'value' => ['required', 'string', 'max:10000'],
             'visibility' => ['nullable', 'in:private,shared,public'],
-            'metadata'   => ['nullable', 'array'],
-            'expires_at' => ['nullable', 'date', 'after:now'],
+            'metadata' => ['nullable', 'array'],
+            'expires_at' => ['nullable', 'date', 'after:now', 'prohibits:ttl'],
+            'ttl' => ['nullable', 'string', 'regex:/^\d+[hmd]$/', 'prohibits:expires_at'],
+            'tags' => ['nullable', 'array', 'max:10'],
+            'tags.*' => ['string', 'max:50'],
         ]);
 
         $memory = $this->memories->store($agent, $validated);
@@ -62,15 +65,16 @@ class MemoryController extends Controller
     public function index(Request $request): JsonResponse
     {
         $agent = $request->attributes->get('agent');
-        $paginated = $this->memories->listForAgent($agent);
+        $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
+        $paginated = $this->memories->listForAgent($agent, 20, $tags);
 
         return response()->json([
-            'data'  => collect($paginated->items())->map(fn ($m) => $this->formatMemory($m)),
-            'meta'  => [
-                'total'        => $paginated->total(),
-                'per_page'     => $paginated->perPage(),
+            'data' => collect($paginated->items())->map(fn ($m) => $this->formatMemory($m)),
+            'meta' => [
+                'total' => $paginated->total(),
+                'per_page' => $paginated->perPage(),
                 'current_page' => $paginated->currentPage(),
-                'last_page'    => $paginated->lastPage(),
+                'last_page' => $paginated->lastPage(),
             ],
         ]);
     }
@@ -90,10 +94,13 @@ class MemoryController extends Controller
         }
 
         $validated = $request->validate([
-            'value'      => ['sometimes', 'string', 'max:10000'],
+            'value' => ['sometimes', 'string', 'max:10000'],
             'visibility' => ['sometimes', 'in:private,shared,public'],
-            'metadata'   => ['sometimes', 'array'],
-            'expires_at' => ['sometimes', 'nullable', 'date'],
+            'metadata' => ['sometimes', 'array'],
+            'expires_at' => ['sometimes', 'nullable', 'date', 'after:now', 'prohibits:ttl'],
+            'ttl' => ['sometimes', 'nullable', 'string', 'regex:/^\d+[hmd]$/', 'prohibits:expires_at'],
+            'tags' => ['sometimes', 'array', 'max:10'],
+            'tags.*' => ['string', 'max:50'],
         ]);
 
         $memory = $this->memories->update($memory, $validated);
@@ -130,14 +137,18 @@ class MemoryController extends Controller
         $agent = $request->attributes->get('agent');
 
         $request->validate([
-            'q'     => ['required', 'string', 'min:1', 'max:500'],
+            'q' => ['required', 'string', 'min:1', 'max:500'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'tags' => ['nullable', 'string'],
         ]);
+
+        $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
 
         $results = $this->memories->searchForAgent(
             $agent,
             $request->string('q'),
-            $request->integer('limit', 10)
+            $request->integer('limit', 10),
+            $tags
         );
 
         return response()->json([
@@ -156,48 +167,55 @@ class MemoryController extends Controller
     public function commonsIndex(Request $request): JsonResponse
     {
         $request->validate([
-            'limit'  => ['nullable', 'integer', 'min:1', 'max:50'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
             'cursor' => ['nullable', 'string'],
+            'tags' => ['nullable', 'string'],
         ]);
 
         $limit = $request->integer('limit', 10);
         $cursor = $request->input('cursor');
+        $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
 
-        // Only cache the "Front Page" (no cursor, default limit)
-        if ($cursor === null && $limit === 10) {
+        // Only cache the "Front Page" (no cursor, default limit, no tags)
+        if ($cursor === null && $limit === 10 && empty($tags)) {
             return response()->json(
                 \Illuminate\Support\Facades\Cache::remember('commons_front_page', 5, function () use ($limit) {
-                    return $this->getCommonsData($limit);
+                    return $this->getCommonsData($limit, []);
                 })
             );
         }
 
-        return response()->json($this->getCommonsData($limit));
+        return response()->json($this->getCommonsData($limit, $tags));
     }
 
-    private function getCommonsData(int $limit): array
+    private function getCommonsData(int $limit, array $tags = []): array
     {
-        $paginated = Memory::query()
+        $query = Memory::query()
             ->public()
             ->notExpired()
             ->latest()
-            ->with('agent:id,name,description')
-            ->cursorPaginate($limit);
+            ->with('agent:id,name,description');
+
+        if (! empty($tags)) {
+            $query->withTags($tags);
+        }
+
+        $paginated = $query->cursorPaginate($limit);
 
         return [
             'data' => collect($paginated->items())->map(fn (Memory $m) => [
                 ...$this->formatMemory($m),
-                'agent'      => [
-                    'id'          => $m->agent->id,
-                    'name'        => $m->agent->name,
+                'agent' => [
+                    'id' => $m->agent->id,
+                    'name' => $m->agent->name,
                     'description' => $m->agent->description,
                 ],
             ]),
             'meta' => [
                 'next_cursor' => $paginated->nextCursor()?->encode(),
                 'prev_cursor' => $paginated->previousCursor()?->encode(),
-                'per_page'    => $paginated->perPage(),
-                'has_more'    => $paginated->hasMorePages(),
+                'per_page' => $paginated->perPage(),
+                'has_more' => $paginated->hasMorePages(),
             ],
         ];
     }
@@ -212,22 +230,26 @@ class MemoryController extends Controller
         $agent = $request->attributes->get('agent');
 
         $request->validate([
-            'q'     => ['required', 'string', 'min:1', 'max:500'],
+            'q' => ['required', 'string', 'min:1', 'max:500'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'tags' => ['nullable', 'string'],
         ]);
+
+        $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
 
         $results = $this->memories->searchCommons(
             $agent,
             $request->string('q'),
-            $request->integer('limit', 10)
+            $request->integer('limit', 10),
+            $tags
         );
 
         return response()->json([
             'data' => $results->map(fn ($m) => [
                 ...$this->formatMemory($m),
-                'agent'      => [
-                    'id'          => $m->agent->id,
-                    'name'        => $m->agent->name,
+                'agent' => [
+                    'id' => $m->agent->id,
+                    'name' => $m->agent->name,
                     'description' => $m->agent->description,
                 ],
                 'similarity' => round($m->similarity ?? 0, 4),
@@ -265,12 +287,17 @@ class MemoryController extends Controller
 
     private function formatMemory(Memory $memory): array
     {
+        $metadata = $memory->metadata ?? [];
+        $tags = $metadata['tags'] ?? [];
+        unset($metadata['tags']);
+
         return [
-            'id'         => $memory->id,
-            'key'        => $memory->key,
-            'value'      => $memory->value,
+            'id' => $memory->id,
+            'key' => $memory->key,
+            'value' => $memory->value,
             'visibility' => $memory->visibility,
-            'metadata'   => $memory->metadata,
+            'tags' => $tags,
+            'metadata' => empty($metadata) ? new \stdClass : $metadata,
             'created_at' => $memory->created_at->toIso8601String(),
             'updated_at' => $memory->updated_at->toIso8601String(),
             'expires_at' => $memory->expires_at?->toIso8601String(),

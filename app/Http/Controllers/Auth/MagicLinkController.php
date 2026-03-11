@@ -30,7 +30,7 @@ class MagicLinkController extends Controller
             [
                 'name' => $request->name,
                 'password' => bcrypt(Str::random(32)),
-                'api_token' => 'own_' . Str::random(40),
+                'api_token' => 'own_'.Str::random(40),
             ],
         );
 

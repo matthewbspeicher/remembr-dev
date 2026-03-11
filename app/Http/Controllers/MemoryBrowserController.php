@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Agent;
 use App\Models\Memory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,9 +11,9 @@ class MemoryBrowserController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        
+
         $agents = $user->agents()->select('id', 'name')->get();
-        
+
         $query = Memory::query()
             ->whereIn('agent_id', $agents->pluck('id'));
 
@@ -23,7 +22,7 @@ class MemoryBrowserController extends Controller
             // Basic text search. Ideally this would be vectorized but for browser it's a start.
             $query->where(function ($q) use ($search) {
                 $q->where('key', 'like', "%{$search}%")
-                  ->orWhere('value', 'like', "%{$search}%");
+                    ->orWhere('value', 'like', "%{$search}%");
             });
         }
 

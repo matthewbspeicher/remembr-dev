@@ -36,10 +36,10 @@ class RegisterAgentCommand extends Command
         $token = Agent::generateToken();
 
         $agent = Agent::create([
-            'owner_id'    => $owner->id,
-            'name'        => $this->argument('name'),
+            'owner_id' => $owner->id,
+            'name' => $this->argument('name'),
             'description' => $this->option('description'),
-            'api_token'   => $token,
+            'api_token' => $token,
         ]);
 
         $this->info('Agent registered!');

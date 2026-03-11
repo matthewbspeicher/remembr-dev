@@ -15,6 +15,7 @@ Route::get('/', function () {
     } catch (\Throwable $e) {
         $totalMemories = cache()->get('home:total_memories', 0);
     }
+
     return Inertia::render('Home', ['totalMemories' => $totalMemories]);
 });
 
@@ -35,6 +36,7 @@ Route::get('/commons', function () {
     } catch (\Throwable $e) {
         $initialMemories = collect();
     }
+
     return Inertia::render('Commons', ['initialMemories' => $initialMemories]);
 })->name('commons');
 

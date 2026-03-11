@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Builder;
 
 class Memory extends Model
 {
@@ -65,10 +65,19 @@ class Memory extends Model
             // Own memories
             $q->where('agent_id', $agent->id)
               // Public memories
-              ->orWhere('visibility', 'public')
+                ->orWhere('visibility', 'public')
               // Explicitly shared with this agent
-              ->orWhereHas('sharedWith', fn ($sq) => $sq->where('agent_id', $agent->id));
+                ->orWhereHas('sharedWith', fn ($sq) => $sq->where('agent_id', $agent->id));
         });
+    }
+
+    public function scopeWithTags(Builder $query, array $tags): Builder
+    {
+        foreach ($tags as $tag) {
+            $query->whereJsonContains('metadata->tags', $tag);
+        }
+
+        return $query;
     }
 
     // -------------------------------------------------------------------------
@@ -77,7 +86,7 @@ class Memory extends Model
 
     public function scopeSemanticSearch(Builder $query, array $embedding, int $limit = 10): Builder
     {
-        $vector = '[' . implode(',', $embedding) . ']';
+        $vector = '['.implode(',', $embedding).']';
 
         return $query
             ->selectRaw('*, 1 - (embedding <=> ?) AS similarity', [$vector])

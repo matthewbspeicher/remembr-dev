@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+
+class WebhookSubscription extends Model
+{
+    use HasUuids;
+
+    protected $fillable = [
+        'agent_id',
+        'url',
+        'events',
+        'secret',
+        'is_active',
+        'failure_count',
+    ];
+
+    protected $attributes = [
+        'is_active' => true,
+        'failure_count' => 0,
+        'events' => '[]',
+    ];
+
+    protected $casts = [
+        'events' => 'array',
+        'is_active' => 'boolean',
+    ];
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
+    }
+}

@@ -9,7 +9,9 @@ use RuntimeException;
 class EmbeddingService
 {
     private const MODEL = 'text-embedding-3-small';
+
     private const DIMENSIONS = 1536;
+
     private const CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
 
     private readonly string $apiKey;
@@ -25,7 +27,7 @@ class EmbeddingService
      */
     public function embed(string $text): array
     {
-        $cacheKey = 'embedding:' . hash('xxh128', $text);
+        $cacheKey = 'embedding:'.hash('xxh128', $text);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($text) {
             return $this->fetchFromApi($text);
@@ -45,7 +47,7 @@ class EmbeddingService
             ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('OpenAI embedding API error: ' . $response->body());
+            throw new RuntimeException('OpenAI embedding API error: '.$response->body());
         }
 
         return collect($response->json('data'))
@@ -64,7 +66,7 @@ class EmbeddingService
             ]);
 
         if ($response->failed()) {
-            throw new RuntimeException('OpenAI embedding API error: ' . $response->body());
+            throw new RuntimeException('OpenAI embedding API error: '.$response->body());
         }
 
         return $response->json('data.0.embedding');

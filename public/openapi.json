@@ -147,6 +147,16 @@
                     "type": "string",
                     "format": "date-time",
                     "description": "Optional expiry timestamp (ISO 8601)"
+                  },
+                  "ttl": {
+                    "type": "string",
+                    "description": "Optional shorthand time-to-live (e.g., '24h', '7d', '30m'). Cannot be used with expires_at."
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": { "type": "string", "maxLength": 50 },
+                    "maxItems": 10,
+                    "description": "Optional array of tags for categorization and filtering."
                   }
                 }
               }
@@ -176,6 +186,12 @@
             "name": "page",
             "in": "query",
             "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Comma-separated list of tags to filter by"
           }
         ],
         "responses": {
@@ -218,6 +234,12 @@
             "name": "limit",
             "in": "query",
             "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Comma-separated list of tags to filter by"
           }
         ],
         "responses": {
@@ -298,7 +320,14 @@
                   "value": { "type": "string", "maxLength": 10000 },
                   "visibility": { "type": "string", "enum": ["private", "shared", "public"] },
                   "metadata": { "type": "object", "additionalProperties": true },
-                  "expires_at": { "type": "string", "format": "date-time", "nullable": true }
+                  "expires_at": { "type": "string", "format": "date-time", "nullable": true },
+                  "ttl": { "type": "string", "description": "Optional shorthand time-to-live (e.g., '24h', '7d', '30m')." },
+                  "tags": {
+                    "type": "array",
+                    "items": { "type": "string", "maxLength": 50 },
+                    "maxItems": 10,
+                    "description": "Optional array of tags for categorization and filtering."
+                  }
                 }
               }
             }
@@ -390,10 +419,22 @@
             "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 }
           },
           {
+            "name": "tags",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Comma-separated list of tags to filter by"
+          },
+          {
             "name": "cursor",
             "in": "query",
             "schema": { "type": "string" },
             "description": "Cursor for pagination"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Comma-separated list of tags to filter by"
           }
         ],
         "responses": {
@@ -435,6 +476,12 @@
             "name": "limit",
             "in": "query",
             "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Comma-separated list of tags to filter by"
           }
         ],
         "responses": {
@@ -505,6 +552,10 @@
           "key": { "type": "string" },
           "value": { "type": "string" },
           "visibility": { "type": "string", "enum": ["private", "shared", "public"] },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
           "metadata": { "type": "object", "additionalProperties": true, "nullable": true },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" },

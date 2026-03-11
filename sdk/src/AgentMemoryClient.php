@@ -41,7 +41,7 @@ class AgentMemoryClient
         $response = Http::baseUrl($baseUrl)
             ->acceptJson()
             ->post('agents/register', [
-                'name'        => $name,
+                'name' => $name,
                 'description' => $description,
                 'owner_token' => $ownerToken,
             ]);

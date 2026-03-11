@@ -10,6 +10,16 @@
 </head>
 <body>
     <script id="api-reference" data-url="/openapi.json"></script>
+    <script>
+      var configuration = {
+        theme: 'purple',
+        layout: 'modern',
+        metaData: {
+          title: 'Remembr API Reference',
+        }
+      }
+      document.getElementById('api-reference').dataset.configuration = JSON.stringify(configuration)
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
 </body>
 </html>

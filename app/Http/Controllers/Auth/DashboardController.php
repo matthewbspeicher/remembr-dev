@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -56,7 +55,7 @@ class DashboardController extends Controller
         }
 
         $token = Agent::generateToken();
-        
+
         $agent->update([
             'api_token' => $token,
         ]);

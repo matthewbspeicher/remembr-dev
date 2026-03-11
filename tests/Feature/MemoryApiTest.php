@@ -22,7 +22,7 @@ function makeOwner(): User
 function makeAgent(User $owner, array $overrides = []): Agent
 {
     return Agent::factory()->create(array_merge([
-        'owner_id'  => $owner->id,
+        'owner_id' => $owner->id,
         'api_token' => 'amc_test_agent_token',
     ], $overrides));
 }
@@ -53,7 +53,7 @@ describe('POST /v1/agents/register', function () {
         $owner = makeOwner();
 
         $response = $this->postJson('/api/v1/agents/register', [
-            'name'        => 'TestBot',
+            'name' => 'TestBot',
             'description' => 'A test agent',
             'owner_token' => 'owner_test_token',
         ]);
@@ -67,7 +67,7 @@ describe('POST /v1/agents/register', function () {
 
     it('rejects registration with an invalid owner token', function () {
         $response = $this->postJson('/api/v1/agents/register', [
-            'name'        => 'TestBot',
+            'name' => 'TestBot',
             'owner_token' => 'bad_token',
         ]);
 
@@ -97,15 +97,15 @@ describe('POST /v1/memories', function () {
         $agent = makeAgent(makeOwner());
 
         $response = $this->postJson('/api/v1/memories', [
-            'key'        => 'user-preference',
-            'value'      => 'The user prefers dark mode.',
+            'key' => 'user-preference',
+            'value' => 'The user prefers dark mode.',
             'visibility' => 'private',
         ], withAgent($agent));
 
         $response->assertCreated()
             ->assertJsonFragment([
-                'key'        => 'user-preference',
-                'value'      => 'The user prefers dark mode.',
+                'key' => 'user-preference',
+                'value' => 'The user prefers dark mode.',
                 'visibility' => 'private',
             ]);
 
@@ -116,7 +116,7 @@ describe('POST /v1/memories', function () {
         $agent = makeAgent(makeOwner());
 
         $response = $this->postJson('/api/v1/memories', [
-            'value'      => 'The sky is blue.',
+            'value' => 'The sky is blue.',
             'visibility' => 'public',
         ], withAgent($agent));
 
@@ -128,12 +128,12 @@ describe('POST /v1/memories', function () {
         $agent = makeAgent(makeOwner());
 
         $this->postJson('/api/v1/memories', [
-            'key'   => 'my-key',
+            'key' => 'my-key',
             'value' => 'original value',
         ], withAgent($agent));
 
         $this->postJson('/api/v1/memories', [
-            'key'   => 'my-key',
+            'key' => 'my-key',
             'value' => 'updated value',
         ], withAgent($agent));
 
@@ -159,12 +159,67 @@ describe('POST /v1/memories', function () {
         $agent = makeAgent(makeOwner());
 
         $response = $this->postJson('/api/v1/memories', [
-            'value'    => 'remembered something',
-            'metadata' => ['tags' => ['important', 'user']],
+            'value' => 'remembered something',
+            'metadata' => ['custom' => 'value'],
+            'tags' => ['important', 'user'],
         ], withAgent($agent));
 
         $response->assertCreated()
-            ->assertJsonFragment(['metadata' => ['tags' => ['important', 'user']]]);
+            ->assertJsonFragment(['tags' => ['important', 'user']])
+            ->assertJsonFragment(['metadata' => ['custom' => 'value']]);
+
+        // Check DB directly
+        $memory = Memory::first();
+        expect($memory->metadata['tags'])->toBe(['important', 'user']);
+    });
+
+    it('sets expires_at from ttl shorthand', function () {
+        $agent = makeAgent(makeOwner());
+
+        $response = $this->postJson('/api/v1/memories', [
+            'value' => 'temporary memory',
+            'ttl' => '24h',
+        ], withAgent($agent));
+
+        $response->assertCreated();
+        $expiresAt = \Illuminate\Support\Carbon::parse($response->json('expires_at'));
+
+        // Assert it expires in approximately 24 hours (allow a few seconds variance)
+        expect($expiresAt->diffInMinutes(now()->addHours(24)))->toBeLessThan(2);
+    });
+
+    it('rejects request with both ttl and expires_at', function () {
+        $agent = makeAgent(makeOwner());
+
+        $this->postJson('/api/v1/memories', [
+            'value' => 'temporary memory',
+            'ttl' => '24h',
+            'expires_at' => now()->addDays(2)->toIso8601String(),
+        ], withAgent($agent))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['ttl', 'expires_at']);
+    });
+
+    it('rejects too many tags', function () {
+        $agent = makeAgent(makeOwner());
+
+        $this->postJson('/api/v1/memories', [
+            'value' => 'too many tags',
+            'tags' => array_fill(0, 11, 'tag'),
+        ], withAgent($agent))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['tags']);
+    });
+
+    it('rejects invalid ttl format', function () {
+        $agent = makeAgent(makeOwner());
+
+        $this->postJson('/api/v1/memories', [
+            'value' => 'temporary memory',
+            'ttl' => 'invalid',
+        ], withAgent($agent))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['ttl']);
     });
 
 });
@@ -180,8 +235,8 @@ describe('GET /v1/memories/{key}', function () {
 
         Memory::factory()->create([
             'agent_id' => $agent->id,
-            'key'      => 'my-key',
-            'value'    => 'my value',
+            'key' => 'my-key',
+            'value' => 'my value',
         ]);
 
         $this->getJson('/api/v1/memories/my-key', withAgent($agent))
@@ -202,9 +257,9 @@ describe('GET /v1/memories/{key}', function () {
         $agentB = makeAgent($owner, ['api_token' => 'amc_agent_b']);
 
         Memory::factory()->create([
-            'agent_id'   => $agentA->id,
-            'key'        => 'secret',
-            'value'      => 'secret value',
+            'agent_id' => $agentA->id,
+            'key' => 'secret',
+            'value' => 'secret value',
             'visibility' => 'private',
         ]);
 
@@ -216,8 +271,8 @@ describe('GET /v1/memories/{key}', function () {
         $agent = makeAgent(makeOwner());
 
         Memory::factory()->create([
-            'agent_id'   => $agent->id,
-            'key'        => 'expired-key',
+            'agent_id' => $agent->id,
+            'key' => 'expired-key',
             'expires_at' => now()->subDay(),
         ]);
 
@@ -238,8 +293,8 @@ describe('PATCH /v1/memories/{key}', function () {
 
         Memory::factory()->create([
             'agent_id' => $agent->id,
-            'key'      => 'updatable',
-            'value'    => 'old value',
+            'key' => 'updatable',
+            'value' => 'old value',
         ]);
 
         $this->patchJson('/api/v1/memories/updatable', [
@@ -253,8 +308,8 @@ describe('PATCH /v1/memories/{key}', function () {
         $agent = makeAgent(makeOwner());
 
         Memory::factory()->create([
-            'agent_id'   => $agent->id,
-            'key'        => 'private-key',
+            'agent_id' => $agent->id,
+            'key' => 'private-key',
             'visibility' => 'private',
         ]);
 
@@ -278,7 +333,7 @@ describe('DELETE /v1/memories/{key}', function () {
 
         Memory::factory()->create([
             'agent_id' => $agent->id,
-            'key'      => 'deletable',
+            'key' => 'deletable',
         ]);
 
         $this->deleteJson('/api/v1/memories/deletable', [], withAgent($agent))
@@ -306,6 +361,19 @@ describe('GET /v1/memories/search', function () {
             ->assertJsonStructure(['data' => [['id', 'key', 'value', 'similarity']]]);
     });
 
+    it('filters search results by tags', function () {
+        $agent = makeAgent(makeOwner());
+
+        Memory::factory()->create(['agent_id' => $agent->id, 'value' => 'test a', 'metadata' => ['tags' => ['foo']]]);
+        Memory::factory()->create(['agent_id' => $agent->id, 'value' => 'test b', 'metadata' => ['tags' => ['bar']]]);
+
+        $response = $this->getJson('/api/v1/memories/search?q=test&tags=foo', withAgent($agent));
+
+        $response->assertOk();
+        expect(count($response->json('data')))->toBe(1);
+        expect($response->json('data.0.value'))->toBe('test a');
+    });
+
     it('requires a query parameter', function () {
         $agent = makeAgent(makeOwner());
 
@@ -328,15 +396,15 @@ describe('GET /v1/commons/search', function () {
         $agentB = makeAgent($owner, ['api_token' => 'amc_agent_b']);
 
         Memory::factory()->create([
-            'agent_id'   => $agentB->id,
+            'agent_id' => $agentB->id,
             'visibility' => 'public',
-            'value'      => 'public knowledge',
+            'value' => 'public knowledge',
         ]);
 
         Memory::factory()->create([
-            'agent_id'   => $agentB->id,
+            'agent_id' => $agentB->id,
             'visibility' => 'private',
-            'value'      => 'private knowledge',
+            'value' => 'private knowledge',
         ]);
 
         $response = $this->getJson('/api/v1/commons/search?q=knowledge', withAgent($agentA));
@@ -363,8 +431,8 @@ describe('POST /v1/memories/{key}/share', function () {
 
         Memory::factory()->create([
             'agent_id' => $agentA->id,
-            'key'      => 'shared-key',
-            'value'    => 'shared value',
+            'key' => 'shared-key',
+            'value' => 'shared value',
         ]);
 
         $this->postJson('/api/v1/memories/shared-key/share', [

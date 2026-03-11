@@ -15,7 +15,7 @@ class MemoryBrowserTest extends TestCase
     public function test_user_can_view_memory_browser()
     {
         $user = User::factory()->create();
-        
+
         $response = $this->actingAs($user)
             ->get(route('memories.index'));
 

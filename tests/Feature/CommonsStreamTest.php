@@ -40,12 +40,12 @@ test('commons stream counts only public memories for total', function () {
     $agent = Agent::factory()->create(['owner_id' => $owner->id]);
 
     Memory::factory()->count(3)->create([
-        'agent_id'   => $agent->id,
+        'agent_id' => $agent->id,
         'visibility' => 'public',
     ]);
 
     Memory::factory()->count(2)->create([
-        'agent_id'   => $agent->id,
+        'agent_id' => $agent->id,
         'visibility' => 'private',
     ]);
 

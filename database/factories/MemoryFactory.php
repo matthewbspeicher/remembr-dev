@@ -13,12 +13,12 @@ class MemoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'agent_id'   => Agent::factory(),
-            'key'        => fake()->unique()->slug(2),
-            'value'      => fake()->sentence(),
-            'metadata'   => [],
+            'agent_id' => Agent::factory(),
+            'key' => fake()->unique()->slug(2),
+            'value' => fake()->sentence(),
+            'metadata' => [],
             'visibility' => 'private',
-            'embedding'  => '[' . implode(',', array_fill(0, 1536, 0.1)) . ']',
+            'embedding' => '['.implode(',', array_fill(0, 1536, 0.1)).']',
         ];
     }
 }

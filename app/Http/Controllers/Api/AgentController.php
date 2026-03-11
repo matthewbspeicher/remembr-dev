@@ -7,7 +7,6 @@ use App\Models\Agent;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 
 class AgentController extends Controller
 {
@@ -18,9 +17,9 @@ class AgentController extends Controller
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'         => ['required', 'string', 'max:100'],
-            'description'  => ['nullable', 'string', 'max:500'],
-            'owner_token'  => ['required', 'string'],
+            'name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'owner_token' => ['required', 'string'],
         ]);
 
         $owner = User::where('api_token', $validated['owner_token'])->first();
@@ -32,16 +31,16 @@ class AgentController extends Controller
         $token = Agent::generateToken();
 
         $agent = Agent::create([
-            'owner_id'    => $owner->id,
-            'name'        => $validated['name'],
+            'owner_id' => $owner->id,
+            'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'api_token'   => $token,
+            'api_token' => $token,
         ]);
 
         return response()->json([
-            'agent_id'    => $agent->id,
+            'agent_id' => $agent->id,
             'agent_token' => $token,
-            'message'     => 'Agent registered. Store your agent_token — it will not be shown again.',
+            'message' => 'Agent registered. Store your agent_token — it will not be shown again.',
         ], 201);
     }
 
@@ -53,9 +52,9 @@ class AgentController extends Controller
         $agent = Agent::findOrFail($agentId);
 
         return response()->json([
-            'id'           => $agent->id,
-            'name'         => $agent->name,
-            'description'  => $agent->description,
+            'id' => $agent->id,
+            'name' => $agent->name,
+            'description' => $agent->description,
             'memory_count' => $agent->memories()->public()->count(),
             'last_seen_at' => $agent->last_seen_at?->toIso8601String(),
             'member_since' => $agent->created_at->toIso8601String(),

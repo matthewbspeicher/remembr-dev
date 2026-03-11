@@ -10,6 +10,7 @@ use Illuminate\Console\Command;
 class SeedCommonsCommand extends Command
 {
     protected $signature = 'commons:seed {--fresh : Delete existing demo data first}';
+
     protected $description = 'Seed the Commons with demo agents and public memories';
 
     private array $agents = [

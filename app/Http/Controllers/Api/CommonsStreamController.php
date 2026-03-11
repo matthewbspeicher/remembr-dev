@@ -20,7 +20,7 @@ class CommonsStreamController extends Controller
             $totalMemories = Memory::where('visibility', 'public')->count();
 
             $this->sendEvent('connected', [
-                'message'        => 'Listening for public memories…',
+                'message' => 'Listening for public memories…',
                 'total_memories' => $totalMemories,
             ]);
 
@@ -46,15 +46,15 @@ class CommonsStreamController extends Controller
 
                     foreach ($memories as $memory) {
                         $this->sendEvent('memory.created', [
-                            'id'         => $memory->id,
-                            'key'        => $memory->key,
-                            'value'      => $memory->value,
+                            'id' => $memory->id,
+                            'key' => $memory->key,
+                            'value' => $memory->value,
                             'visibility' => $memory->visibility,
-                            'metadata'   => $memory->metadata,
+                            'metadata' => $memory->metadata,
                             'created_at' => $memory->created_at->toIso8601String(),
-                            'agent'      => [
-                                'id'          => $memory->agent->id,
-                                'name'        => $memory->agent->name,
+                            'agent' => [
+                                'id' => $memory->agent->id,
+                                'name' => $memory->agent->name,
                                 'description' => $memory->agent->description,
                             ],
                         ]);
@@ -77,9 +77,9 @@ class CommonsStreamController extends Controller
                 sleep(2);
             }
         }, 200, [
-            'Content-Type'  => 'text/event-stream',
+            'Content-Type' => 'text/event-stream',
             'Cache-Control' => 'no-cache',
-            'Connection'    => 'keep-alive',
+            'Connection' => 'keep-alive',
             'X-Accel-Buffering' => 'no',
         ]);
     }
@@ -87,7 +87,7 @@ class CommonsStreamController extends Controller
     private function sendEvent(string $event, array $data): void
     {
         echo "event: {$event}\n";
-        echo 'data: ' . json_encode($data) . "\n\n";
+        echo 'data: '.json_encode($data)."\n\n";
         flush();
     }
 }

@@ -18,6 +18,10 @@ Route::prefix('v1')->group(function () {
     // Public agent profile
     Route::get('agents/{agentId}', [AgentController::class, 'show']);
 
+    // Badges
+    Route::get('badges/agent/{agentId}/memories', [\App\Http\Controllers\Api\BadgeController::class, 'memories'])->whereUuid('agentId');
+    Route::get('badges/agent/{agentId}/status', [\App\Http\Controllers\Api\BadgeController::class, 'status'])->whereUuid('agentId');
+
     // Public SSE stream of new public memories
     Route::get('commons/stream', CommonsStreamController::class);
 
@@ -36,7 +40,13 @@ Route::prefix('v1')->group(function () {
         Route::delete('memories/{key}', [MemoryController::class, 'destroy']);
 
         // Sharing
-        Route::post('memories/{key}/share', [MemoryController::class, 'share']);
+        Route::post('/memories/{key}/share', [MemoryController::class, 'share']);
+
+        // Webhooks
+        Route::get('/webhooks', [\App\Http\Controllers\Api\WebhookController::class, 'index']);
+        Route::post('/webhooks', [\App\Http\Controllers\Api\WebhookController::class, 'store']);
+        Route::delete('/webhooks/{id}', [\App\Http\Controllers\Api\WebhookController::class, 'destroy']);
+        Route::post('/webhooks/{id}/test', [\App\Http\Controllers\Api\WebhookController::class, 'test']);
 
         // Commons — public memory generic list across all agents
         Route::get('commons', [MemoryController::class, 'commonsIndex']);

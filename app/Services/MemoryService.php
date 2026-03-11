@@ -28,6 +28,15 @@ class MemoryService
             abort(422, "Memory quota exceeded. This agent is limited to {$agent->max_memories} memories.");
         }
 
+        if (isset($data['ttl'])) {
+            $data['expires_at'] = $this->parseTtl($data['ttl']);
+        }
+
+        $metadata = $data['metadata'] ?? [];
+        if (isset($data['tags'])) {
+            $metadata['tags'] = $data['tags'];
+        }
+
         $embedding = $this->embeddings->embed($data['value']);
 
         $memory = Memory::updateOrCreate(
@@ -37,8 +46,8 @@ class MemoryService
             ],
             [
                 'value' => $data['value'],
-                'embedding' => '[' . implode(',', $embedding) . ']',
-                'metadata' => $data['metadata'] ?? [],
+                'embedding' => '['.implode(',', $embedding).']',
+                'metadata' => $metadata,
                 'visibility' => $data['visibility'] ?? 'private',
                 'expires_at' => $data['expires_at'] ?? null,
             ]
@@ -54,12 +63,37 @@ class MemoryService
     public function update(Memory $memory, array $data): Memory
     {
         if (isset($data['value']) && $data['value'] !== $memory->value) {
-            $data['embedding'] = '[' . implode(',', $this->embeddings->embed($data['value'])) . ']';
+            $data['embedding'] = '['.implode(',', $this->embeddings->embed($data['value'])).']';
+        }
+
+        if (isset($data['ttl'])) {
+            $data['expires_at'] = $this->parseTtl($data['ttl']);
+            unset($data['ttl']);
+        }
+
+        if (isset($data['tags'])) {
+            $metadata = $data['metadata'] ?? $memory->metadata ?? [];
+            $metadata['tags'] = $data['tags'];
+            $data['metadata'] = $metadata;
+            unset($data['tags']);
         }
 
         $memory->update($data);
 
         return $memory->fresh();
+    }
+
+    private function parseTtl(string $ttl): \Illuminate\Support\Carbon
+    {
+        $value = (int) substr($ttl, 0, -1);
+        $unit = substr($ttl, -1);
+
+        return match ($unit) {
+            'm' => now()->addMinutes($value),
+            'h' => now()->addHours($value),
+            'd' => now()->addDays($value),
+            default => throw new \InvalidArgumentException("Invalid TTL format: {$ttl}"),
+        };
     }
 
     public function delete(Memory $memory): void
@@ -80,40 +114,55 @@ class MemoryService
             ->first();
     }
 
-    public function listForAgent(Agent $agent, int $perPage = 20): LengthAwarePaginator
+    public function listForAgent(Agent $agent, int $perPage = 20, array $tags = []): LengthAwarePaginator
     {
-        return Memory::query()
+        $query = Memory::query()
             ->where('agent_id', $agent->id)
             ->notExpired()
-            ->latest()
-            ->paginate($perPage);
+            ->latest();
+
+        if (! empty($tags)) {
+            $query->withTags($tags);
+        }
+
+        return $query->paginate($perPage);
     }
 
     // -------------------------------------------------------------------------
     // Search
     // -------------------------------------------------------------------------
 
-    public function searchForAgent(Agent $agent, string $query, int $limit = 10): Collection
+    public function searchForAgent(Agent $agent, string $q, int $limit = 10, array $tags = []): Collection
     {
-        $embedding = $this->embeddings->embed($query);
+        $embedding = $this->embeddings->embed($q);
 
-        return Memory::query()
+        $query = Memory::query()
             ->where('agent_id', $agent->id)
             ->notExpired()
-            ->semanticSearch($embedding, $limit)
-            ->get();
+            ->semanticSearch($embedding, $limit);
+
+        if (! empty($tags)) {
+            $query->withTags($tags);
+        }
+
+        return $query->get();
     }
 
-    public function searchCommons(Agent $agent, string $query, int $limit = 10): Collection
+    public function searchCommons(Agent $agent, string $q, int $limit = 10, array $tags = []): Collection
     {
-        $embedding = $this->embeddings->embed($query);
+        $embedding = $this->embeddings->embed($q);
 
-        return Memory::query()
+        $query = Memory::query()
             ->visibleTo($agent)
             ->notExpired()
             ->semanticSearch($embedding, $limit)
-            ->with('agent:id,name,description')
-            ->get();
+            ->with('agent:id,name,description');
+
+        if (! empty($tags)) {
+            $query->withTags($tags);
+        }
+
+        return $query->get();
     }
 
     // -------------------------------------------------------------------------
@@ -123,6 +172,7 @@ class MemoryService
     public function shareWith(Memory $memory, Agent $recipient): void
     {
         $memory->sharedWith()->syncWithoutDetaching([$recipient->id]);
+        \App\Events\MemoryShared::dispatch($memory, $recipient);
     }
 
     public function revokeShare(Memory $memory, Agent $recipient): void

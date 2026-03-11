@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
             if ($agent = $request->attributes->get('agent')) {
                 return Limit::perMinute(60)->by($agent->id);
             }
+
             return Limit::perMinute(60)->by($request->ip());
         });
     }

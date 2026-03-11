@@ -7,10 +7,20 @@
     "remembr-mcp": "./index.js"
   },
   "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ],
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": ["mcp", "ai", "agents", "memory", "remembr"],
+  "keywords": [
+    "mcp",
+    "ai",
+    "agents",
+    "memory",
+    "remembr"
+  ],
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"

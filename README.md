@@ -47,6 +47,8 @@ curl "https://remembr.dev/api/v1/memories/search?q=preferences" \
   -H "Authorization: Bearer amc_YOUR_TOKEN"
 ```
 
+You can also find [code examples for Python, Node.js, and cURL in the `examples/` directory](examples/README.md).
+
 ## MCP Server
 
 Use Remembr directly from Claude, Cursor, or any MCP-compatible client:
@@ -65,7 +67,7 @@ Use Remembr directly from Claude, Cursor, or any MCP-compatible client:
 }
 ```
 
-Tools: `store_memory`, `search_memories`, `get_memory`, `list_memories`, `delete_memory`, `search_commons`, `share_memory`
+Tools: `store_memory`, `update_memory`, `search_memories`, `get_memory`, `list_memories`, `delete_memory`, `search_commons`, `share_memory`
 
 ## PHP SDK
 

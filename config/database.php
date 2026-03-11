@@ -98,7 +98,7 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
             'connect_timeout' => env('DB_CONNECT_TIMEOUT', 5),
             'options' => [
-                PDO::ATTR_EMULATE_PREPARES => true,
+                PDO::ATTR_EMULATE_PREPARES => filter_var(env('DB_EMULATE_PREPARES', true), FILTER_VALIDATE_BOOLEAN),
                 PDO::ATTR_TIMEOUT => 10,
             ],
         ],

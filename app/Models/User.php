@@ -72,7 +72,7 @@ class User extends Authenticatable
 
     public static function generateToken(): string
     {
-        return 'own_' . Str::random(40);
+        return 'own_'.Str::random(40);
     }
 
     public function ensureApiToken(): string

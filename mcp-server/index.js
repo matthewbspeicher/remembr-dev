@@ -21,10 +21,27 @@ const headers = {
 async function api(method, path, body) {
   const opts = { method, headers };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(`${BASE_URL}/api/v1${path}`, opts);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || `API error ${res.status}`);
-  return data;
+  
+  try {
+    const res = await fetch(`${BASE_URL}/api/v1${path}`, opts);
+    let data;
+    
+    // Check if the response has JSON content
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      data = { message: await res.text() || `API error ${res.status}` };
+    }
+    
+    if (!res.ok) throw new Error(data.message || `API error ${res.status}`);
+    return data;
+  } catch (error) {
+    if (error.message.startsWith("API error") || error.message.includes("failed") || error.message.includes("Failed to fetch") || error.message.includes("fetch failed")) {
+       throw error;
+    }
+    throw new Error(`Network error communicating with Remembr API: ${error.message}`);
+  }
 }
 
 const server = new McpServer({
@@ -43,13 +60,47 @@ server.tool(
     visibility: z.enum(["private", "shared", "public"]).default("private").describe("Memory visibility"),
     metadata: z.record(z.any()).optional().describe("Optional metadata object for categorization"),
     expires_at: z.string().optional().describe("Optional ISO 8601 expiry timestamp"),
+    ttl: z.string().optional().describe("Optional shorthand time-to-live (e.g., '24h', '7d', '30m')"),
+    tags: z.array(z.string()).max(10).optional().describe("Optional array of tags (max 10)"),
   },
-  async ({ value, key, visibility, metadata, expires_at }) => {
+  async ({ value, key, visibility, metadata, expires_at, ttl, tags }) => {
     const body = { value, visibility };
     if (key) body.key = key;
     if (metadata) body.metadata = metadata;
     if (expires_at) body.expires_at = expires_at;
+    if (ttl) body.ttl = ttl;
+    if (tags) body.tags = tags;
     const result = await api("POST", "/memories", body);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "update_memory",
+  "Update an existing memory by key",
+  {
+    key: z.string().describe("The memory key to update"),
+    value: z.string().optional().describe("The new memory content"),
+    visibility: z.enum(["private", "shared", "public"]).optional().describe("New visibility setting"),
+    metadata: z.record(z.any()).optional().describe("New metadata object (will replace existing)"),
+    expires_at: z.string().optional().describe("New ISO 8601 expiry timestamp"),
+    ttl: z.string().optional().describe("New shorthand time-to-live (e.g., '24h', '7d', '30m')"),
+    tags: z.array(z.string()).max(10).optional().describe("New array of tags (max 10)"),
+  },
+  async ({ key, value, visibility, metadata, expires_at, ttl, tags }) => {
+    const body = {};
+    if (value !== undefined) body.value = value;
+    if (visibility !== undefined) body.visibility = visibility;
+    if (metadata !== undefined) body.metadata = metadata;
+    if (expires_at !== undefined) body.expires_at = expires_at;
+    if (ttl !== undefined) body.ttl = ttl;
+    if (tags !== undefined) body.tags = tags;
+    
+    if (Object.keys(body).length === 0) {
+      throw new Error("Must provide at least one field to update");
+    }
+    
+    const result = await api("PATCH", `/memories/${encodeURIComponent(key)}`, body);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );
@@ -60,9 +111,11 @@ server.tool(
   {
     q: z.string().describe("Natural language search query"),
     limit: z.number().default(10).describe("Max results to return"),
+    tags: z.string().optional().describe("Comma-separated list of tags to filter by"),
   },
-  async ({ q, limit }) => {
-    const result = await api("GET", `/memories/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+  async ({ q, limit, tags }) => {
+    const tagsParam = tags ? `&tags=${encodeURIComponent(tags)}` : '';
+    const result = await api("GET", `/memories/search?q=${encodeURIComponent(q)}&limit=${limit}${tagsParam}`);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );
@@ -84,9 +137,11 @@ server.tool(
   "List all memories for the authenticated agent",
   {
     page: z.number().default(1).describe("Page number"),
+    tags: z.string().optional().describe("Comma-separated list of tags to filter by"),
   },
-  async ({ page }) => {
-    const result = await api("GET", `/memories?page=${page}`);
+  async ({ page, tags }) => {
+    const tagsParam = tags ? `&tags=${encodeURIComponent(tags)}` : '';
+    const result = await api("GET", `/memories?page=${page}${tagsParam}`);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );
@@ -109,9 +164,11 @@ server.tool(
   {
     q: z.string().describe("Natural language search query"),
     limit: z.number().default(10).describe("Max results to return"),
+    tags: z.string().optional().describe("Comma-separated list of tags to filter by"),
   },
-  async ({ q, limit }) => {
-    const result = await api("GET", `/commons/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+  async ({ q, limit, tags }) => {
+    const tagsParam = tags ? `&tags=${encodeURIComponent(tags)}` : '';
+    const result = await api("GET", `/commons/search?q=${encodeURIComponent(q)}&limit=${limit}${tagsParam}`);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );

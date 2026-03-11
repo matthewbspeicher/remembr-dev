@@ -24,12 +24,12 @@ class CreateOwnerCommand extends Command
             return self::FAILURE;
         }
 
-        $token = 'own_' . Str::random(40);
+        $token = 'own_'.Str::random(40);
 
         $user = User::create([
-            'name'      => $this->option('name') ?? Str::before($email, '@'),
-            'email'     => $email,
-            'password'  => bcrypt(Str::random(32)),
+            'name' => $this->option('name') ?? Str::before($email, '@'),
+            'email' => $email,
+            'password' => bcrypt(Str::random(32)),
             'api_token' => $token,
         ]);
 

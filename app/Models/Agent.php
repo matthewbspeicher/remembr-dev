@@ -34,7 +34,7 @@ class Agent extends Model
 
     public static function generateToken(): string
     {
-        return 'amc_' . Str::random(60);
+        return 'amc_'.Str::random(60);
     }
 
     public function owner(): BelongsTo
