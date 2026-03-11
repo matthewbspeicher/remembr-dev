@@ -1,7 +1,7 @@
 # Implementation Plan: Enhance semantic search quality for the Commons
 
 ## Phase 1: Evaluation and Metric Setup
-- [ ] Task: Set up test framework for search accuracy
+- [x] Task: Set up test framework for search accuracy [commit: a1efaf0]
     - [ ] Write tests for baseline search accuracy.
     - [ ] Implement evaluation scripts to score search results.
 - [ ] Task: Analyze current pgvector performance
