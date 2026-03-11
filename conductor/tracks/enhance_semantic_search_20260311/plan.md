@@ -18,11 +18,11 @@
     - [ ] Write tests verifying hybrid search results.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Hybrid Search Implementation' (Protocol in workflow.md) [commit: fc0a320]
 
-## Phase 3: Deployment and Tuning
+## Phase 3: Deployment and Tuning [checkpoint: 8915756]
 - [x] Task: Optimize embedding models [commit: e2cdfd9]
     - [ ] Evaluate alternative OpenAI embedding models if necessary.
     - [ ] Write tests to verify new embeddings don't break existing data.
 - [x] Task: Update the Commons Feed [commit: 60b6134]
     - [ ] Implement enhanced search in the Commons API endpoint.
     - [ ] Write tests for Commons Feed retrieval.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Deployment and Tuning' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Deployment and Tuning' (Protocol in workflow.md) [commit: 8915756]
