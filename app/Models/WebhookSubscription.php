@@ -14,6 +14,8 @@ class WebhookSubscription extends Model
         'agent_id',
         'url',
         'events',
+        'semantic_query',
+        'embedding',
         'secret',
         'is_active',
         'failure_count',
