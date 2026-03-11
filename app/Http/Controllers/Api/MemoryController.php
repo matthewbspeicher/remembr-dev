@@ -35,6 +35,9 @@ class MemoryController extends Controller
             'ttl' => ['nullable', 'string', 'regex:/^\d+[hmd]$/', 'prohibits:expires_at'],
             'tags' => ['nullable', 'array', 'max:10'],
             'tags.*' => ['string', 'max:50'],
+            'relations' => ['nullable', 'array', 'max:50'],
+            'relations.*.id' => ['required', 'uuid', 'exists:memories,id'],
+            'relations.*.type' => ['nullable', 'string', 'max:50'],
         ]);
 
         $memory = $this->memories->store($agent, $validated);
@@ -105,6 +108,9 @@ class MemoryController extends Controller
             'ttl' => ['sometimes', 'nullable', 'string', 'regex:/^\d+[hmd]$/', 'prohibits:expires_at'],
             'tags' => ['sometimes', 'array', 'max:10'],
             'tags.*' => ['string', 'max:50'],
+            'relations' => ['sometimes', 'array', 'max:50'],
+            'relations.*.id' => ['required', 'uuid', 'exists:memories,id'],
+            'relations.*.type' => ['nullable', 'string', 'max:50'],
         ]);
 
         $memory = $this->memories->update($memory, $validated);
@@ -295,6 +301,14 @@ class MemoryController extends Controller
         $tags = $metadata['tags'] ?? [];
         unset($metadata['tags']);
 
+        $relations = [];
+        if ($memory->relationLoaded('relatedTo')) {
+            $relations = $memory->relatedTo->map(fn($rel) => [
+                'id' => $rel->id,
+                'type' => $rel->pivot->type ?? 'related',
+            ])->toArray();
+        }
+
         return [
             'id' => $memory->id,
             'key' => $memory->key,
@@ -304,6 +318,7 @@ class MemoryController extends Controller
             'confidence' => $memory->confidence,
             'metadata' => empty($metadata) ? new \stdClass : $metadata,
             'tags' => array_values($tags),
+            'relations' => empty($relations) ? [] : $relations,
             'created_at' => $memory->created_at->toIso8601String(),
             'updated_at' => $memory->updated_at->toIso8601String(),
             'expires_at' => $memory->expires_at?->toIso8601String(),

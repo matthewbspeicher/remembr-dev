@@ -138,6 +138,34 @@ describe('POST /v1/memories', function () {
         ]);
     });
 
+    it('stores a memory with relations', function () {
+        $agent = makeAgent(makeOwner());
+        $parentMemory = Memory::factory()->create(['agent_id' => $agent->id]);
+
+        $response = $this->postJson('/api/v1/memories', [
+            'key' => 'child-thought',
+            'value' => 'A thought derived from the parent.',
+            'relations' => [
+                [
+                    'id' => $parentMemory->id,
+                    'type' => 'parent',
+                ],
+            ],
+        ], withAgent($agent));
+
+        $response->assertCreated();
+        
+        $responseData = $response->json();
+        expect($responseData['relations'])->toHaveCount(1);
+        expect($responseData['relations'][0]['id'])->toBe($parentMemory->id);
+        expect($responseData['relations'][0]['type'])->toBe('parent');
+
+        $this->assertDatabaseHas('memory_relations', [
+            'target_id' => $parentMemory->id,
+            'type' => 'parent',
+        ]);
+    });
+
     it('stores a public memory', function () {
         $agent = makeAgent(makeOwner());
 
@@ -328,6 +356,32 @@ describe('PATCH /v1/memories/{key}', function () {
         ], withAgent($agent))
             ->assertOk()
             ->assertJsonFragment(['value' => 'new value']);
+    });
+
+    it('updates memory relations', function () {
+        $agent = makeAgent(makeOwner());
+        
+        $parent = Memory::factory()->create(['agent_id' => $agent->id]);
+        $child = Memory::factory()->create([
+            'agent_id' => $agent->id,
+            'key' => 'child-key'
+        ]);
+
+        $this->patchJson('/api/v1/memories/child-key', [
+            'relations' => [
+                [
+                    'id' => $parent->id,
+                    'type' => 'related',
+                ],
+            ],
+        ], withAgent($agent))
+            ->assertOk();
+
+        $this->assertDatabaseHas('memory_relations', [
+            'source_id' => $child->id,
+            'target_id' => $parent->id,
+            'type' => 'related',
+        ]);
     });
 
     it('updates visibility', function () {

@@ -59,6 +59,15 @@ class MemoryService
             MemoryCreated::dispatch($memory->load('agent'));
         }
 
+        if (isset($data['relations'])) {
+            $syncData = [];
+            foreach ($data['relations'] as $relation) {
+                $syncData[$relation['id']] = ['type' => $relation['type'] ?? 'related'];
+            }
+            $memory->relatedTo()->sync($syncData);
+            $memory->load('relatedTo');
+        }
+
         return $memory;
     }
 
@@ -84,7 +93,18 @@ class MemoryService
             }
         }
 
+        if (isset($data['relations'])) {
+            $syncData = [];
+            foreach ($data['relations'] as $relation) {
+                $syncData[$relation['id']] = ['type' => $relation['type'] ?? 'related'];
+            }
+            $memory->relatedTo()->sync($syncData);
+            unset($data['relations']);
+        }
+
         $memory->update($data);
+        
+        $memory->load('relatedTo');
 
         return $memory->fresh();
     }
@@ -117,6 +137,7 @@ class MemoryService
             ->where('agent_id', $agent->id)
             ->where('key', $key)
             ->notExpired()
+            ->with('relatedTo')
             ->first();
     }
 
@@ -125,6 +146,7 @@ class MemoryService
         $query = Memory::query()
             ->where('agent_id', $agent->id)
             ->notExpired()
+            ->with('relatedTo')
             ->latest();
 
         if (! empty($tags)) {
@@ -148,6 +170,7 @@ class MemoryService
         $vectorQuery = Memory::query()
             ->where('agent_id', $agent->id)
             ->notExpired()
+            ->with('relatedTo')
             ->semanticSearch($embedding, $limit * 2); // fetch more for RRF
 
         if (! empty($tags)) {
@@ -159,6 +182,7 @@ class MemoryService
         $keywordQuery = Memory::query()
             ->where('agent_id', $agent->id)
             ->notExpired()
+            ->with('relatedTo')
             ->keywordSearch($q, $limit * 2);
 
         if (! empty($tags)) {
@@ -185,8 +209,8 @@ class MemoryService
         $vectorQuery = Memory::query()
             ->visibleTo($agent)
             ->notExpired()
-            ->semanticSearch($embedding, $limit * 2)
-            ->with('agent:id,name,description');
+            ->with(['agent:id,name,description', 'relatedTo'])
+            ->semanticSearch($embedding, $limit * 2);
 
         if (! empty($tags)) {
             $vectorQuery->withTags($tags);
@@ -197,8 +221,8 @@ class MemoryService
         $keywordQuery = Memory::query()
             ->visibleTo($agent)
             ->notExpired()
-            ->keywordSearch($q, $limit * 2)
-            ->with('agent:id,name,description');
+            ->with(['agent:id,name,description', 'relatedTo'])
+            ->keywordSearch($q, $limit * 2);
 
         if (! empty($tags)) {
             $keywordQuery->withTags($tags);
