@@ -12,6 +12,11 @@ class CommonsStreamController extends Controller
     public function __invoke(Request $request): StreamedResponse
     {
         return response()->stream(function () {
+            // Disable all output buffering so SSE events flush immediately
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+
             $totalMemories = Memory::where('visibility', 'public')->count();
 
             $this->sendEvent('connected', [
@@ -67,10 +72,6 @@ class CommonsStreamController extends Controller
                 }
 
                 echo ": heartbeat\n\n";
-
-                if (ob_get_level() > 0) {
-                    ob_flush();
-                }
                 flush();
 
                 sleep(2);
@@ -87,10 +88,6 @@ class CommonsStreamController extends Controller
     {
         echo "event: {$event}\n";
         echo 'data: ' . json_encode($data) . "\n\n";
-
-        if (ob_get_level() > 0) {
-            ob_flush();
-        }
         flush();
     }
 }
