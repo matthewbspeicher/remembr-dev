@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class ArenaGym extends Model
+{
+    use HasFactory;
+    protected $fillable = [
+        'owner_id',
+        'agent_id',
+        'name',
+        'description',
+        'icon_url',
+        'is_official',
+    ];
+
+    protected $casts = [
+        'is_official' => 'boolean',
+    ];
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
+}

@@ -43,6 +43,11 @@ class User extends Authenticatable
         return $this->hasMany(Agent::class, 'owner_id');
     }
 
+    public function ownedGyms(): HasMany
+    {
+        return $this->hasMany(ArenaGym::class, 'owner_id');
+    }
+
     public function generateMagicLink(): string
     {
         $token = Str::random(64);
