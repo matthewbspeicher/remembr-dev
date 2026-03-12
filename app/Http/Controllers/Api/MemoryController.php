@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Concerns\FormatsMemories;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\Memory;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 
 class MemoryController extends Controller
 {
+    use FormatsMemories;
     public function __construct(
         private readonly MemoryService $memories,
     ) {}
@@ -339,38 +341,4 @@ class MemoryController extends Controller
         return response()->json(['message' => "Memory shared with agent {$recipient->name}."]);
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    private function formatMemory(Memory $memory): array
-    {
-        $metadata = $memory->metadata ?? [];
-        $tags = $metadata['tags'] ?? [];
-        unset($metadata['tags']);
-
-        $relations = [];
-        if ($memory->relationLoaded('relatedTo')) {
-            $relations = $memory->relatedTo->map(fn($rel) => [
-                'id' => $rel->id,
-                'type' => $rel->pivot->type ?? 'related',
-            ])->toArray();
-        }
-
-        return [
-            'id' => $memory->id,
-            'key' => $memory->key,
-            'value' => $memory->value,
-            'visibility' => $memory->visibility,
-            'workspace_id' => $memory->workspace_id,
-            'importance' => $memory->importance,
-            'confidence' => $memory->confidence,
-            'metadata' => empty($metadata) ? new \stdClass : $metadata,
-            'tags' => array_values($tags),
-            'relations' => empty($relations) ? [] : $relations,
-            'created_at' => $memory->created_at->toIso8601String(),
-            'updated_at' => $memory->updated_at->toIso8601String(),
-            'expires_at' => $memory->expires_at?->toIso8601String(),
-        ];
-    }
 }
