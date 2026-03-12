@@ -8,11 +8,11 @@ use RuntimeException;
 
 class EmbeddingService
 {
-    private const MODEL = 'gemini-embedding-001';
+    private const MODEL = 'gemini-embedding-2-preview';
 
-    // The database column is currently set to 1536. 
-    // Gemini text-embedding-004 outputs 768. 
-    // We will pad it to 1536 so we don't have to rebuild the DB.
+    // Both gemini-embedding-001 and gemini-embedding-2-preview output 3072
+    // dimensions by default. Our DB column is vector(1536), so we truncate
+    // using Matryoshka slicing (supported by both models).
     private const DB_DIMENSIONS = 1536;
 
     private const CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
@@ -61,7 +61,7 @@ class EmbeddingService
 
         $embeddings = [];
         foreach ($response->json('embeddings') as $emb) {
-            // gemini-embedding-001 returns 3072 dimensions, but our DB expects 1536.
+            // gemini-embedding-2-preview returns 3072 dimensions, but our DB expects 1536.
             $embeddings[] = array_slice($emb['values'], 0, self::DB_DIMENSIONS);
         }
 
