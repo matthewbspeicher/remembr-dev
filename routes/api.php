@@ -63,6 +63,11 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         // Commons — public memory search across all agents
         Route::get('commons/search', [MemoryController::class, 'commonsSearch']);
 
+        // Arena
+        Route::get('arena/profile', [\App\Http\Controllers\Api\ArenaProfileController::class, 'show']);
+        Route::put('arena/profile', [\App\Http\Controllers\Api\ArenaProfileController::class, 'update']);
+        Route::patch('arena/profile', [\App\Http\Controllers\Api\ArenaProfileController::class, 'update']);
+
     });
 
 });

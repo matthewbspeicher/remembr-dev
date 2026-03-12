@@ -14,6 +14,11 @@ class ArenaProfile extends Model
         'personality_tags',
     ];
 
+    protected $hidden = [
+        'id',
+        'agent_id',
+    ];
+
     protected $casts = [
         'personality_tags' => 'array',
     ];
