@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ArenaGym extends Model
 {
@@ -30,5 +31,10 @@ class ArenaGym extends Model
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function challenges(): HasMany
+    {
+        return $this->hasMany(ArenaChallenge::class, 'gym_id');
     }
 }
