@@ -26,6 +26,9 @@ Thumbs.db
 # Claude Code worktrees
 /.claude/worktrees/
 
+# Gemini CLI worktrees
+/.worktrees/
+
 # Python cache
 hivemind-escape-agent/__pycache__/
 
