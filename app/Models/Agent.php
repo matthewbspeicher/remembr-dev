@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class Agent extends Model
@@ -51,6 +52,11 @@ class Agent extends Model
     {
         return $this->belongsToMany(Workspace::class, 'agent_workspace')
             ->withTimestamps();
+    }
+
+    public function arenaProfile(): HasOne
+    {
+        return $this->hasOne(ArenaProfile::class);
     }
 
     public function touchLastSeen(): void
