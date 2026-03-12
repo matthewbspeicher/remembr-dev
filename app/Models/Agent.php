@@ -64,6 +64,11 @@ class Agent extends Model
         return $this->hasMany(ArenaGym::class, 'agent_id');
     }
 
+    public function arenaSessions(): HasMany
+    {
+        return $this->hasMany(ArenaSession::class);
+    }
+
     public function touchLastSeen(): void
     {
         $this->updateQuietly(['last_seen_at' => now()]);
