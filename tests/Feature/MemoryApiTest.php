@@ -8,30 +8,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function makeOwner(): User
-{
-    return User::factory()->create([
-        'api_token' => 'owner_test_token',
-    ]);
-}
-
-function makeAgent(User $owner, array $overrides = []): Agent
-{
-    return Agent::factory()->create(array_merge([
-        'owner_id' => $owner->id,
-        'api_token' => 'amc_test_agent_token',
-    ], $overrides));
-}
-
-function withAgent(Agent $agent): array
-{
-    return ['Authorization' => "Bearer {$agent->api_token}"];
-}
-
 // Mock embeddings for all tests — we don't want real OpenAI calls
 beforeEach(function () {
     $this->mock(EmbeddingService::class, function ($mock) {

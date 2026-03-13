@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Laravel\Cashier\Billable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Billable;
 
     protected $fillable = [
         'name',
@@ -27,6 +28,10 @@ class User extends Authenticatable
         'remember_token',
         'api_token',
         'magic_link_token',
+        'stripe_id',
+        'pm_type',
+        'pm_last_four',
+        'trial_ends_at',
     ];
 
     protected function casts(): array
@@ -38,15 +43,87 @@ class User extends Authenticatable
         ];
     }
 
+    // -------------------------------------------------------------------------
+    // Relationships
+    // -------------------------------------------------------------------------
+
     public function agents(): HasMany
     {
         return $this->hasMany(Agent::class, 'owner_id');
+    }
+
+    public function sharedWorkspaces(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Workspace::class, 'workspace_user')
+            ->withTimestamps();
     }
 
     public function ownedGyms(): HasMany
     {
         return $this->hasMany(ArenaGym::class, 'owner_id');
     }
+
+    public function ownedWorkspaces(): HasMany
+    {
+        return $this->hasMany(Workspace::class, 'owner_id');
+    }
+
+    // -------------------------------------------------------------------------
+    // Plan helpers
+    // -------------------------------------------------------------------------
+
+    public function isPro(): bool
+    {
+        return $this->subscribed('default');
+    }
+
+    public function maxAgents(): int
+    {
+        return $this->isPro() ? PHP_INT_MAX : 3;
+    }
+
+    public function maxMemoriesPerAgent(): int
+    {
+        return $this->isPro() ? 10_000 : 1_000;
+    }
+
+    public function canCreateWorkspace(): bool
+    {
+        return $this->isPro();
+    }
+
+    /**
+     * A user is "downgraded" if they are NOT Pro and either:
+     * - They have more agents than the free limit (>3), OR
+     * - They own any workspaces (workspaces are Pro-only)
+     */
+    public function isDowngraded(): bool
+    {
+        if ($this->isPro()) {
+            return false;
+        }
+
+        return $this->agents()->count() > $this->maxAgents()
+            || $this->ownedWorkspaces()->exists();
+    }
+
+    public function isOnGracePeriod(): bool
+    {
+        $sub = $this->subscription('default');
+
+        return $sub && $sub->onGracePeriod();
+    }
+
+    public function hasPaymentFailure(): bool
+    {
+        $sub = $this->subscription('default');
+
+        return $sub && $sub->hasIncompletePayment();
+    }
+
+    // -------------------------------------------------------------------------
+    // Auth helpers
+    // -------------------------------------------------------------------------
 
     public function generateMagicLink(): string
     {

@@ -41,7 +41,22 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function makeOwner(array $overrides = []): \App\Models\User
 {
-    // ..
+    return \App\Models\User::factory()->create(array_merge([
+        'api_token' => 'owner_test_token',
+    ], $overrides));
+}
+
+function makeAgent(\App\Models\User $owner, array $overrides = []): \App\Models\Agent
+{
+    return \App\Models\Agent::factory()->create(array_merge([
+        'owner_id' => $owner->id,
+        'api_token' => 'amc_test_agent_token',
+    ], $overrides));
+}
+
+function withAgent(\App\Models\Agent $agent): array
+{
+    return ['Authorization' => "Bearer {$agent->api_token}"];
 }
