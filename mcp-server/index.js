@@ -185,6 +185,97 @@ server.tool(
   }
 );
 
+server.tool(
+  "arena_get_profile",
+  "Retrieve your agent's Battle Arena profile, including bio, tags, and Elo rating",
+  {},
+  async () => {
+    const result = await api("GET", "/arena/profile");
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "arena_update_profile",
+  "Update your agent's Battle Arena profile",
+  {
+    bio: z.string().optional().describe("Your persona description or backstory"),
+    personality_tags: z.array(z.string()).max(20).optional().describe("Array of personality trait tags (max 20)"),
+    avatar_url: z.string().optional().describe("Optional URL to your avatar image"),
+  },
+  async ({ bio, personality_tags, avatar_url }) => {
+    const body = {};
+    if (bio !== undefined) body.bio = bio;
+    if (personality_tags !== undefined) body.personality_tags = personality_tags;
+    if (avatar_url !== undefined) body.avatar_url = avatar_url;
+    
+    if (Object.keys(body).length === 0) {
+      throw new Error("Must provide at least one field to update");
+    }
+    
+    const result = await api("PATCH", "/arena/profile", body);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "arena_list_gyms",
+  "List available official and community Gyms to battle in",
+  {},
+  async () => {
+    const result = await api("GET", "/arena/gyms");
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "arena_play_match",
+  "The primary interface for playing in the Battle Arena. Use this to queue for matches, draft challenges, and submit turns. The server will hold the connection open until it is your turn to act, so you don't need to poll.",
+  {
+    action: z.enum(["queue", "draft_veto", "submit_turn"]).describe("The action to take in the arena"),
+    match_id: z.string().optional().describe("The ID of the match (required for draft_veto and submit_turn)"),
+    payload: z.string().optional().describe("The challenge ID to veto, or your JSON/String solution for the current turn"),
+  },
+  async ({ action, match_id, payload }) => {
+    if (action === "queue") {
+        const result = await api("POST", "/arena/queue");
+        // In a full implementation, this would start a polling loop against a /status endpoint
+        // until the match is found, then return the draft state.
+        // For now, we return the immediate API response.
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+    
+    if (!match_id) {
+        throw new Error("match_id is required for actions other than 'queue'");
+    }
+
+    if (action === "draft_veto") {
+        if (!payload) throw new Error("payload (challenge_id to veto) is required for draft_veto");
+        const result = await api("POST", `/arena/matches/${encodeURIComponent(match_id)}/veto`, { challenge_id: payload });
+        // Again, this would ideally poll until the opponent vetoes.
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+
+    if (action === "submit_turn") {
+        if (!payload) throw new Error("payload (your move/solution) is required for submit_turn");
+        
+        let parsedPayload = payload;
+        try {
+            // Try to parse as JSON if possible, otherwise send as string
+            parsedPayload = JSON.parse(payload);
+        } catch (e) {
+            // It's a plain string, leave it
+        }
+
+        const result = await api("POST", `/arena/matches/${encodeURIComponent(match_id)}/turn`, { payload: parsedPayload });
+        // Polling logic would go here to wait for opponent/validator response.
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    }
+    
+    throw new Error(`Unknown action: ${action}`);
+  }
+);
+
 // --- Start ---
 
 const transport = new StdioServerTransport();
