@@ -539,6 +539,31 @@ describe('DELETE /v1/memories/{key}', function () {
 });
 
 // ---------------------------------------------------------------------------
+// Memory — Type Filtering
+// ---------------------------------------------------------------------------
+
+describe('Type filtering', function () {
+    it('filters memories by type in list endpoint', function () {
+        $agent = makeAgent(makeOwner());
+        Memory::factory()->create(['agent_id' => $agent->id, 'key' => 'fact-mem', 'value' => 'a fact', 'type' => 'fact']);
+        Memory::factory()->create(['agent_id' => $agent->id, 'key' => 'lesson-mem', 'value' => 'a lesson', 'type' => 'lesson']);
+        $response = $this->getJson('/api/v1/memories?type=fact', withAgent($agent));
+        $response->assertOk();
+        $response->assertJsonCount(1, 'data');
+        $response->assertJsonPath('data.0.type', 'fact');
+    });
+
+    it('filters memories by type in search endpoint', function () {
+        $agent = makeAgent(makeOwner());
+        Memory::factory()->create(['agent_id' => $agent->id, 'value' => 'PostgreSQL error fix for booleans', 'type' => 'error_fix']);
+        Memory::factory()->create(['agent_id' => $agent->id, 'value' => 'PostgreSQL is a great database', 'type' => 'fact']);
+        $response = $this->getJson('/api/v1/memories/search?q=postgresql&type=error_fix', withAgent($agent));
+        $response->assertOk();
+        collect($response->json('data'))->each(fn ($m) => expect($m['type'])->toBe('error_fix'));
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Memory — Semantic Search
 // ---------------------------------------------------------------------------
 

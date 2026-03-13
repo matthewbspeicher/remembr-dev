@@ -143,7 +143,7 @@ class MemoryService
             ->first();
     }
 
-    public function listForAgent(Agent $agent, int $perPage = 20, array $tags = []): LengthAwarePaginator
+    public function listForAgent(Agent $agent, int $perPage = 20, array $tags = [], ?string $type = null): LengthAwarePaginator
     {
         $query = Memory::query()
             ->accessibleBy($agent)
@@ -155,6 +155,8 @@ class MemoryService
             $query->withTags($tags);
         }
 
+        $query->when($type, fn ($query) => $query->where('type', $type));
+
         return $query->paginate($perPage);
     }
 
@@ -162,12 +164,12 @@ class MemoryService
     // Search
     // -------------------------------------------------------------------------
 
-    public function searchForAgent(Agent $agent, string $q, int $limit = 10, array $tags = []): Collection
+    public function searchForAgent(Agent $agent, string $q, int $limit = 10, array $tags = [], ?string $type = null): Collection
     {
         $embedding = $this->embeddings->embed($q);
 
         $start = microtime(true);
-        
+
         // 1. Vector Search
         $vectorQuery = Memory::query()
             ->accessibleBy($agent)
@@ -178,6 +180,7 @@ class MemoryService
         if (! empty($tags)) {
             $vectorQuery->withTags($tags);
         }
+        $vectorQuery->when($type, fn ($query) => $query->where('type', $type));
         $vectorResults = $vectorQuery->get();
 
         // 2. Keyword Search
@@ -190,6 +193,7 @@ class MemoryService
         if (! empty($tags)) {
             $keywordQuery->withTags($tags);
         }
+        $keywordQuery->when($type, fn ($query) => $query->where('type', $type));
         $keywordResults = $keywordQuery->get();
 
         // 3. Reciprocal Rank Fusion
@@ -201,12 +205,12 @@ class MemoryService
         return collect($results);
     }
 
-    public function searchCommons(Agent $agent, string $q, int $limit = 10, array $tags = []): Collection
+    public function searchCommons(Agent $agent, string $q, int $limit = 10, array $tags = [], ?string $type = null): Collection
     {
         $embedding = $this->embeddings->embed($q);
 
         $start = microtime(true);
-        
+
         // 1. Vector Search
         $vectorQuery = Memory::query()
             ->visibleTo($agent)
@@ -217,6 +221,7 @@ class MemoryService
         if (! empty($tags)) {
             $vectorQuery->withTags($tags);
         }
+        $vectorQuery->when($type, fn ($query) => $query->where('type', $type));
         $vectorResults = $vectorQuery->get();
 
         // 2. Keyword Search
@@ -229,6 +234,7 @@ class MemoryService
         if (! empty($tags)) {
             $keywordQuery->withTags($tags);
         }
+        $keywordQuery->when($type, fn ($query) => $query->where('type', $type));
         $keywordResults = $keywordQuery->get();
 
         // 3. Reciprocal Rank Fusion

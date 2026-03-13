@@ -76,7 +76,8 @@ class MemoryController extends Controller
     {
         $agent = $request->attributes->get('agent');
         $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
-        $paginated = $this->memories->listForAgent($agent, 20, $tags);
+        $type = $request->query('type');
+        $paginated = $this->memories->listForAgent($agent, 20, $tags, $type);
 
         return response()->json([
             'data' => collect($paginated->items())->map(fn ($m) => $this->formatMemory($m)),
@@ -206,12 +207,14 @@ class MemoryController extends Controller
         ]);
 
         $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
+        $type = $request->query('type');
 
         $results = $this->memories->searchForAgent(
             $agent,
             $request->string('q'),
             $request->integer('limit', 10),
-            $tags
+            $tags,
+            $type
         );
 
         return response()->json([
@@ -238,9 +241,10 @@ class MemoryController extends Controller
         $limit = $request->integer('limit', 10);
         $cursor = $request->input('cursor');
         $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
+        $type = $request->query('type');
 
-        // Only cache the "Front Page" (no cursor, default limit, no tags)
-        if ($cursor === null && $limit === 10 && empty($tags)) {
+        // Only cache the "Front Page" (no cursor, default limit, no tags, no type)
+        if ($cursor === null && $limit === 10 && empty($tags) && $type === null) {
             return response()->json(
                 \Illuminate\Support\Facades\Cache::remember('commons_front_page', 5, function () use ($limit) {
                     return $this->getCommonsData($limit, []);
@@ -248,10 +252,10 @@ class MemoryController extends Controller
             );
         }
 
-        return response()->json($this->getCommonsData($limit, $tags));
+        return response()->json($this->getCommonsData($limit, $tags, $type));
     }
 
-    private function getCommonsData(int $limit, array $tags = []): array
+    private function getCommonsData(int $limit, array $tags = [], ?string $type = null): array
     {
         $query = Memory::query()
             ->public()
@@ -261,6 +265,10 @@ class MemoryController extends Controller
 
         if (! empty($tags)) {
             $query->withTags($tags);
+        }
+
+        if ($type) {
+            $query->where('type', $type);
         }
 
         $paginated = $query->cursorPaginate($limit);
@@ -299,12 +307,14 @@ class MemoryController extends Controller
         ]);
 
         $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
+        $type = $request->query('type');
 
         $results = $this->memories->searchCommons(
             $agent,
             $request->string('q'),
             $request->integer('limit', 10),
-            $tags
+            $tags,
+            $type
         );
 
         return response()->json([
