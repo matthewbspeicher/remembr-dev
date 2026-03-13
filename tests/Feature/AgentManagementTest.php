@@ -17,7 +17,10 @@ class AgentManagementTest extends TestCase
         $agent = Agent::factory()->create(['owner_id' => $user->id]);
 
         $response = $this->actingAs($user)
-            ->delete(route('dashboard.agents.destroy', $agent));
+            ->withSession(['_token' => 'test-token'])
+            ->delete(route('dashboard.agents.destroy', $agent), [
+                '_token' => 'test-token'
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('message', 'Agent deleted successfully.');
@@ -31,7 +34,10 @@ class AgentManagementTest extends TestCase
         $agent = Agent::factory()->create(['owner_id' => $otherUser->id]);
 
         $response = $this->actingAs($user)
-            ->delete(route('dashboard.agents.destroy', $agent));
+            ->withSession(['_token' => 'test-token'])
+            ->delete(route('dashboard.agents.destroy', $agent), [
+                '_token' => 'test-token'
+            ]);
 
         $response->assertForbidden();
         $this->assertDatabaseHas('agents', ['id' => $agent->id]);
@@ -44,7 +50,10 @@ class AgentManagementTest extends TestCase
         $oldToken = $agent->api_token;
 
         $response = $this->actingAs($user)
-            ->post(route('dashboard.agents.rotate', $agent));
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('dashboard.agents.rotate', $agent), [
+                '_token' => 'test-token'
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('message');
@@ -62,7 +71,10 @@ class AgentManagementTest extends TestCase
         $oldToken = $agent->api_token;
 
         $response = $this->actingAs($user)
-            ->post(route('dashboard.agents.rotate', $agent));
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('dashboard.agents.rotate', $agent), [
+                '_token' => 'test-token'
+            ]);
 
         $response->assertForbidden();
 
@@ -76,7 +88,10 @@ class AgentManagementTest extends TestCase
         $oldToken = $user->api_token;
 
         $response = $this->actingAs($user)
-            ->post(route('dashboard.token.rotate'));
+            ->withSession(['_token' => 'test-token'])
+            ->post(route('dashboard.token.rotate'), [
+                '_token' => 'test-token'
+            ]);
 
         $response->assertRedirect();
         $response->assertSessionHas('message');

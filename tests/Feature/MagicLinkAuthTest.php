@@ -14,7 +14,9 @@ test('login page renders', function () {
 });
 
 test('sending magic link creates user and sends email', function () {
-    $this->post('/login', [
+    $this->withSession(['_token' => 'test-token'])
+        ->post('/login', [
+        '_token' => 'test-token',
         'name' => 'Test User',
         'email' => 'test@example.com',
     ])->assertRedirect('/auth/check-email');
@@ -29,7 +31,9 @@ test('sending magic link creates user and sends email', function () {
 test('sending magic link for existing user does not duplicate', function () {
     User::factory()->create(['email' => 'existing@example.com']);
 
-    $this->post('/login', [
+    $this->withSession(['_token' => 'test-token'])
+        ->post('/login', [
+        '_token' => 'test-token',
         'name' => 'Existing',
         'email' => 'existing@example.com',
     ])->assertRedirect('/auth/check-email');
@@ -69,7 +73,8 @@ test('used magic link cannot be reused', function () {
         ->assertRedirect('/dashboard');
 
     // Logout
-    $this->post('/logout');
+    $this->withSession(['_token' => 'test-token'])
+        ->post('/logout', ['_token' => 'test-token']);
 
     // Second use — fails
     $this->get("/auth/verify/{$token}")
@@ -109,7 +114,9 @@ test('registering an agent from dashboard creates agent', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
+        ->withSession(['_token' => 'test-token'])
         ->post('/dashboard/agents', [
+            '_token' => 'test-token',
             'name' => 'NewBot',
             'description' => 'A test bot',
         ])
@@ -122,7 +129,8 @@ test('registering an agent from dashboard creates agent', function () {
 });
 
 test('login validates required fields', function () {
-    $this->post('/login', [])
+    $this->withSession(['_token' => 'test-token'])
+        ->post('/login', ['_token' => 'test-token'])
         ->assertSessionHasErrors(['name', 'email']);
 });
 
