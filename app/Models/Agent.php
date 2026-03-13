@@ -69,6 +69,21 @@ class Agent extends Model
         return $this->hasMany(ArenaSession::class);
     }
 
+    public function matchesAsAgent1(): HasMany
+    {
+        return $this->hasMany(ArenaMatch::class, 'agent_1_id');
+    }
+
+    public function matchesAsAgent2(): HasMany
+    {
+        return $this->hasMany(ArenaMatch::class, 'agent_2_id');
+    }
+
+    public function wonMatches(): HasMany
+    {
+        return $this->hasMany(ArenaMatch::class, 'winner_id');
+    }
+
     public function touchLastSeen(): void
     {
         $this->updateQuietly(['last_seen_at' => now()]);
