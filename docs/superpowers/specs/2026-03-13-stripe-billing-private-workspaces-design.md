@@ -433,7 +433,7 @@ No changes needed — the existing "Get Started Free" button already links to `/
 - `bootstrap/app.php` — exclude webhook route from CSRF
 - `resources/js/Pages/Dashboard.vue` — billing tab section
 - `resources/js/Layouts/AppLayout.vue` — pricing nav link
-- `app/Http/Controllers/DashboardController.php` — pass billing props to Inertia
+- `app/Http/Controllers/Auth/DashboardController.php` — pass billing props to Inertia
 
 ---
 
