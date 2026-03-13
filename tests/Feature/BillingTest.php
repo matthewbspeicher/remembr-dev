@@ -191,3 +191,74 @@ describe('workspace creation gate', function () {
         $response->assertStatus(201);
     });
 });
+
+// ---------------------------------------------------------------------------
+// Soft Lock on Downgrade
+// ---------------------------------------------------------------------------
+
+describe('soft lock on downgrade', function () {
+
+    beforeEach(function () {
+        // Mock embeddings for memory store tests
+        $mock = Mockery::mock(\App\Services\EmbeddingService::class);
+        $mock->shouldReceive('embed')->andReturn(array_fill(0, 1536, 0.1));
+        app()->instance(\App\Services\EmbeddingService::class, $mock);
+    });
+
+    it('blocks write on 4th agent when downgraded', function () {
+        $owner = makeOwner();
+        $agents = [];
+        for ($i = 0; $i < 4; $i++) {
+            $agents[] = makeAgent($owner);
+        }
+
+        // 4th agent (by created_at) should be read-only
+        $response = $this->postJson('/api/v1/memories', [
+            'value' => 'test memory',
+        ], withAgent($agents[3]));
+
+        $response->assertStatus(403);
+        $response->assertJsonFragment(['error' => 'This agent is in read-only mode. Upgrade to Pro to restore write access.']);
+    });
+
+    it('allows read on 4th agent when downgraded', function () {
+        $owner = makeOwner();
+        $agents = [];
+        for ($i = 0; $i < 4; $i++) {
+            $agents[] = makeAgent($owner);
+        }
+
+        $response = $this->getJson('/api/v1/memories', withAgent($agents[3]));
+        $response->assertOk();
+    });
+
+    it('allows write on first 3 agents when downgraded', function () {
+        $owner = makeOwner();
+        $agents = [];
+        for ($i = 0; $i < 4; $i++) {
+            $agents[] = makeAgent($owner);
+        }
+
+        $response = $this->postJson('/api/v1/memories', [
+            'value' => 'test memory',
+        ], withAgent($agents[0]));
+
+        $response->assertStatus(201);
+    });
+
+    it('blocks workspace memory writes when downgraded', function () {
+        $owner = makeOwner();
+        $agent = makeAgent($owner);
+        $workspace = Workspace::factory()->create(['owner_id' => $owner->id]);
+        $agent->workspaces()->attach($workspace->id);
+
+        // Owner is downgraded because they own a workspace but have no Pro sub
+        $response = $this->postJson('/api/v1/memories', [
+            'value' => 'workspace memory',
+            'workspace_id' => $workspace->id,
+        ], withAgent($agent));
+
+        $response->assertStatus(403);
+        $response->assertJsonFragment(['error' => 'Workspace memories are read-only. Upgrade to Pro to restore write access.']);
+    });
+});

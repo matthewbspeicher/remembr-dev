@@ -123,7 +123,21 @@ describe('Workspaces API', function () {
     });
 
     it('allows an agent to publish a memory to a workspace', function () {
-        $user = User::factory()->create();
+        $mock = Mockery::mock(\App\Services\EmbeddingService::class);
+        $mock->shouldReceive('embed')->andReturn(array_fill(0, 1536, 0.1));
+        app()->instance(\App\Services\EmbeddingService::class, $mock);
+
+        $user = User::factory()->create(['stripe_id' => 'cus_test_wp1']);
+        $sub = $user->subscriptions()->create([
+            'type' => 'default',
+            'stripe_id' => 'sub_test_wp1',
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_test',
+            'quantity' => 1,
+        ]);
+        $sub->items()->create(['stripe_id' => 'si_test_wp1', 'stripe_product' => 'prod_test', 'stripe_price' => 'price_test', 'quantity' => 1]);
+        $user = $user->fresh();
+
         $agent = Agent::factory()->create(['owner_id' => $user->id]);
         $token = 'amc_test_token';
         $agent->update(['api_token' => $token]);

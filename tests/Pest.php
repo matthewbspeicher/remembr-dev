@@ -52,7 +52,7 @@ function makeAgent(\App\Models\User $owner, array $overrides = []): \App\Models\
 {
     return \App\Models\Agent::factory()->create(array_merge([
         'owner_id' => $owner->id,
-        'api_token' => 'amc_test_agent_token',
+        'api_token' => 'amc_' . \Illuminate\Support\Str::random(40),
     ], $overrides));
 }
 
