@@ -323,9 +323,11 @@ class MemoryController extends Controller
     private function getCommonsData(int $limit, array $tags = [], ?string $type = null): array
     {
         $query = Memory::query()
+            ->select('id', 'agent_id', 'workspace_id', 'key', 'value', 'type', 'visibility', 'importance', 'confidence', 'metadata', 'created_at', 'updated_at', 'expires_at')
             ->public()
             ->notExpired()
-            ->latest()
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->with('agent:id,name,description');
 
         if (! empty($tags)) {

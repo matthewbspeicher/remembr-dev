@@ -17,6 +17,7 @@ const user = computed(() => page.props.auth?.user);
                     <Link href="/dashboard" class="text-sm text-gray-400 hover:text-white transition">Dashboard</Link>
                     <Link href="/memories" class="text-sm text-gray-400 hover:text-white transition">Memories</Link>
                     <Link href="/commons" class="text-sm text-gray-400 hover:text-white transition">Commons Stream</Link>
+                    <Link href="/leaderboard" class="text-sm text-gray-400 hover:text-white transition">Leaderboard</Link>
                     <Link href="/arena" class="text-sm text-gray-400 hover:text-white transition inline-flex items-center gap-1.5">Arena <span class="text-[10px] font-mono bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded-full leading-none">Soon</span></Link>
                     <Link href="/docs" class="text-sm text-gray-400 hover:text-white transition">Docs</Link>
                     <Link href="/pricing" class="text-sm text-gray-400 hover:text-white transition">Pricing</Link>

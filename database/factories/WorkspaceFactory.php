@@ -20,6 +20,7 @@ class WorkspaceFactory extends Factory
             'name' => fake()->company(),
             'description' => fake()->sentence(),
             'owner_id' => \App\Models\User::factory(),
+            'api_token' => \App\Models\Workspace::generateToken(),
         ];
     }
 }

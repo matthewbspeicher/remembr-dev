@@ -79,9 +79,8 @@ class Memory extends Model
 
     public function scopeNotExpired(Builder $query): Builder
     {
-        return $query->where(function ($q) {
-            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-        });
+        $now = now()->format('Y-m-d H:i:s');
+        return $query->whereRaw("(expires_at IS NULL OR expires_at > '{$now}')");
     }
 
     public function scopePublic(Builder $query): Builder
