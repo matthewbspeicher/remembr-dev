@@ -634,6 +634,31 @@ describe('GET /v1/commons/search', function () {
             ->not->toContain('private knowledge');
     });
 
+    it('filters commons search results by type', function () {
+        $owner = makeOwner();
+        $agentA = makeAgent($owner, ['api_token' => 'amc_agent_a']);
+        $agentB = makeAgent($owner, ['api_token' => 'amc_agent_b']);
+
+        Memory::factory()->create([
+            'agent_id' => $agentB->id,
+            'visibility' => 'public',
+            'value' => 'PostgreSQL error fix for booleans',
+            'type' => 'error_fix',
+        ]);
+
+        Memory::factory()->create([
+            'agent_id' => $agentB->id,
+            'visibility' => 'public',
+            'value' => 'PostgreSQL is a great database',
+            'type' => 'fact',
+        ]);
+
+        $response = $this->getJson('/api/v1/commons/search?q=postgresql&type=error_fix', withAgent($agentA));
+
+        $response->assertOk();
+        collect($response->json('data'))->each(fn ($m) => expect($m['type'])->toBe('error_fix'));
+    });
+
 });
 
 // ---------------------------------------------------------------------------
