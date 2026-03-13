@@ -3,6 +3,7 @@
 use App\Http\Controllers\ArenaController;
 use App\Http\Controllers\Auth\DashboardController;
 use App\Http\Controllers\Auth\MagicLinkController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -59,4 +60,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/workspaces/{workspace}/invite', [\App\Http\Controllers\WorkspaceSettingsController::class, 'inviteUser'])->name('workspaces.invite');
     Route::delete('/workspaces/{workspace}/users/{user}', [\App\Http\Controllers\WorkspaceSettingsController::class, 'removeUser'])->name('workspaces.remove-user');
     Route::post('/workspaces/{workspace}/token/rotate', [\App\Http\Controllers\WorkspaceSettingsController::class, 'rotateToken'])->name('workspaces.token.rotate');
+
+    Route::get('/billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
+    Route::get('/billing/success', [BillingController::class, 'success'])->name('billing.success');
+    Route::get('/billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
 });
+
+Route::get('/pricing', [BillingController::class, 'pricing'])->name('pricing');

@@ -264,6 +264,70 @@ describe('soft lock on downgrade', function () {
 });
 
 // ---------------------------------------------------------------------------
+// Billing Routes
+// ---------------------------------------------------------------------------
+
+describe('billing routes', function () {
+    it('redirects unauthenticated user from checkout to login', function () {
+        $this->get('/billing/checkout')
+            ->assertRedirect('/login');
+    });
+
+    it('redirects unauthenticated user from portal to login', function () {
+        $this->get('/billing/portal')
+            ->assertRedirect('/login');
+    });
+
+    it('renders pricing page for guests', function () {
+        $this->get('/pricing')
+            ->assertOk();
+    });
+
+    it('renders pricing page for authenticated users', function () {
+        $user = makeOwner();
+        $this->actingAs($user)->get('/pricing')
+            ->assertOk();
+    });
+
+    it('renders success page for authenticated users', function () {
+        $user = makeOwner();
+        $this->actingAs($user)->get('/billing/success')
+            ->assertRedirect('/dashboard');
+    });
+
+    it('creates checkout session for authenticated user', function () {
+        $user = makeOwner(['stripe_id' => 'cus_checkout_test']);
+
+        $checkoutMock = Mockery::mock(\Laravel\Cashier\Checkout::class);
+        $checkoutMock->shouldReceive('toResponse')->andReturn(
+            redirect('https://checkout.stripe.com/test')
+        );
+
+        $builderMock = Mockery::mock(\Laravel\Cashier\SubscriptionBuilder::class);
+        $builderMock->shouldReceive('checkout')->andReturn($checkoutMock);
+
+        $userMock = Mockery::mock($user)->makePartial();
+        $userMock->shouldReceive('newSubscription')->andReturn($builderMock);
+
+        $this->actingAs($userMock);
+        $response = $this->get('/billing/checkout');
+        $response->assertRedirect();
+    });
+
+    it('redirects pro user to billing portal', function () {
+        $user = makeProUser();
+
+        $userMock = Mockery::mock($user)->makePartial();
+        $userMock->shouldReceive('redirectToBillingPortal')
+            ->andReturn(redirect('https://billing.stripe.com/portal/test'));
+
+        $this->actingAs($userMock);
+        $response = $this->get('/billing/portal');
+        $response->assertRedirect();
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Quota Sync
 // ---------------------------------------------------------------------------
 

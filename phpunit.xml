@@ -33,6 +33,8 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="STRIPE_SECRET" value="sk_test_fake_key_for_testing"/>
+        <env name="STRIPE_PRO_PRICE_ID" value="price_test_pro"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
