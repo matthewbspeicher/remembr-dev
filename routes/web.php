@@ -2,26 +2,15 @@
 
 use App\Http\Controllers\Auth\DashboardController;
 use App\Http\Controllers\Auth\MagicLinkController;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ArenaController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn () => response('ok', 200));
 
 Route::get('/arena', [ArenaController::class, 'index'])->name('arena.index');
 
-Route::get('/', function () {
-    try {
-        $totalMemories = cache()->remember('home:total_memories', 60, function () {
-            return \App\Models\Memory::count();
-        });
-    } catch (\Throwable $e) {
-        $totalMemories = cache()->get('home:total_memories', 0);
-    }
-
-    return Inertia::render('Home', ['totalMemories' => $totalMemories]);
-});
+Route::get('/', HomeController::class);
 
 Route::get('/skill.md', fn () => response()->file(public_path('skill.md'), ['Content-Type' => 'text/markdown']));
 
