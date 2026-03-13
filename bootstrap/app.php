@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'agent.auth' => \App\Http\Middleware\AuthenticateAgent::class,
             'rate.headers' => \App\Http\Middleware\RateLimitHeaders::class,
         ]);
+        $middleware->validateCsrfTokens(except: ['stripe/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
