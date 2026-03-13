@@ -262,3 +262,60 @@ describe('soft lock on downgrade', function () {
         $response->assertJsonFragment(['error' => 'Workspace memories are read-only. Upgrade to Pro to restore write access.']);
     });
 });
+
+// ---------------------------------------------------------------------------
+// Quota Sync
+// ---------------------------------------------------------------------------
+
+describe('quota sync', function () {
+    it('sets max_memories to 10000 when user subscribes', function () {
+        $user = makeOwner(['stripe_id' => 'cus_sync_test']);
+        $agent = makeAgent($user);
+
+        expect($agent->fresh()->max_memories)->toBe(1000);
+
+        // Simulate subscription created webhook
+        $event = new \Laravel\Cashier\Events\WebhookReceived([
+            'type' => 'customer.subscription.created',
+            'data' => ['object' => ['customer' => 'cus_sync_test']],
+        ]);
+
+        // Before creating subscription, make user Pro
+        $subscription = $user->subscriptions()->create([
+            'type' => 'default',
+            'stripe_id' => 'sub_sync_test',
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_test',
+            'quantity' => 1,
+        ]);
+        $subscription->items()->create([
+            'stripe_id' => 'si_sync_test',
+            'stripe_product' => 'prod_test',
+            'stripe_price' => 'price_test',
+            'quantity' => 1,
+        ]);
+
+        $listener = new \App\Listeners\SyncAgentQuotas();
+        $listener->handle($event);
+
+        expect($agent->fresh()->max_memories)->toBe(10000);
+    });
+
+    it('sets max_memories to 1000 when subscription is deleted', function () {
+        $user = makeProUser(['stripe_id' => 'cus_downgrade_test']);
+        $agent = makeAgent($user, ['max_memories' => 10000]);
+
+        // Delete the subscription to simulate downgrade
+        $user->subscriptions()->delete();
+
+        $event = new \Laravel\Cashier\Events\WebhookReceived([
+            'type' => 'customer.subscription.deleted',
+            'data' => ['object' => ['customer' => 'cus_downgrade_test']],
+        ]);
+
+        $listener = new \App\Listeners\SyncAgentQuotas();
+        $listener->handle($event);
+
+        expect($agent->fresh()->max_memories)->toBe(1000);
+    });
+});
