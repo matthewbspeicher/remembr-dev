@@ -13,10 +13,24 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
+        $agentCount = $user->agents()->count();
+        $avgMemories = $agentCount > 0
+            ? (int) $user->agents()->withCount('memories')->get()->avg('memories_count')
+            : 0;
+
         return Inertia::render('Dashboard', [
             'apiToken' => $user->api_token,
             'agents' => $user->agents()->select('id', 'name', 'description', 'created_at')->latest()->get(),
             'workspaces' => $user->sharedWorkspaces()->select('workspaces.id', 'workspaces.name', 'workspaces.description', 'workspaces.owner_id')->get(),
+            'isPro' => $user->isPro(),
+            'isOnGracePeriod' => $user->isOnGracePeriod(),
+            'hasPaymentFailure' => $user->hasPaymentFailure(),
+            'isDowngraded' => $user->isDowngraded(),
+            'currentPlan' => $user->isPro() ? 'pro' : 'free',
+            'agentCount' => $agentCount,
+            'maxAgents' => $user->isPro() ? 'unlimited' : $user->maxAgents(),
+            'avgMemoriesPerAgent' => $avgMemories,
+            'maxMemoriesPerAgent' => $user->maxMemoriesPerAgent(),
         ]);
     }
 

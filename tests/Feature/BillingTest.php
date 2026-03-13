@@ -383,3 +383,40 @@ describe('quota sync', function () {
         expect($agent->fresh()->max_memories)->toBe(1000);
     });
 });
+
+describe('dashboard billing props', function () {
+    it('passes billing props to dashboard for free user', function () {
+        $user = makeOwner();
+        makeAgent($user);
+
+        $response = $this->actingAs($user)->get('/dashboard');
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Dashboard')
+            ->has('isPro')
+            ->has('isDowngraded')
+            ->has('isOnGracePeriod')
+            ->has('hasPaymentFailure')
+            ->has('currentPlan')
+            ->has('agentCount')
+            ->has('maxAgents')
+            ->has('avgMemoriesPerAgent')
+            ->has('maxMemoriesPerAgent')
+            ->where('isPro', false)
+            ->where('currentPlan', 'free')
+        );
+    });
+
+    it('passes pro billing props to dashboard', function () {
+        $user = makeProUser();
+
+        $response = $this->actingAs($user)->get('/dashboard');
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Dashboard')
+            ->where('isPro', true)
+            ->where('currentPlan', 'pro')
+            ->where('maxAgents', 'unlimited')
+        );
+    });
+});
