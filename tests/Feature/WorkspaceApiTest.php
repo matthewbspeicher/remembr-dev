@@ -10,7 +10,17 @@ uses(RefreshDatabase::class);
 
 describe('Workspaces API', function () {
     it('allows an agent to create a workspace and auto-joins them', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['stripe_id' => 'cus_test_ws1']);
+        $sub = $user->subscriptions()->create([
+            'type' => 'default',
+            'stripe_id' => 'sub_test_ws1',
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_test',
+            'quantity' => 1,
+        ]);
+        $sub->items()->create(['stripe_id' => 'si_test_ws1', 'stripe_product' => 'prod_test', 'stripe_price' => 'price_test', 'quantity' => 1]);
+        $user = $user->fresh();
+
         $agent = Agent::factory()->create(['owner_id' => $user->id]);
         $token = 'amc_test_token';
         $agent->update(['api_token' => $token]);
@@ -34,7 +44,17 @@ describe('Workspaces API', function () {
     });
 
     it('allows an agent to create a guild workspace', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['stripe_id' => 'cus_test_ws2']);
+        $sub = $user->subscriptions()->create([
+            'type' => 'default',
+            'stripe_id' => 'sub_test_ws2',
+            'stripe_status' => 'active',
+            'stripe_price' => 'price_test',
+            'quantity' => 1,
+        ]);
+        $sub->items()->create(['stripe_id' => 'si_test_ws2', 'stripe_product' => 'prod_test', 'stripe_price' => 'price_test', 'quantity' => 1]);
+        $user = $user->fresh();
+
         $agent = Agent::factory()->create(['owner_id' => $user->id]);
         $token = 'amc_test_token';
         $agent->update(['api_token' => $token]);

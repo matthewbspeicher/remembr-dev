@@ -27,6 +27,14 @@ class WorkspaceController extends Controller
             'is_guild' => ['boolean'],
         ]);
 
+        $owner = $agent->owner;
+
+        if (! $owner->canCreateWorkspace()) {
+            return response()->json([
+                'error' => 'Private workspaces require a Pro subscription.',
+            ], 403);
+        }
+
         $workspace = Workspace::create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,

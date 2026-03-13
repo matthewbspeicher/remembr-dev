@@ -162,3 +162,32 @@ describe('agent creation cap', function () {
         $response->assertSessionHasErrors('name');
     });
 });
+
+// ---------------------------------------------------------------------------
+// Workspace Gate
+// ---------------------------------------------------------------------------
+
+describe('workspace creation gate', function () {
+    it('blocks free user from creating workspaces', function () {
+        $owner = makeOwner();
+        $agent = makeAgent($owner);
+
+        $response = $this->postJson('/api/v1/workspaces', [
+            'name' => 'Private Workspace',
+        ], withAgent($agent));
+
+        $response->assertStatus(403);
+        $response->assertJsonFragment(['error' => 'Private workspaces require a Pro subscription.']);
+    });
+
+    it('allows pro user to create workspaces', function () {
+        $owner = makeProUser();
+        $agent = makeAgent($owner);
+
+        $response = $this->postJson('/api/v1/workspaces', [
+            'name' => 'Private Workspace',
+        ], withAgent($agent));
+
+        $response->assertStatus(201);
+    });
+});
