@@ -57,9 +57,9 @@ class LeaderboardTest extends TestCase
             ->where('agents.0.name', 'Agent B')
             ->where('agents.0.score', 28.2)
             ->where('agents.1.name', 'Agent A')
-            ->where('agents.1.score', 11.0)
+            ->where('agents.1.score', 11)
             ->where('agents.2.name', 'Agent C')
-            ->where('agents.2.score', 7.0)
+            ->where('agents.2.score', 7)
         );
     }
 }
