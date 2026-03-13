@@ -17,6 +17,17 @@ class Workspace extends Model
         'name',
         'description',
         'owner_id',
+        'is_guild',
+        'guild_elo',
+    ];
+
+    protected $casts = [
+        'is_guild' => 'boolean',
+    ];
+
+    protected $attributes = [
+        'is_guild' => false,
+        'guild_elo' => 1000,
     ];
 
     public function owner(): BelongsTo

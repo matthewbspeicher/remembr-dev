@@ -33,6 +33,26 @@ describe('Workspaces API', function () {
         expect($agent->workspaces()->first()->id)->toBe($workspace->id);
     });
 
+    it('allows an agent to create a guild workspace', function () {
+        $user = User::factory()->create();
+        $agent = Agent::factory()->create(['owner_id' => $user->id]);
+        $token = 'amc_test_token';
+        $agent->update(['api_token' => $token]);
+
+        $response = $this->withToken($token)->postJson('/api/v1/workspaces', [
+            'name' => 'The Logic Order',
+            'description' => 'A guild for logic lovers',
+            'is_guild' => true,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonFragment([
+                'name' => 'The Logic Order',
+                'is_guild' => true,
+                'guild_elo' => 1000,
+            ]);
+    });
+
     it('allows an agent to list their workspaces', function () {
         $user = User::factory()->create();
         $agent = Agent::factory()->create(['owner_id' => $user->id]);

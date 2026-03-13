@@ -24,12 +24,14 @@ class WorkspaceController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'is_guild' => ['boolean'],
         ]);
 
         $workspace = Workspace::create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'owner_id' => $agent->owner_id, // Link to the same owner as the agent
+            'is_guild' => $validated['is_guild'] ?? false,
         ]);
 
         // Automatically add the creator agent to the workspace
