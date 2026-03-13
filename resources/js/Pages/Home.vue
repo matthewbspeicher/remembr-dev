@@ -79,7 +79,7 @@ function truncate(str, len) {
 
             <h1 class="text-5xl md:text-6xl font-black tracking-tight leading-tight mb-6">
                 Memory for<br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-rose-400">AI Agents</span>
+                <span class="text-transparent bg-clip-text bg-linear-to-r from-indigo-400 via-purple-400 to-rose-400">AI Agents</span>
             </h1>
             <p class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-4">
                 A persistent, shared memory API. Your agents store knowledge, search semantically,
@@ -190,38 +190,25 @@ function truncate(str, len) {
         <!-- Code Example -->
         <div class="mb-20">
             <h2 class="text-2xl font-bold text-center mb-2">Try it in 30 seconds</h2>
-            <p class="text-gray-500 text-center text-sm mb-8">curl, fetch, or use our SDK — any language works.</p>
+            <p class="text-gray-500 text-center text-sm mb-8">Works via MCP, REST API, or our official SDKs.</p>
 
-            <div class="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/5">
-                <div class="bg-gray-900/90 border-b border-gray-800 px-4 py-3 flex items-center gap-3">
-                    <div class="flex gap-1.5">
-                        <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
-                        <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                        <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-[0_0_50px_-12px_rgba(79,70,229,0.3)]">
+                    <div class="flex items-center gap-2 px-4 py-2 border-b border-gray-800 bg-gray-900/80">
+                        <div class="w-3 h-3 rounded-full bg-red-500/60"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500/60"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500/60"></div>
+                        <span class="ml-2 text-xs text-gray-500 font-mono">terminal</span>
                     </div>
-                    <span class="text-gray-500 text-xs font-mono">terminal</span>
-                </div>
-                <div class="p-6 font-mono text-sm leading-relaxed overflow-x-auto">
-                    <div class="mb-4">
-                        <span class="text-gray-500"># Store a memory</span><br>
-                        <span class="text-emerald-400">$</span>
-                        <span class="text-gray-300"> curl -X POST https://remembr.dev/api/v1/memories \</span><br>
-                        <span class="text-gray-300">  -H "Authorization: Bearer $AGENT_TOKEN" \</span><br>
-                        <span class="text-gray-300">  -H "Content-Type: application/json" \</span><br>
-                        <span class="text-gray-300">  -d '{"value":"User prefers dark mode","visibility":"public"}'</span>
-                    </div>
-                    <div class="mb-4">
-                        <span class="text-gray-500"># Search by meaning</span><br>
-                        <span class="text-emerald-400">$</span>
-                        <span class="text-gray-300"> curl "https://remembr.dev/api/v1/memories/search?q=UI+preferences" \</span><br>
-                        <span class="text-gray-300">  -H "Authorization: Bearer $AGENT_TOKEN"</span>
-                    </div>
-                    <div>
-                        <span class="text-indigo-400/70">
-                            {"data":[{"key":null,"value":"User prefers dark mode",<br>
-                            &nbsp;&nbsp;"similarity":0.94,"importance":5}]}
-                        </span>
-                    </div>
+                    <pre class="p-6 text-sm font-mono leading-relaxed overflow-x-auto"><code class="text-gray-300"><span class="text-gray-500"># Store a typed memory</span>
+<span class="text-green-400">curl</span> -X POST https://remembr.dev/api/v1/memories \
+  -H <span class="text-amber-300">"Authorization: Bearer amc_..."</span> \
+  -H <span class="text-amber-300">"Content-Type: application/json"</span> \
+  -d <span class="text-amber-300">'{"value":"IVFFlat needs >100 rows to build","type":"error_fix","tags":["postgresql","pgvector"]}'</span>
+
+<span class="text-gray-500"># Search by type</span>
+<span class="text-green-400">curl</span> <span class="text-amber-300">"https://remembr.dev/api/v1/memories/search?q=database+errors&amp;type=error_fix"</span> \
+  -H <span class="text-amber-300">"Authorization: Bearer amc_..."</span></code></pre>
                 </div>
             </div>
         </div>
