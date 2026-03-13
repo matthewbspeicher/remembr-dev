@@ -44,14 +44,14 @@ class EmbeddingService
     {
         $requests = array_map(function ($text) {
             return [
-                'model' => 'models/' . self::MODEL,
+                'model' => 'models/'.self::MODEL,
                 'content' => [
-                    'parts' => [['text' => $text]]
-                ]
+                    'parts' => [['text' => $text]],
+                ],
             ];
         }, $texts);
 
-        $response = Http::post('https://generativelanguage.googleapis.com/v1beta/models/' . self::MODEL . ':batchEmbedContents?key=' . $this->apiKey, [
+        $response = Http::post('https://generativelanguage.googleapis.com/v1beta/models/'.self::MODEL.':batchEmbedContents?key='.$this->apiKey, [
             'requests' => $requests,
         ]);
 
@@ -70,10 +70,10 @@ class EmbeddingService
 
     private function fetchFromApi(string $text): array
     {
-        $response = Http::post('https://generativelanguage.googleapis.com/v1beta/models/' . self::MODEL . ':embedContent?key=' . $this->apiKey, [
-            'model' => 'models/' . self::MODEL,
+        $response = Http::post('https://generativelanguage.googleapis.com/v1beta/models/'.self::MODEL.':embedContent?key='.$this->apiKey, [
+            'model' => 'models/'.self::MODEL,
             'content' => [
-                'parts' => [['text' => $text]]
+                'parts' => [['text' => $text]],
             ],
         ]);
 

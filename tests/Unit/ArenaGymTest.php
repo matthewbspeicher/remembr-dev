@@ -16,7 +16,7 @@ class ArenaGymTest extends TestCase
     {
         $user = User::factory()->create();
         $agent = Agent::factory()->create(['owner_id' => $user->id]);
-        
+
         $userGym = ArenaGym::create([
             'owner_id' => $user->id,
             'name' => 'User Gym',

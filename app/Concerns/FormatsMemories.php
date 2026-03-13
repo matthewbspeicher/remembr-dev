@@ -14,7 +14,7 @@ trait FormatsMemories
 
         $relations = [];
         if ($memory->relationLoaded('relatedTo')) {
-            $relations = $memory->relatedTo->map(fn($rel) => [
+            $relations = $memory->relatedTo->map(fn ($rel) => [
                 'id' => $rel->id,
                 'type' => $rel->pivot->type ?? 'related',
             ])->toArray();

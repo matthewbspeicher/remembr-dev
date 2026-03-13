@@ -33,8 +33,9 @@ class EvaluateSearchAccuracy extends Command
         $this->info('Starting semantic search evaluation...');
 
         // Check if Gemini key is set
-        if (!config('services.gemini.key')) {
+        if (! config('services.gemini.key')) {
             $this->error('Gemini API key is missing. Required for generating real embeddings.');
+
             return 1;
         }
 
@@ -72,7 +73,7 @@ class EvaluateSearchAccuracy extends Command
                     'q' => 'Tell me about machine smarts.',
                     'expected' => 'doc5',
                 ],
-            ]
+            ],
         ];
 
         DB::beginTransaction();
@@ -81,10 +82,10 @@ class EvaluateSearchAccuracy extends Command
             $agent = Agent::factory()->create(['owner_id' => $user->id]);
 
             $this->info('Embedding and indexing corpus...');
-            
+
             $docsToEmbed = array_values($dataset['corpus']);
             $keys = array_keys($dataset['corpus']);
-            
+
             // Get embeddings for all corpus docs at once to save time
             $vectors = $embeddings->embedBatch($docsToEmbed);
 
@@ -99,9 +100,9 @@ class EvaluateSearchAccuracy extends Command
             }
 
             $this->info('Running evaluation queries...');
-            
+
             $limit = (int) $this->option('limit');
-            
+
             $score = 0;
             $mrr = 0.0;
             $total = count($dataset['queries']);
@@ -109,14 +110,14 @@ class EvaluateSearchAccuracy extends Command
             foreach ($dataset['queries'] as $query) {
                 $q = $query['q'];
                 $expected = $query['expected'];
-                
+
                 $queryVector = $embeddings->embed($q);
-                
+
                 $results = Memory::query()
                     ->where('agent_id', $agent->id)
                     ->semanticSearch($queryVector, $limit)
                     ->get();
-                
+
                 $rank = null;
                 foreach ($results as $index => $result) {
                     if ($result->key === $expected) {
@@ -124,7 +125,7 @@ class EvaluateSearchAccuracy extends Command
                         break;
                     }
                 }
-                
+
                 if ($rank !== null) {
                     $mrr += (1 / $rank);
                     if ($rank === 1) {
@@ -137,8 +138,8 @@ class EvaluateSearchAccuracy extends Command
             }
 
             $this->info('--- Evaluation Results ---');
-            $this->info("Top-1 Accuracy: " . round(($score / $total) * 100, 2) . "% ($score/$total)");
-            $this->info("MRR (Mean Reciprocal Rank): " . round($mrr / $total, 4));
+            $this->info('Top-1 Accuracy: '.round(($score / $total) * 100, 2)."% ($score/$total)");
+            $this->info('MRR (Mean Reciprocal Rank): '.round($mrr / $total, 4));
 
             // Rollback to clean up database
             DB::rollBack();
@@ -146,7 +147,8 @@ class EvaluateSearchAccuracy extends Command
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->error("Evaluation failed: " . $e->getMessage());
+            $this->error('Evaluation failed: '.$e->getMessage());
+
             return 1;
         }
 

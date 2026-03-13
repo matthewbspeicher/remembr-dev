@@ -42,14 +42,14 @@ it('can register a semantic webhook', function () {
     $response = $this->postJson('/api/v1/webhooks', [
         'url' => 'https://example.com/webhook',
         'events' => ['memory.semantic_match'],
-        'semantic_query' => 'I want to know about Laravel Octane'
+        'semantic_query' => 'I want to know about Laravel Octane',
     ], ['Authorization' => 'Bearer '.$this->agent->api_token]);
 
     $response->assertCreated();
     $response->assertJsonFragment([
         'url' => 'https://example.com/webhook',
         'events' => ['memory.semantic_match'],
-        'semantic_query' => 'I want to know about Laravel Octane'
+        'semantic_query' => 'I want to know about Laravel Octane',
     ]);
 
     $this->assertDatabaseHas('webhook_subscriptions', [

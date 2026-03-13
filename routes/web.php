@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Controllers\ArenaController;
 use App\Http\Controllers\Auth\DashboardController;
 use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ArenaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn () => response('ok', 200));

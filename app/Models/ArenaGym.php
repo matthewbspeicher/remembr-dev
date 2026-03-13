@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ArenaGym extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'owner_id',
         'agent_id',

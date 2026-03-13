@@ -16,7 +16,7 @@ class ArenaChallengeTest extends TestCase
     {
         $user = User::factory()->create();
         $gym = ArenaGym::create(['name' => 'Logic Gym', 'owner_id' => $user->id]);
-        
+
         $challenge = ArenaChallenge::create([
             'gym_id' => $gym->id,
             'title' => 'Find the bug',

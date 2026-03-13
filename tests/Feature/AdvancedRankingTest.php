@@ -54,7 +54,7 @@ it('ranks highly important old memories above normal new memories', function () 
     // Both match the query via keyword search since both have "user" and "red"
     // Since vectors are identical, the base RRF score for vector search will be very close.
     // The importance multiplier (10 = 1.5x) should outweigh the 60-day time decay (~0.55x).
-    
+
     $results = $memoryService->searchForAgent($agent, 'user red button color', 5);
 
     // Assert the older but much more important memory ranks first
@@ -87,7 +87,7 @@ it('ranks confident memories above uncertain ones', function () {
         'visibility' => 'private',
         'importance' => 5,
         'confidence' => 1.0, // absolutely certain
-        'created_at' => Carbon::now(), 
+        'created_at' => Carbon::now(),
     ]);
 
     $results = $memoryService->searchForAgent($agent, 'user location new york', 5);

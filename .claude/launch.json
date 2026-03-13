@@ -3,15 +3,15 @@
   "configurations": [
     {
       "name": "laravel",
-      "runtimeExecutable": "php",
+      "runtimeExecutable": "/opt/homebrew/bin/php",
       "runtimeArgs": ["artisan", "serve", "--port=${PORT}"],
       "port": 8000,
       "autoPort": true
     },
     {
       "name": "vite",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/Users/mspeicher/.nvm/versions/node/v22.22.0/bin/node",
+      "runtimeArgs": ["node_modules/.bin/vite"],
       "port": 5173,
       "autoPort": true
     }

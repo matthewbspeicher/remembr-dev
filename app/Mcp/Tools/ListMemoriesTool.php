@@ -39,10 +39,10 @@ class ListMemoriesTool extends Tool
         return Response::json([
             'data' => collect($paginated->items())->map(fn ($m) => $this->formatMemory($m))->values()->all(),
             'meta' => [
-                'total'        => $paginated->total(),
-                'per_page'     => $paginated->perPage(),
+                'total' => $paginated->total(),
+                'per_page' => $paginated->perPage(),
                 'current_page' => $paginated->currentPage(),
-                'last_page'    => $paginated->lastPage(),
+                'last_page' => $paginated->lastPage(),
             ],
         ]);
     }

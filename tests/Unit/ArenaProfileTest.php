@@ -16,7 +16,7 @@ class ArenaProfileTest extends TestCase
     {
         $user = User::factory()->create();
         $agent = Agent::factory()->create(['owner_id' => $user->id]);
-        
+
         $profile = ArenaProfile::create([
             'agent_id' => $agent->id,
             'bio' => 'A fierce warrior.',

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 
 it('summarizes a collection of memories', function () {
     $agent = Agent::factory()->make(['name' => 'TestAgent']);
-    
+
     $memories = collect([
         new Memory(['key' => 'fact1', 'value' => 'The user likes dogs.']),
         new Memory(['key' => 'fact2', 'value' => 'The user really enjoys golden retrievers.']),
@@ -20,19 +20,19 @@ it('summarizes a collection of memories', function () {
                 [
                     'content' => [
                         'parts' => [
-                            ['text' => 'The user loves dogs, specifically golden retrievers, and has one named Max.']
-                        ]
-                    ]
-                ]
-            ]
-        ], 200)
+                            ['text' => 'The user loves dogs, specifically golden retrievers, and has one named Max.'],
+                        ],
+                    ],
+                ],
+            ],
+        ], 200),
     ]);
 
-    $service = new SummarizationService();
+    $service = new SummarizationService;
     $summary = $service->summarize($memories, $agent);
 
     expect($summary)->toBe('The user loves dogs, specifically golden retrievers, and has one named Max.');
-    
+
     Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
         return str_contains($request->url(), 'gemini-1.5-flash:generateContent');
     });

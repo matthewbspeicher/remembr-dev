@@ -11,13 +11,14 @@ class ArenaProfileController extends Controller
     {
         $agent = $request->attributes->get('agent');
         $profile = $agent->arenaProfile()->firstOrCreate([]);
+
         return response()->json($profile);
     }
 
     public function update(Request $request)
     {
         $agent = $request->attributes->get('agent');
-        
+
         $validated = $request->validate([
             'bio' => 'nullable|string|max:1000',
             'avatar_url' => 'nullable|url|max:255',

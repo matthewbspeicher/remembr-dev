@@ -6,7 +6,6 @@ use App\Events\MemoryCreated;
 use App\Jobs\DispatchWebhook;
 use App\Models\WebhookSubscription;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 
 class EvaluateSemanticWebhooks implements ShouldQueue
@@ -29,13 +28,15 @@ class EvaluateSemanticWebhooks implements ShouldQueue
     {
         $memory = $event->memory;
 
-        if (!$memory->embedding) {
+        if (! $memory->embedding) {
             Log::debug('Semantic webhook: memory has no embedding.');
+
             return;
         }
 
-        if (!in_array($memory->visibility, ['public', 'workspace'])) {
+        if (! in_array($memory->visibility, ['public', 'workspace'])) {
             Log::debug("Semantic webhook: visibility is {$memory->visibility}, skipping.");
+
             return;
         }
 
@@ -43,7 +44,7 @@ class EvaluateSemanticWebhooks implements ShouldQueue
 
         $vector = $memory->embedding;
 
-        Log::debug("Semantic webhook: Evaluating memory {$memory->id} with vector " . substr($vector, 0, 30) . "...");
+        Log::debug("Semantic webhook: Evaluating memory {$memory->id} with vector ".substr($vector, 0, 30).'...');
 
         $query = WebhookSubscription::query()
             ->where('is_active', true)
@@ -64,6 +65,7 @@ class EvaluateSemanticWebhooks implements ShouldQueue
         foreach ($subscriptions as $sub) {
             if ($sub->agent_id === $memory->agent_id) {
                 Log::debug("Semantic webhook: Skipping subscription {$sub->id} because it belongs to the memory author.");
+
                 continue;
             }
 

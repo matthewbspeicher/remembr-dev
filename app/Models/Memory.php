@@ -161,7 +161,7 @@ class Memory extends Model
         return $query
             ->selectRaw('*, ts_rank(search_vector, to_tsquery(\'english\', ?)) AS rank', [$tsQuery])
             ->whereRaw("search_vector @@ to_tsquery('english', ?)", [$tsQuery])
-            ->orderByRaw("rank DESC")
+            ->orderByRaw('rank DESC')
             ->limit($limit);
     }
 

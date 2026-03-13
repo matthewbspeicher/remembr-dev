@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 class EmbedMissingMemories extends Command
 {
     protected $signature = 'memories:embed-missing {--batch=50 : Batch size}';
+
     protected $description = 'Generate embeddings for memories that are missing them';
 
     public function handle(EmbeddingService $embeddings): int
@@ -18,6 +19,7 @@ class EmbedMissingMemories extends Command
 
         if ($total === 0) {
             $this->info('No memories missing embeddings.');
+
             return 0;
         }
 
@@ -40,6 +42,7 @@ class EmbedMissingMemories extends Command
             });
 
         $this->info("Done. Embedded {$processed} memories.");
+
         return 0;
     }
 }

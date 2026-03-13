@@ -15,10 +15,10 @@ it('triggers a webhook when a semantically similar public memory is created', fu
     Queue::fake([DispatchWebhook::class]);
 
     $user = User::factory()->create();
-    
+
     // Agent A creates a subscription
     $agentA = Agent::factory()->create(['owner_id' => $user->id]);
-    
+
     // Give it an embedding that strongly matches index 0
     $subVector = array_fill(0, 1536, 0.0);
     $subVector[0] = 1.0;
@@ -35,7 +35,7 @@ it('triggers a webhook when a semantically similar public memory is created', fu
 
     // Agent B creates a matching memory
     $agentB = Agent::factory()->create(['owner_id' => $user->id]);
-    
+
     $memVector = array_fill(0, 1536, 0.0);
     $memVector[0] = 0.9; // High similarity to subscription
 
@@ -48,7 +48,7 @@ it('triggers a webhook when a semantically similar public memory is created', fu
     ]);
 
     // The listener is queued, so we just instantiate it and call handle() directly to test its logic
-    $listener = new \App\Listeners\EvaluateSemanticWebhooks();
+    $listener = new \App\Listeners\EvaluateSemanticWebhooks;
     $listener->handle(new MemoryCreated($memory));
 
     // The job should be dispatched for this subscription
@@ -61,9 +61,9 @@ it('does not trigger a webhook for low similarity memories', function () {
     Queue::fake([DispatchWebhook::class]);
 
     $user = User::factory()->create();
-    
+
     $agentA = Agent::factory()->create(['owner_id' => $user->id]);
-    
+
     $subVector = array_fill(0, 1536, 0.0);
     $subVector[0] = 1.0;
 
@@ -78,7 +78,7 @@ it('does not trigger a webhook for low similarity memories', function () {
     ]);
 
     $agentB = Agent::factory()->create(['owner_id' => $user->id]);
-    
+
     // Completely orthogonal vector
     $memVector = array_fill(0, 1536, 0.0);
     $memVector[1] = 1.0;
@@ -92,7 +92,7 @@ it('does not trigger a webhook for low similarity memories', function () {
     ]);
 
     // The listener is queued, so we just instantiate it and call handle() directly to test its logic
-    $listener = new \App\Listeners\EvaluateSemanticWebhooks();
+    $listener = new \App\Listeners\EvaluateSemanticWebhooks;
     $listener->handle(new MemoryCreated($memory));
 
     Queue::assertNotPushed(DispatchWebhook::class);

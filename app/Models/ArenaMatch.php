@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ArenaMatch extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'agent_1_id',
         'agent_2_id',

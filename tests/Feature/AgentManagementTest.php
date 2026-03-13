@@ -19,7 +19,7 @@ class AgentManagementTest extends TestCase
         $response = $this->actingAs($user)
             ->withSession(['_token' => 'test-token'])
             ->delete(route('dashboard.agents.destroy', $agent), [
-                '_token' => 'test-token'
+                '_token' => 'test-token',
             ]);
 
         $response->assertRedirect();
@@ -36,7 +36,7 @@ class AgentManagementTest extends TestCase
         $response = $this->actingAs($user)
             ->withSession(['_token' => 'test-token'])
             ->delete(route('dashboard.agents.destroy', $agent), [
-                '_token' => 'test-token'
+                '_token' => 'test-token',
             ]);
 
         $response->assertForbidden();
@@ -52,7 +52,7 @@ class AgentManagementTest extends TestCase
         $response = $this->actingAs($user)
             ->withSession(['_token' => 'test-token'])
             ->post(route('dashboard.agents.rotate', $agent), [
-                '_token' => 'test-token'
+                '_token' => 'test-token',
             ]);
 
         $response->assertRedirect();
@@ -73,7 +73,7 @@ class AgentManagementTest extends TestCase
         $response = $this->actingAs($user)
             ->withSession(['_token' => 'test-token'])
             ->post(route('dashboard.agents.rotate', $agent), [
-                '_token' => 'test-token'
+                '_token' => 'test-token',
             ]);
 
         $response->assertForbidden();
@@ -90,7 +90,7 @@ class AgentManagementTest extends TestCase
         $response = $this->actingAs($user)
             ->withSession(['_token' => 'test-token'])
             ->post(route('dashboard.token.rotate'), [
-                '_token' => 'test-token'
+                '_token' => 'test-token',
             ]);
 
         $response->assertRedirect();

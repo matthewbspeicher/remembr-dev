@@ -37,12 +37,12 @@ class WebhookController extends Controller
         if (in_array('memory.semantic_match', $validated['events']) && empty($validated['semantic_query'])) {
             return response()->json([
                 'message' => 'The semantic query field is required when events contains memory.semantic_match.',
-                'errors' => ['semantic_query' => ['The semantic query field is required when events contains memory.semantic_match.']]
+                'errors' => ['semantic_query' => ['The semantic query field is required when events contains memory.semantic_match.']],
             ], 422);
         }
 
         $embedding = null;
-        if (in_array('memory.semantic_match', $validated['events']) && !empty($validated['semantic_query'])) {
+        if (in_array('memory.semantic_match', $validated['events']) && ! empty($validated['semantic_query'])) {
             $embeddings = app(\App\Services\EmbeddingService::class);
             $embedding = '['.implode(',', $embeddings->embed($validated['semantic_query'])).']';
         }

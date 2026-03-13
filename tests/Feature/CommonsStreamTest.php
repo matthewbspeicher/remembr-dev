@@ -40,7 +40,7 @@ test('commons stream counts only public memories for total', function () {
 test('commons stream validates tags parameter', function () {
     \Illuminate\Support\Facades\Route::get('/api/v1/commons/stream', App\Http\Controllers\Api\CommonsStreamController::class);
     $response = $this->getJson('/api/v1/commons/stream?tags=string_instead_of_array');
-    
+
     $response->assertStatus(422);
     $response->assertJsonValidationErrors(['tags']);
 });

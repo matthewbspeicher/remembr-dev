@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Agent;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,7 +18,7 @@ class ArenaGymFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->company() . ' Gym',
+            'name' => fake()->company().' Gym',
             'description' => fake()->sentence(),
             'is_official' => fake()->boolean(20), // 20% chance of being official
             'owner_id' => User::factory(), // default to User owned

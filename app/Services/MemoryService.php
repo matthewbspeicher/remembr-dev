@@ -105,7 +105,7 @@ class MemoryService
         }
 
         $memory->update($data);
-        
+
         $memory->load('relatedTo');
 
         return $memory->fresh();
@@ -248,7 +248,7 @@ class MemoryService
 
     /**
      * Perform Reciprocal Rank Fusion on two sets of results, augmented with metadata.
-     * 
+     *
      * Base RRF score for an item is: sum(1 / (k + rank))
      * Time Decay: e^(-lambda * days_old) where lambda controls the decay rate.
      * Importance: Scaled 1-10 multiplier.
@@ -259,9 +259,9 @@ class MemoryService
         $scores = [];
         $memories = [];
 
-        $processMemory = function($memory, $rank) use (&$scores, &$memories, $k) {
+        $processMemory = function ($memory, $rank) use (&$scores, &$memories, $k) {
             $id = $memory->id;
-            if (!isset($scores[$id])) {
+            if (! isset($scores[$id])) {
                 $scores[$id] = 0.0;
                 $memories[$id] = $memory;
             }
@@ -283,21 +283,21 @@ class MemoryService
 
         foreach ($scores as $id => $baseScore) {
             $memory = $memories[$id];
-            
+
             // Importance Multiplier (1-10 mapped to 0.5-2.0 or similar)
             // A default importance of 5 yields a 1.0 multiplier (no change)
             // An importance of 10 yields a 1.5 multiplier
             // An importance of 1 yields a 0.6 multiplier
             $importanceMultiplier = 0.5 + ($memory->importance / 10.0);
-            
+
             // Confidence Multiplier (0.0 to 1.0)
             // A default confidence of 1.0 yields a 1.0 multiplier (no change)
             $confidenceMultiplier = $memory->confidence;
-            
+
             // Time Decay Multiplier (exponential decay)
             $daysOld = max(0, $memory->created_at->diffInDays($now));
             $timeDecayMultiplier = exp(-$decayLambda * $daysOld);
-            
+
             // Calculate final augmented score
             $scores[$id] = $baseScore * $importanceMultiplier * $confidenceMultiplier * $timeDecayMultiplier;
         }

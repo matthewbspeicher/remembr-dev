@@ -13,7 +13,7 @@ class CommonsStreamController extends Controller
     {
         $request->validate([
             'tags' => 'nullable|array',
-            'tags.*' => 'string'
+            'tags.*' => 'string',
         ]);
 
         return response()->stream(function () use ($request) {
@@ -25,7 +25,7 @@ class CommonsStreamController extends Controller
             $tags = $request->query('tags');
 
             $applyTags = function ($query) use ($tags) {
-                $query->when(!empty($tags), function ($q) use ($tags) {
+                $query->when(! empty($tags), function ($q) use ($tags) {
                     foreach ($tags as $tag) {
                         $q->whereJsonContains('metadata->tags', $tag);
                     }
@@ -81,7 +81,7 @@ class CommonsStreamController extends Controller
                 $pollsSinceStats++;
                 if ($pollsSinceStats >= 15) {
                     $totalMemories = Memory::where('visibility', 'public')->tap($applyTags)->count();
-                    
+
                     $this->sendEvent('stats', [
                         'total_memories' => $totalMemories,
                     ]);

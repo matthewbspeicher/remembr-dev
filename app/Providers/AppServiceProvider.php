@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
             if (app()->environment('testing')) {
                 return Limit::none();
             }
+
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 

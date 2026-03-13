@@ -22,14 +22,14 @@ class UpdateMemoryTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'key'        => $schema->string()->description('The memory key to update')->required(),
-            'value'      => $schema->string()->description('The new memory content'),
+            'key' => $schema->string()->description('The memory key to update')->required(),
+            'value' => $schema->string()->description('The new memory content'),
             'visibility' => $schema->string()->description('New visibility setting: private, shared, or public')->enum(['private', 'shared', 'public']),
-            'type'       => $schema->string()->description('New memory type')->enum(Memory::TYPES),
-            'metadata'   => $schema->object()->description('New metadata object (will replace existing)'),
+            'type' => $schema->string()->description('New memory type')->enum(Memory::TYPES),
+            'metadata' => $schema->object()->description('New metadata object (will replace existing)'),
             'expires_at' => $schema->string()->description('New ISO 8601 expiry timestamp'),
-            'ttl'        => $schema->string()->description("New shorthand time-to-live (e.g., '24h', '7d', '30m')"),
-            'tags'       => $schema->array()->description('New array of tags (max 10)')->max(10),
+            'ttl' => $schema->string()->description("New shorthand time-to-live (e.g., '24h', '7d', '30m')"),
+            'tags' => $schema->array()->description('New array of tags (max 10)')->max(10),
         ];
     }
 
@@ -43,13 +43,13 @@ class UpdateMemoryTool extends Tool
         }
 
         $data = array_filter([
-            'value'      => $request->get('value'),
+            'value' => $request->get('value'),
             'visibility' => $request->get('visibility'),
-            'type'       => $request->get('type'),
-            'metadata'   => $request->get('metadata'),
+            'type' => $request->get('type'),
+            'metadata' => $request->get('metadata'),
             'expires_at' => $request->get('expires_at'),
-            'ttl'        => $request->get('ttl'),
-            'tags'       => $request->get('tags'),
+            'ttl' => $request->get('ttl'),
+            'tags' => $request->get('tags'),
         ], fn ($v) => $v !== null);
 
         if (empty($data)) {

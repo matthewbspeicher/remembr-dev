@@ -14,7 +14,7 @@ beforeEach(function () {
         $mock->shouldReceive('embed')
             ->andReturnUsing(function ($text) {
                 $vector = array_fill(0, 1536, 0.0);
-                
+
                 // Simple deterministic mapping for tests
                 if (str_contains($text, 'apple')) {
                     $vector[0] = 0.9;
@@ -23,7 +23,7 @@ beforeEach(function () {
                 } else {
                     $vector[2] = 0.9;
                 }
-                
+
                 return $vector;
             });
     });

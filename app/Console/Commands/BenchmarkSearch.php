@@ -33,12 +33,12 @@ class BenchmarkSearch extends Command
         $this->info('Starting semantic search benchmark...');
 
         $iterations = (int) $this->option('iterations');
-        
+
         $user = User::first() ?? User::factory()->create();
         $agent = Agent::first() ?? Agent::factory()->create(['owner_id' => $user->id]);
 
         $query = 'What is the meaning of life, the universe, and everything?';
-        
+
         try {
             $queryVector = $embeddings->embed($query);
         } catch (\Exception $e) {
@@ -59,14 +59,14 @@ class BenchmarkSearch extends Command
                 ->get();
         }
         $end = microtime(true);
-        
+
         $totalTime = ($end - $start) * 1000; // ms
         $avgTime = $totalTime / $iterations;
 
         $this->info('--- Benchmark Results ---');
-        $this->info("Total Time ({$iterations} iterations): " . round($totalTime, 2) . " ms");
-        $this->info("Average Time per Search: " . round($avgTime, 2) . " ms");
-        
+        $this->info("Total Time ({$iterations} iterations): ".round($totalTime, 2).' ms');
+        $this->info('Average Time per Search: '.round($avgTime, 2).' ms');
+
         // Count total memories in DB to provide context
         $totalMemories = Memory::count();
         $this->info("Total Memories in DB: {$totalMemories}");

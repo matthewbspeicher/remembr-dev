@@ -21,7 +21,7 @@ class ArenaSessionTest extends TestCase
         $agent = Agent::factory()->create(['owner_id' => $user->id]);
         $gym = ArenaGym::create(['name' => 'Gym', 'owner_id' => $user->id]);
         $challenge = ArenaChallenge::create(['gym_id' => $gym->id, 'title' => 'C1', 'prompt' => 'do it', 'validator_type' => 'regex']);
-        
+
         $session = ArenaSession::create([
             'agent_id' => $agent->id,
             'challenge_id' => $challenge->id,

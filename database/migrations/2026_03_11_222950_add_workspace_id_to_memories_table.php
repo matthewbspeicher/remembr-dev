@@ -18,7 +18,7 @@ return new class extends Migration
         });
 
         // We also need to update the visibility check constraint to allow 'workspace'
-        DB::statement("ALTER TABLE memories DROP CONSTRAINT IF EXISTS memories_visibility_check");
+        DB::statement('ALTER TABLE memories DROP CONSTRAINT IF EXISTS memories_visibility_check');
         DB::statement("ALTER TABLE memories ADD CONSTRAINT memories_visibility_check CHECK (visibility IN ('private', 'shared', 'public', 'workspace'))");
     }
 
@@ -32,7 +32,7 @@ return new class extends Migration
             $table->dropColumn('workspace_id');
         });
 
-        DB::statement("ALTER TABLE memories DROP CONSTRAINT IF EXISTS memories_visibility_check");
+        DB::statement('ALTER TABLE memories DROP CONSTRAINT IF EXISTS memories_visibility_check');
         DB::statement("ALTER TABLE memories ADD CONSTRAINT memories_visibility_check CHECK (visibility IN ('private', 'shared', 'public'))");
     }
 };

@@ -14,6 +14,7 @@ use Illuminate\Validation\Rule;
 class MemoryController extends Controller
 {
     use FormatsMemories;
+
     public function __construct(
         private readonly MemoryService $memories,
     ) {}
@@ -171,10 +172,10 @@ class MemoryController extends Controller
         try {
             $summaryText = $summarizer->summarize($memories, $agent);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to generate summary: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Failed to generate summary: '.$e->getMessage()], 500);
         }
 
-        $relations = $memories->map(fn($m) => ['id' => $m->id, 'type' => 'compacted_from'])->toArray();
+        $relations = $memories->map(fn ($m) => ['id' => $m->id, 'type' => 'compacted_from'])->toArray();
 
         $summaryMemory = $this->memories->store($agent, [
             'key' => $validated['summary_key'],
@@ -353,5 +354,4 @@ class MemoryController extends Controller
 
         return response()->json(['message' => "Memory shared with agent {$recipient->name}."]);
     }
-
 }

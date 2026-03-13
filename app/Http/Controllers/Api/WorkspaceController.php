@@ -43,7 +43,7 @@ class WorkspaceController extends Controller
     public function join(Request $request, string $workspaceId): JsonResponse
     {
         $agent = $request->attributes->get('agent');
-        
+
         $workspace = Workspace::findOrFail($workspaceId);
 
         // Security check: Only allow agents with the same owner to join without an invite.

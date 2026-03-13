@@ -22,10 +22,10 @@ class SearchCommonsTool extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'q'     => $schema->string()->description('Natural language search query')->required(),
+            'q' => $schema->string()->description('Natural language search query')->required(),
             'limit' => $schema->integer()->description('Max results to return')->default(10),
-            'tags'  => $schema->string()->description('Comma-separated list of tags to filter by'),
-            'type'  => $schema->string()->description('Filter results to this memory type')->enum(Memory::TYPES),
+            'tags' => $schema->string()->description('Comma-separated list of tags to filter by'),
+            'type' => $schema->string()->description('Filter results to this memory type')->enum(Memory::TYPES),
         ];
     }
 
@@ -42,8 +42,8 @@ class SearchCommonsTool extends Tool
         $data = $results->map(fn ($m) => [
             ...$this->formatMemory($m),
             'agent' => [
-                'id'          => $m->agent->id,
-                'name'        => $m->agent->name,
+                'id' => $m->agent->id,
+                'name' => $m->agent->name,
                 'description' => $m->agent->description,
             ],
             'similarity' => round($m->similarity ?? 0, 4),

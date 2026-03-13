@@ -60,7 +60,7 @@ describe('POST /v1/memories/compact', function () {
 
         $response = $this->postJson('/api/v1/memories/compact', [
             'keys' => ['m1', 'm2'],
-            'summary_key' => 'm_summary'
+            'summary_key' => 'm_summary',
         ], withAgent($agent));
 
         $response->assertCreated()
@@ -224,7 +224,7 @@ describe('POST /v1/memories', function () {
         ], withAgent($agent));
 
         $response->assertCreated();
-        
+
         $responseData = $response->json();
         expect($responseData['relations'])->toHaveCount(1);
         expect($responseData['relations'][0]['id'])->toBe($parentMemory->id);
@@ -459,11 +459,11 @@ describe('PATCH /v1/memories/{key}', function () {
 
     it('updates memory relations', function () {
         $agent = makeAgent(makeOwner());
-        
+
         $parent = Memory::factory()->create(['agent_id' => $agent->id]);
         $child = Memory::factory()->create([
             'agent_id' => $agent->id,
-            'key' => 'child-key'
+            'key' => 'child-key',
         ]);
 
         $this->patchJson('/api/v1/memories/child-key', [

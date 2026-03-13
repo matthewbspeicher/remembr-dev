@@ -14,11 +14,11 @@ beforeEach(function () {
         $mock->shouldReceive('embed')
             ->andReturnUsing(function ($text) {
                 $vector = array_fill(0, 1536, 0.0);
-                
+
                 if (str_contains($text, 'vector_match')) {
                     $vector[0] = 1.0;
                 }
-                
+
                 return $vector;
             });
     });
@@ -66,12 +66,12 @@ it('can perform hybrid search using RRF', function () {
     ]);
 
     $memoryService = app(MemoryService::class);
-    
+
     // Search query that has BOTH the keyword and the phrase that triggers vectorMatch in the mock
     $results = $memoryService->searchForAgent($agent, 'elephant vector_match', 3);
 
     expect($results)->toHaveCount(3);
-    
+
     // Due to Reciprocal Rank Fusion, doc3 should be #1 since it ranks high in both searches
     expect($results[0]->key)->toBe('doc3');
 });

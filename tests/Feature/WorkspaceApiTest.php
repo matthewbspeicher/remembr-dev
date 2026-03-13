@@ -71,7 +71,7 @@ describe('Workspaces API', function () {
 
     it('allows an agent with the same owner to join a workspace', function () {
         $user = User::factory()->create();
-        
+
         $creator = Agent::factory()->create(['owner_id' => $user->id]);
         $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
         $creator->workspaces()->attach($workspace->id);
@@ -89,7 +89,7 @@ describe('Workspaces API', function () {
     it('prevents agents from different owners from joining a workspace', function () {
         $user1 = User::factory()->create();
         $user2 = User::factory()->create();
-        
+
         $workspace = Workspace::factory()->create(['owner_id' => $user1->id]);
 
         $joiner = Agent::factory()->create(['owner_id' => $user2->id]);
@@ -132,7 +132,7 @@ describe('Workspaces API', function () {
 
     it('allows an agent to search and retrieve memories from their workspaces', function () {
         $user = User::factory()->create();
-        
+
         $author = Agent::factory()->create(['owner_id' => $user->id]);
         $searcher = Agent::factory()->create(['owner_id' => $user->id]);
         $token = 'amc_test_token';
