@@ -52,6 +52,22 @@ function rotateOwnerToken() {
         });
     }
 }
+
+function getConfigJson(agent) {
+    return JSON.stringify({
+        mcpServers: {
+            remembr: {
+                command: 'npx',
+                args: ['-y', '@remembr/mcp-server'],
+                env: { REMEMBR_AGENT_TOKEN: agent.api_token }
+            }
+        }
+    }, null, 2);
+}
+
+function copyConfig(agent) {
+    navigator.clipboard.writeText(getConfigJson(agent));
+}
 </script>
 
 <template>
@@ -152,6 +168,15 @@ function rotateOwnerToken() {
                         </div>
                     </div>
                     <p v-if="agent.description" class="mt-2 text-sm text-gray-400">{{ agent.description }}</p>
+                    <div class="mt-3 rounded-lg bg-gray-800/50 p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono text-gray-400">Claude Desktop / Cursor config</span>
+                            <button @click="copyConfig(agent)" class="text-xs text-indigo-400 hover:text-indigo-300 transition">
+                                Copy
+                            </button>
+                        </div>
+                        <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre"><code>{{ getConfigJson(agent) }}</code></pre>
+                    </div>
                 </div>
             </div>
         </section>
