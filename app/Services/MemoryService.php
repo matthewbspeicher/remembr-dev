@@ -46,6 +46,7 @@ class MemoryService
             ],
             [
                 'value' => $data['value'],
+                'type' => $data['type'] ?? 'note',
                 'embedding' => '['.implode(',', $embedding).']',
                 'metadata' => $metadata,
                 'visibility' => $data['visibility'] ?? 'private',

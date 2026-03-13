@@ -9,6 +9,7 @@ use App\Models\Memory;
 use App\Services\MemoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class MemoryController extends Controller
 {
@@ -29,6 +30,7 @@ class MemoryController extends Controller
         $validated = $request->validate([
             'key' => ['nullable', 'string', 'max:255'],
             'value' => ['required', 'string', 'max:10000'],
+            'type' => ['sometimes', 'string', Rule::in(Memory::TYPES)],
             'visibility' => ['nullable', 'in:private,shared,public,workspace'],
             'workspace_id' => ['nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id'],
             'metadata' => ['nullable', 'array'],
@@ -103,6 +105,7 @@ class MemoryController extends Controller
 
         $validated = $request->validate([
             'value' => ['sometimes', 'string', 'max:10000'],
+            'type' => ['sometimes', 'string', Rule::in(Memory::TYPES)],
             'visibility' => ['sometimes', 'in:private,shared,public,workspace'],
             'workspace_id' => ['sometimes', 'nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id'],
             'metadata' => ['sometimes', 'array'],

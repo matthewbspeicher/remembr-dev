@@ -265,6 +265,35 @@ describe('POST /v1/memories', function () {
         expect(Memory::where('agent_id', $agent->id)->first()->value)->toBe('updated value');
     });
 
+    it('accepts valid memory type on store', function () {
+        $agent = makeAgent(makeOwner());
+        $response = $this->postJson('/api/v1/memories', [
+            'value' => 'PostgreSQL IVFFlat needs >100 rows',
+            'type' => 'error_fix',
+        ], withAgent($agent));
+        $response->assertCreated();
+        $response->assertJsonPath('type', 'error_fix');
+    });
+
+    it('rejects invalid memory type on store', function () {
+        $agent = makeAgent(makeOwner());
+        $response = $this->postJson('/api/v1/memories', [
+            'value' => 'some value',
+            'type' => 'invalid_type',
+        ], withAgent($agent));
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('type');
+    });
+
+    it('defaults to note type when not specified', function () {
+        $agent = makeAgent(makeOwner());
+        $response = $this->postJson('/api/v1/memories', [
+            'value' => 'no type specified',
+        ], withAgent($agent));
+        $response->assertCreated();
+        $response->assertJsonPath('type', 'note');
+    });
+
     it('rejects unauthenticated requests', function () {
         $this->postJson('/api/v1/memories', [
             'value' => 'some value',
@@ -452,6 +481,20 @@ describe('PATCH /v1/memories/{key}', function () {
             'target_id' => $parent->id,
             'type' => 'related',
         ]);
+    });
+
+    it('allows type to be updated', function () {
+        $agent = makeAgent(makeOwner());
+        $this->postJson('/api/v1/memories', [
+            'key' => 'update-type-test',
+            'value' => 'original value',
+            'type' => 'note',
+        ], withAgent($agent));
+        $response = $this->patchJson('/api/v1/memories/update-type-test', [
+            'type' => 'lesson',
+        ], withAgent($agent));
+        $response->assertOk();
+        $response->assertJsonPath('type', 'lesson');
     });
 
     it('updates visibility', function () {
