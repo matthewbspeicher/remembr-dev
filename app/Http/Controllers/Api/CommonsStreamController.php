@@ -11,13 +11,28 @@ class CommonsStreamController extends Controller
 {
     public function __invoke(Request $request): StreamedResponse
     {
-        return response()->stream(function () {
+        $request->validate([
+            'tags' => 'nullable|array',
+            'tags.*' => 'string'
+        ]);
+
+        return response()->stream(function () use ($request) {
             // Disable all output buffering so SSE events flush immediately
             while (ob_get_level() > 0) {
                 ob_end_clean();
             }
 
-            $totalMemories = Memory::where('visibility', 'public')->count();
+            $tags = $request->query('tags');
+
+            $applyTags = function ($query) use ($tags) {
+                $query->when(!empty($tags), function ($q) use ($tags) {
+                    foreach ($tags as $tag) {
+                        $q->whereJsonContains('metadata->tags', $tag);
+                    }
+                });
+            };
+
+            $totalMemories = Memory::where('visibility', 'public')->tap($applyTags)->count();
 
             $this->sendEvent('connected', [
                 'message' => 'Listening for public memories…',
@@ -38,6 +53,7 @@ class CommonsStreamController extends Controller
                     ->with('agent:id,name,description')
                     ->orderBy('created_at')
                     ->limit(50)
+                    ->tap($applyTags)
                     ->get();
 
                 if ($memories->isNotEmpty()) {
@@ -64,7 +80,8 @@ class CommonsStreamController extends Controller
                 // Send stats every ~30 seconds (15 polls × 2s)
                 $pollsSinceStats++;
                 if ($pollsSinceStats >= 15) {
-                    $totalMemories = Memory::where('visibility', 'public')->count();
+                    $totalMemories = Memory::where('visibility', 'public')->tap($applyTags)->count();
+                    
                     $this->sendEvent('stats', [
                         'total_memories' => $totalMemories,
                     ]);
