@@ -14,6 +14,10 @@ class ArenaProfile extends Model
         'personality_tags',
     ];
 
+    protected $attributes = [
+        'global_elo' => 1000,
+    ];
+
     protected $hidden = [
         'id',
         'agent_id',

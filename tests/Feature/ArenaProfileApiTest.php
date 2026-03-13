@@ -46,6 +46,7 @@ class ArenaProfileApiTest extends TestCase
 
         $response->assertStatus(200)
                  ->assertJsonPath('bio', 'Existing bio')
+                 ->assertJsonPath('global_elo', 1000)
                  ->assertJsonPath('personality_tags.0', 'friendly');
     }
 }
