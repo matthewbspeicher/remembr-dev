@@ -58,18 +58,20 @@ server.tool(
     value: z.string().describe("The memory content to store"),
     key: z.string().optional().describe("Optional unique key for this memory"),
     visibility: z.enum(["private", "shared", "public"]).default("private").describe("Memory visibility"),
+    type: z.enum(['fact', 'preference', 'procedure', 'lesson', 'error_fix', 'tool_tip', 'context', 'note']).default('note').describe('Memory type. fact=objective knowledge, preference=user/agent prefs, procedure=how-to steps, lesson=experiential learning, error_fix=problem+solution, tool_tip=API/tool patterns, context=session state, note=general (default)'),
     metadata: z.record(z.any()).optional().describe("Optional metadata object for categorization"),
     expires_at: z.string().optional().describe("Optional ISO 8601 expiry timestamp"),
     ttl: z.string().optional().describe("Optional shorthand time-to-live (e.g., '24h', '7d', '30m')"),
     tags: z.array(z.string()).max(10).optional().describe("Optional array of tags (max 10)"),
   },
-  async ({ value, key, visibility, metadata, expires_at, ttl, tags }) => {
+  async ({ value, key, visibility, type, metadata, expires_at, ttl, tags }) => {
     const body = { value, visibility };
     if (key) body.key = key;
     if (metadata) body.metadata = metadata;
     if (expires_at) body.expires_at = expires_at;
     if (ttl) body.ttl = ttl;
     if (tags) body.tags = tags;
+    if (type) body.type = type;
     const result = await api("POST", "/memories", body);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
@@ -82,15 +84,17 @@ server.tool(
     key: z.string().describe("The memory key to update"),
     value: z.string().optional().describe("The new memory content"),
     visibility: z.enum(["private", "shared", "public"]).optional().describe("New visibility setting"),
+    type: z.enum(['fact', 'preference', 'procedure', 'lesson', 'error_fix', 'tool_tip', 'context', 'note']).optional().describe('Memory type. fact=objective knowledge, preference=user/agent prefs, procedure=how-to steps, lesson=experiential learning, error_fix=problem+solution, tool_tip=API/tool patterns, context=session state, note=general (default)'),
     metadata: z.record(z.any()).optional().describe("New metadata object (will replace existing)"),
     expires_at: z.string().optional().describe("New ISO 8601 expiry timestamp"),
     ttl: z.string().optional().describe("New shorthand time-to-live (e.g., '24h', '7d', '30m')"),
     tags: z.array(z.string()).max(10).optional().describe("New array of tags (max 10)"),
   },
-  async ({ key, value, visibility, metadata, expires_at, ttl, tags }) => {
+  async ({ key, value, visibility, type, metadata, expires_at, ttl, tags }) => {
     const body = {};
     if (value !== undefined) body.value = value;
     if (visibility !== undefined) body.visibility = visibility;
+    if (type !== undefined) body.type = type;
     if (metadata !== undefined) body.metadata = metadata;
     if (expires_at !== undefined) body.expires_at = expires_at;
     if (ttl !== undefined) body.ttl = ttl;
@@ -112,10 +116,12 @@ server.tool(
     q: z.string().describe("Natural language search query"),
     limit: z.number().default(10).describe("Max results to return"),
     tags: z.string().optional().describe("Comma-separated list of tags to filter by"),
+    type: z.enum(['fact', 'preference', 'procedure', 'lesson', 'error_fix', 'tool_tip', 'context', 'note']).optional().describe('Filter results to this memory type only'),
   },
-  async ({ q, limit, tags }) => {
+  async ({ q, limit, tags, type }) => {
     const tagsParam = tags ? `&tags=${encodeURIComponent(tags)}` : '';
-    const result = await api("GET", `/memories/search?q=${encodeURIComponent(q)}&limit=${limit}${tagsParam}`);
+    const typeParam = type ? `&type=${encodeURIComponent(type)}` : '';
+    const result = await api("GET", `/memories/search?q=${encodeURIComponent(q)}&limit=${limit}${tagsParam}${typeParam}`);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );
@@ -138,10 +144,12 @@ server.tool(
   {
     page: z.number().default(1).describe("Page number"),
     tags: z.string().optional().describe("Comma-separated list of tags to filter by"),
+    type: z.enum(['fact', 'preference', 'procedure', 'lesson', 'error_fix', 'tool_tip', 'context', 'note']).optional().describe('Filter results to this memory type only'),
   },
-  async ({ page, tags }) => {
+  async ({ page, tags, type }) => {
     const tagsParam = tags ? `&tags=${encodeURIComponent(tags)}` : '';
-    const result = await api("GET", `/memories?page=${page}${tagsParam}`);
+    const typeParam = type ? `&type=${encodeURIComponent(type)}` : '';
+    const result = await api("GET", `/memories?page=${page}${tagsParam}${typeParam}`);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );
@@ -165,10 +173,12 @@ server.tool(
     q: z.string().describe("Natural language search query"),
     limit: z.number().default(10).describe("Max results to return"),
     tags: z.string().optional().describe("Comma-separated list of tags to filter by"),
+    type: z.enum(['fact', 'preference', 'procedure', 'lesson', 'error_fix', 'tool_tip', 'context', 'note']).optional().describe('Filter results to this memory type only'),
   },
-  async ({ q, limit, tags }) => {
+  async ({ q, limit, tags, type }) => {
     const tagsParam = tags ? `&tags=${encodeURIComponent(tags)}` : '';
-    const result = await api("GET", `/commons/search?q=${encodeURIComponent(q)}&limit=${limit}${tagsParam}`);
+    const typeParam = type ? `&type=${encodeURIComponent(type)}` : '';
+    const result = await api("GET", `/commons/search?q=${encodeURIComponent(q)}&limit=${limit}${tagsParam}${typeParam}`);
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   }
 );
