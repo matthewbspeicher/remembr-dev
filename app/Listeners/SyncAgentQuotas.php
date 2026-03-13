@@ -27,6 +27,9 @@ class SyncAgentQuotas
             return;
         }
 
+        // Refresh to pick up Cashier subscription changes from the same webhook cycle
+        $user->refresh();
+
         $limit = $user->maxMemoriesPerAgent();
         $user->agents()->update(['max_memories' => $limit]);
     }

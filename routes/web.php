@@ -11,6 +11,7 @@ use Inertia\Inertia;
 Route::get('/health', fn () => response('ok', 200));
 
 Route::get('/arena', [ArenaController::class, 'index'])->name('arena.index');
+Route::get('/leaderboard', [\App\Http\Controllers\LeaderboardController::class, 'index'])->name('leaderboard.index');
 
 Route::get('/', HomeController::class);
 
@@ -67,3 +68,5 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::get('/pricing', [BillingController::class, 'pricing'])->name('pricing');
+
+// Stripe Cashier webhook routes are automatically registered in Cashier v15+

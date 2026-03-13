@@ -31,6 +31,16 @@ class AuthenticateAgent
                 ], 401);
             }
 
+            // Soft-lock: block workspace writes when owner is downgraded
+            if ($this->isWriteOperation($request) && $this->isMemoryEndpoint($request)) {
+                $owner = $workspace->owner;
+                if ($owner && $owner->isDowngraded()) {
+                    return response()->json([
+                        'error' => 'Workspace memories are read-only. Upgrade to Pro to restore write access.',
+                    ], 403);
+                }
+            }
+
             $request->attributes->set('workspace_token', $workspace);
             return $next($request);
         }

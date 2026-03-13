@@ -19,8 +19,14 @@ class BillingController extends Controller
     public function checkout(Request $request)
     {
         $user = $request->user();
+        $priceId = config('stripe.pro_price_id');
 
-        return $user->newSubscription('default', config('stripe.pro_price_id'))
+        if (! $priceId) {
+            return redirect()->route('pricing')
+                ->with('error', 'Billing is not configured. Please contact support.');
+        }
+
+        return $user->newSubscription('default', $priceId)
             ->checkout([
                 'success_url' => route('billing.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('pricing'),

@@ -32,16 +32,8 @@ class WorkspaceSettingsController extends Controller
 
         $owner = $request->user();
 
-        // Subscription Limit
-        $workspaceLimit = $owner->subscribed('pro') ? 5 : 0;
-        $currentCount = Workspace::where('owner_id', $owner->id)->count();
-
-        if ($currentCount >= $workspaceLimit) {
-            $message = $workspaceLimit === 0
-                ? 'Free accounts cannot create private Workspaces. Please upgrade to a Pro Team plan.'
-                : 'You have reached the maximum of 5 Workspaces allowed on the Pro Team plan.';
-                
-            return back()->with('error', $message);
+        if (! $owner->canCreateWorkspace()) {
+            return back()->with('error', 'Private workspaces require a Pro subscription.');
         }
 
         $workspace = Workspace::create([

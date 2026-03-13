@@ -21,7 +21,7 @@ class WorkspaceSettingsTest extends TestCase
         ]);
 
         // Instead of hard failing, we redirect with an error message because it's a web form
-        $response->assertSessionHas('error', 'Free accounts cannot create private Workspaces. Please upgrade to a Pro Team plan.');
+        $response->assertSessionHas('error', 'Private workspaces require a Pro subscription.');
         $this->assertDatabaseCount('workspaces', 0);
     }
 
