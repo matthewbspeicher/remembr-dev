@@ -28,6 +28,12 @@ class AgentController extends Controller
             return response()->json(['error' => 'Invalid owner token.'], 401);
         }
 
+        if ($owner->agents()->count() >= $owner->maxAgents()) {
+            return response()->json([
+                'error' => 'Agent limit reached. Upgrade to Pro for unlimited agents.',
+            ], 403);
+        }
+
         $token = Agent::generateToken();
 
         $agent = Agent::create([

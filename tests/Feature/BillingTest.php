@@ -108,3 +108,57 @@ describe('plan helpers', function () {
         expect($user->isDowngraded())->toBeFalse();
     });
 });
+
+// ---------------------------------------------------------------------------
+// Agent Cap Enforcement
+// ---------------------------------------------------------------------------
+
+describe('agent creation cap', function () {
+    it('allows free user to register 3 agents via API', function () {
+        $owner = makeOwner();
+        for ($i = 0; $i < 3; $i++) {
+            $response = $this->postJson('/api/v1/agents/register', [
+                'name' => "Agent $i",
+                'owner_token' => $owner->api_token,
+            ]);
+            $response->assertStatus(201);
+        }
+    });
+
+    it('blocks free user from registering 4th agent via API', function () {
+        $owner = makeOwner();
+        for ($i = 0; $i < 3; $i++) {
+            makeAgent($owner, ['api_token' => 'amc_' . \Illuminate\Support\Str::random(40)]);
+        }
+
+        $response = $this->postJson('/api/v1/agents/register', [
+            'name' => 'Agent 4',
+            'owner_token' => $owner->api_token,
+        ]);
+        $response->assertStatus(403);
+        $response->assertJsonFragment(['error' => 'Agent limit reached. Upgrade to Pro for unlimited agents.']);
+    });
+
+    it('allows pro user to register unlimited agents via API', function () {
+        $owner = makeProUser();
+        for ($i = 0; $i < 5; $i++) {
+            $response = $this->postJson('/api/v1/agents/register', [
+                'name' => "Agent $i",
+                'owner_token' => $owner->api_token,
+            ]);
+            $response->assertStatus(201);
+        }
+    });
+
+    it('blocks free user from registering 4th agent via dashboard', function () {
+        $owner = makeOwner();
+        for ($i = 0; $i < 3; $i++) {
+            makeAgent($owner, ['api_token' => 'amc_' . \Illuminate\Support\Str::random(40)]);
+        }
+
+        $response = $this->actingAs($owner)->post('/dashboard/agents', [
+            'name' => 'Agent 4',
+        ]);
+        $response->assertSessionHasErrors('name');
+    });
+});

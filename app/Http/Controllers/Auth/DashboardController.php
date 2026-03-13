@@ -16,6 +16,7 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'apiToken' => $user->api_token,
             'agents' => $user->agents()->select('id', 'name', 'description', 'created_at')->latest()->get(),
+            'workspaces' => $user->sharedWorkspaces()->select('workspaces.id', 'workspaces.name', 'workspaces.description', 'workspaces.owner_id')->get(),
         ]);
     }
 
@@ -25,6 +26,12 @@ class DashboardController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
         ]);
+
+        $user = $request->user();
+
+        if ($user->agents()->count() >= $user->maxAgents()) {
+            return back()->withErrors(['name' => 'Agent limit reached. Upgrade to Pro for unlimited agents.']);
+        }
 
         $token = Agent::generateToken();
 
