@@ -1,5 +1,6 @@
 import type {
   Memory,
+  MemoryType,
   MemorySearchResult,
   StoreOptions,
   UpdateOptions,
@@ -21,6 +22,7 @@ import {
 
 export type {
   Memory,
+  MemoryType,
   MemorySearchResult,
   StoreOptions,
   UpdateOptions,
@@ -115,6 +117,7 @@ export class RemembrClient {
     const params = new URLSearchParams();
     if (options.page) params.set('page', String(options.page));
     if (options.tags?.length) params.set('tags', options.tags.join(','));
+    if (options.type) params.set('type', options.type);
     const qs = params.toString();
     return this.request<PaginatedResponse<Memory>>('GET', `/memories${qs ? '?' + qs : ''}`);
   }
@@ -127,6 +130,7 @@ export class RemembrClient {
     const params = new URLSearchParams({ q: query });
     if (options.limit) params.set('limit', String(options.limit));
     if (options.tags?.length) params.set('tags', options.tags.join(','));
+    if (options.type) params.set('type', options.type);
     const res = await this.request<{ data: MemorySearchResult[] }>('GET', `/memories/search?${params}`);
     return (res as unknown as { data: MemorySearchResult[] }).data;
   }
@@ -135,6 +139,7 @@ export class RemembrClient {
     const params = new URLSearchParams({ q: query });
     if (options.limit) params.set('limit', String(options.limit));
     if (options.tags?.length) params.set('tags', options.tags.join(','));
+    if (options.type) params.set('type', options.type);
     const res = await this.request<{ data: MemorySearchResult[] }>('GET', `/commons/search?${params}`);
     return (res as unknown as { data: MemorySearchResult[] }).data;
   }
