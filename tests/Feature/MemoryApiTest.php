@@ -136,6 +136,28 @@ describe('POST /v1/agents/register', function () {
 });
 
 // ---------------------------------------------------------------------------
+// Memory — Type in Response
+// ---------------------------------------------------------------------------
+
+describe('Memory type in response', function () {
+    it('includes type in memory response', function () {
+        $agent = makeAgent(makeOwner());
+        $memory = Memory::factory()->create([
+            'agent_id' => $agent->id,
+            'key' => 'type-test',
+            'value' => 'test value',
+            'type' => 'fact',
+            'visibility' => 'private',
+        ]);
+
+        $response = $this->getJson('/api/v1/memories/type-test', withAgent($agent));
+
+        $response->assertOk();
+        $response->assertJsonPath('type', 'fact');
+    });
+});
+
+// ---------------------------------------------------------------------------
 // Memory — Store
 // ---------------------------------------------------------------------------
 

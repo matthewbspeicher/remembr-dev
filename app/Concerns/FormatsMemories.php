@@ -24,6 +24,7 @@ trait FormatsMemories
             'id' => $memory->id,
             'key' => $memory->key,
             'value' => $memory->value,
+            'type' => $memory->type,
             'visibility' => $memory->visibility,
             'workspace_id' => $memory->workspace_id,
             'importance' => $memory->importance,
