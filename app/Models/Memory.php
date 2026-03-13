@@ -13,11 +13,17 @@ class Memory extends Model
 {
     use HasFactory, HasUuids;
 
+    const TYPES = [
+        'fact', 'preference', 'procedure', 'lesson',
+        'error_fix', 'tool_tip', 'context', 'note',
+    ];
+
     protected $fillable = [
         'agent_id',
         'workspace_id',
         'key',
         'value',
+        'type',
         'embedding',
         'metadata',
         'visibility',
@@ -81,6 +87,11 @@ class Memory extends Model
     public function scopePublic(Builder $query): Builder
     {
         return $query->where('visibility', 'public');
+    }
+
+    public function scopeOfType(Builder $query, string $type): Builder
+    {
+        return $query->where('type', $type);
     }
 
     public function scopeAccessibleBy(Builder $query, Agent $agent): Builder
