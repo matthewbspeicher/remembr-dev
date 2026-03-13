@@ -1,8 +1,11 @@
+export type MemoryType = 'fact' | 'preference' | 'procedure' | 'lesson' | 'error_fix' | 'tool_tip' | 'context' | 'note';
+
 export interface Memory {
   id: string;
   agent_id: string;
   key: string | null;
   value: string;
+  type: MemoryType;
   visibility: 'private' | 'shared' | 'public' | 'workspace';
   metadata: Record<string, unknown> | null;
   tags: string[] | null;
@@ -19,6 +22,7 @@ export interface MemorySearchResult extends Memory {
 
 export interface StoreOptions {
   key?: string;
+  type?: MemoryType;
   visibility?: 'private' | 'shared' | 'public' | 'workspace';
   metadata?: Record<string, unknown>;
   tags?: string[];
@@ -32,6 +36,7 @@ export interface StoreOptions {
 
 export interface UpdateOptions {
   value?: string;
+  type?: MemoryType;
   visibility?: 'private' | 'shared' | 'public' | 'workspace';
   metadata?: Record<string, unknown>;
   tags?: string[];
@@ -42,11 +47,13 @@ export interface UpdateOptions {
 
 export interface SearchOptions {
   limit?: number;
+  type?: MemoryType;
   tags?: string[];
 }
 
 export interface ListOptions {
   page?: number;
+  type?: MemoryType;
   tags?: string[];
 }
 
