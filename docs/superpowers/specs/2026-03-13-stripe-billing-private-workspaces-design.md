@@ -91,6 +91,12 @@ class User extends Authenticatable
 {
     use Billable;
 
+    // Hide Cashier columns from API responses
+    protected $hidden = [
+        // ...existing hidden fields...
+        'stripe_id', 'pm_type', 'pm_last_four', 'trial_ends_at',
+    ];
+
     public function isPro(): bool
     {
         return $this->subscribed('default');
@@ -111,10 +117,19 @@ class User extends Authenticatable
         return $this->isPro();
     }
 
+    /**
+     * A user is "downgraded" if they are NOT Pro and either:
+     * - They have more agents than the free limit (>3), OR
+     * - They own any workspaces (workspaces are Pro-only)
+     */
     public function isDowngraded(): bool
     {
-        return !$this->isPro()
-            && $this->agents()->count() > $this->maxAgents();
+        if ($this->isPro()) {
+            return false;
+        }
+
+        return $this->agents()->count() > $this->maxAgents()
+            || $this->ownedWorkspaces()->exists();
     }
 
     public function isOnGracePeriod(): bool
@@ -131,6 +146,10 @@ class User extends Authenticatable
 }
 ```
 
+**Note:** `ownedWorkspaces()` is a `hasMany(Workspace::class, 'owner_id')` relationship. Add it if not already present.
+
+**Grace period behavior:** During the grace period (user cancelled but billing period hasn't ended), `isPro()` still returns true via Cashier's `subscribed()` method, which considers grace-period subscriptions as active. All Pro features remain fully accessible until the period ends.
+
 ---
 
 ## 3. Plan Enforcement
@@ -139,7 +158,9 @@ Three server-side enforcement points. All gates are at the controller/middleware
 
 ### 3.1 Agent Creation Cap
 
-**File:** `app/Http/Controllers/Api/AgentController.php` — `register()` method
+There are two agent creation paths — both must enforce the cap.
+
+**File 1:** `app/Http/Controllers/Api/AgentController.php` — `register()` method
 
 After validating the owner token, before creating the agent:
 
@@ -148,6 +169,18 @@ $user = User::where('api_token', $validated['owner_token'])->firstOrFail();
 
 if ($user->agents()->count() >= $user->maxAgents()) {
     abort(403, 'Agent limit reached. Upgrade to Pro for unlimited agents.');
+}
+```
+
+**File 2:** `app/Http/Controllers/Auth/DashboardController.php` — `registerAgent()` method
+
+Before creating the agent:
+
+```php
+$user = $request->user();
+
+if ($user->agents()->count() >= $user->maxAgents()) {
+    return back()->withErrors(['name' => 'Agent limit reached. Upgrade to Pro for unlimited agents.']);
 }
 ```
 
@@ -175,7 +208,7 @@ Agent `max_memories` is updated when subscription status changes (see Section 5 
 
 When a user was Pro but has cancelled/lapsed, their extra agents and workspace memories become read-only.
 
-**Detection:** `User::isDowngraded()` returns true when the user is not Pro but has more than 3 agents.
+**Detection:** `User::isDowngraded()` returns true when the user is not Pro and either has more than 3 agents or owns any workspaces.
 
 **Enforcement in agent auth middleware** (`AuthenticateAgent`):
 
@@ -185,13 +218,15 @@ For write operations (POST/PUT/PATCH/DELETE on memory endpoints):
 2. If `$user->isDowngraded()`:
    - Get user's first 3 agents ordered by `created_at`
    - If current agent is NOT in those 3 → `403: "This agent is in read-only mode. Upgrade to Pro to restore write access."`
-   - If request targets a workspace-scoped memory → `403: "Workspace memories are read-only. Upgrade to Pro to restore write access."`
+   - For new memories (POST): check `$request->input('workspace_id')` — if set, block with `403: "Workspace memories are read-only. Upgrade to Pro to restore write access."`
+   - For updates/deletes (PUT/PATCH/DELETE): load the target memory — if `$memory->workspace_id` is set, block with same 403
 3. Otherwise, proceed normally
 
 **What stays accessible on downgrade:**
 - All read operations (search, list, get) — full access
-- First 3 agents retain full write access (up to 1,000 memory limit)
-- All existing data is preserved — nothing is deleted
+- First 3 agents retain full write access for non-workspace memories (up to 1,000 memory limit)
+- All existing data is preserved — nothing is deleted, nothing is removed from workspaces
+- Existing memories above the 1,000 quota are preserved but no new writes are allowed (existing `MemoryService::store()` enforces `max_memories`)
 
 ---
 
@@ -235,10 +270,17 @@ Route::middleware('auth')->group(function () {
 });
 
 // routes/web.php — public
-Route::get('/pricing', fn () => Inertia::render('Pricing', [...]))->name('pricing');
+Route::get('/pricing', [BillingController::class, 'pricing'])->name('pricing');
 ```
 
-**Webhook route:** Cashier registers `POST /stripe/webhook` automatically. Must be excluded from CSRF verification in `bootstrap/app.php` or via `VerifyCsrfToken` middleware exception.
+The pricing route uses `BillingController::pricing()` so it can pass the correct Inertia props (see Section 6.1): `auth.user`, `isPro`, `currentPeriodEnd`.
+
+**Webhook route:** Cashier registers `POST /stripe/webhook` automatically. Must be excluded from CSRF verification in `bootstrap/app.php`:
+
+```php
+// In bootstrap/app.php, inside ->withMiddleware():
+$middleware->validateCsrfTokens(except: ['stripe/*']);
+```
 
 ---
 
@@ -250,10 +292,13 @@ Cashier handles subscription lifecycle automatically. We add one custom listener
 
 | Stripe Event | Cashier Action | Custom Action |
 |---|---|---|
-| `checkout.session.completed` | Creates subscription record | Sync quotas → 10,000 |
+| `checkout.session.completed` | Creates subscription record | None (quota sync fires on `customer.subscription.created`) |
+| `customer.subscription.created` | Cashier creates local subscription | Sync quotas → 10,000 |
 | `customer.subscription.updated` | Updates subscription status | Re-sync quotas based on new status |
 | `customer.subscription.deleted` | Marks subscription as ended | Sync quotas → 1,000 |
 | `invoice.payment_failed` | Marks as `past_due` | None (dashboard shows banner) |
+
+**Note:** The custom `SyncAgentQuotas` listener hooks into `customer.subscription.*` events (not `checkout.session.completed`). Stripe fires `customer.subscription.created` as part of the checkout flow, which triggers the quota sync.
 
 ### 5.2 Quota Sync Listener
 
@@ -379,10 +424,11 @@ No changes needed — the existing "Get Started Free" button already links to `/
 - `composer.json` — add `laravel/cashier-stripe`
 - `.env.example` — add `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID`
 - `app/Models/User.php` — add `Billable` trait, plan helper methods
-- `app/Http/Controllers/Api/AgentController.php` — agent creation cap
+- `app/Http/Controllers/Api/AgentController.php` — agent creation cap (API path)
+- `app/Http/Controllers/Auth/DashboardController.php` — agent creation cap (web UI path)
 - `app/Http/Controllers/Api/WorkspaceController.php` — workspace creation gate
 - `app/Http/Middleware/AuthenticateAgent.php` — soft lock check for write operations
-- `app/Providers/EventServiceProvider.php` (or `AppServiceProvider`) — register `SyncAgentQuotas` listener
+- `app/Providers/AppServiceProvider.php` — register `SyncAgentQuotas` listener (no EventServiceProvider in this project)
 - `routes/web.php` — billing routes + pricing route
 - `bootstrap/app.php` — exclude webhook route from CSRF
 - `resources/js/Pages/Dashboard.vue` — billing tab section
@@ -402,6 +448,7 @@ All tests in `tests/Feature/BillingTest.php` following existing Pest conventions
 - `maxMemoriesPerAgent()` returns 1000 for free, 10000 for Pro
 - `canCreateWorkspace()` returns false for free, true for Pro
 - `isDowngraded()` returns true when not Pro but has >3 agents
+- `isDowngraded()` returns true when not Pro but owns workspaces (even with ≤3 agents)
 
 ### 8.2 Agent Cap Enforcement
 - Free user can register 3 agents (success)
@@ -429,10 +476,43 @@ All tests in `tests/Feature/BillingTest.php` following existing Pest conventions
 - `GET /pricing` renders for guests and authenticated users
 
 ### 8.7 Mocking Strategy
-- Use `Cashier::fake()` for Stripe API calls
-- Mock `User::subscribed()` where needed via factory states
-- No real Stripe charges in any test
-- Create a `User` factory state for Pro: `User::factory()->pro()->create()` that stubs `subscribed('default')` to return true
+
+No real Stripe charges in any test. Two approaches for simulating Pro status:
+
+**Approach 1 — Database seeding (preferred for integration tests):**
+Create subscription records directly in the database. Add a helper function or factory state:
+
+```php
+// In tests/TestCase.php or a test helper
+function makeProUser(): User
+{
+    $user = User::factory()->create(['stripe_id' => 'cus_test_' . Str::random(10)]);
+
+    $subscription = $user->subscriptions()->create([
+        'type' => 'default',
+        'stripe_id' => 'sub_test_' . Str::random(10),
+        'stripe_status' => 'active',
+        'stripe_price' => config('stripe.pro_price_id') ?: 'price_test',
+        'quantity' => 1,
+    ]);
+
+    $subscription->items()->create([
+        'stripe_id' => 'si_test_' . Str::random(10),
+        'stripe_product' => 'prod_test',
+        'stripe_price' => config('stripe.pro_price_id') ?: 'price_test',
+        'quantity' => 1,
+    ]);
+
+    return $user;
+}
+```
+
+This makes `$user->subscribed('default')` return true without any Stripe API calls.
+
+**Approach 2 — HTTP mocking (for checkout/portal route tests):**
+Use `Http::fake()` to mock Stripe API responses when testing the BillingController routes that actually call Stripe.
+
+**No `Cashier::fake()` exists.** Do not use it.
 
 ---
 
