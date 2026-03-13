@@ -6,6 +6,7 @@ use App\Concerns\FormatsMemories;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\Memory;
+use App\Models\Workspace;
 use App\Services\MemoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,41 @@ class MemoryController extends Controller
         private readonly MemoryService $memories,
     ) {}
 
+    /**
+     * Resolve the active agent for the request.
+     * If the actor is an Agent token, use that agent.
+     * If the actor is a Workspace token, require 'agent_id' in payload and ensure it belongs to the workspace.
+     */
+    private function resolveAgent(Request $request, ?array $validated = null): Agent|JsonResponse
+    {
+        $agent = $request->attributes->get('agent');
+        $workspace = $request->attributes->get('workspace_token');
+
+        if ($agent) {
+            return $agent;
+        }
+
+        if ($workspace) {
+            $agentId = $validated['agent_id'] ?? $request->input('agent_id');
+            if (! $agentId) {
+                return response()->json(['error' => 'agent_id is required when authenticating via Workspace token.'], 422);
+            }
+
+            $agent = Agent::find($agentId);
+            if (! $agent) {
+                return response()->json(['error' => 'Agent not found.'], 404);
+            }
+
+            if (! $workspace->agents()->where('agents.id', $agentId)->exists()) {
+                return response()->json(['error' => 'Agent does not belong to this Workspace.'], 403);
+            }
+
+            return $agent;
+        }
+
+        return response()->json(['error' => 'Unauthorized.'], 401);
+    }
+
     // -------------------------------------------------------------------------
     // Store a memory
     // POST /v1/memories
@@ -26,9 +62,8 @@ class MemoryController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
-
         $validated = $request->validate([
+            'agent_id' => ['sometimes', 'uuid'],
             'key' => ['nullable', 'string', 'max:255'],
             'value' => ['required', 'string', 'max:10000'],
             'type' => ['sometimes', 'string', Rule::in(Memory::TYPES)],
@@ -46,6 +81,11 @@ class MemoryController extends Controller
             'relations.*.type' => ['nullable', 'string', 'max:50'],
         ]);
 
+        $agent = $this->resolveAgent($request, $validated);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
+
         $memory = $this->memories->store($agent, $validated);
 
         return response()->json($this->formatMemory($memory), 201);
@@ -58,7 +98,11 @@ class MemoryController extends Controller
 
     public function show(Request $request, string $key): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
+
         $memory = $this->memories->findByKey($agent, $key);
 
         if (! $memory) {
@@ -75,7 +119,11 @@ class MemoryController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
+
         $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
         $type = $request->query('type');
         $paginated = $this->memories->listForAgent($agent, 20, $tags, $type);
@@ -98,7 +146,11 @@ class MemoryController extends Controller
 
     public function update(Request $request, string $key): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
+
         $memory = $this->memories->findByKey($agent, $key);
 
         if (! $memory) {
@@ -134,7 +186,11 @@ class MemoryController extends Controller
 
     public function destroy(Request $request, string $key): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
+
         $memory = $this->memories->findByKey($agent, $key);
 
         if (! $memory) {
@@ -153,13 +209,17 @@ class MemoryController extends Controller
 
     public function compact(Request $request, \App\Services\SummarizationService $summarizer): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
-
         $validated = $request->validate([
+            'agent_id' => ['sometimes', 'uuid'],
             'keys' => ['required', 'array', 'min:2', 'max:50'],
             'keys.*' => ['string'],
             'summary_key' => ['required', 'string', 'max:255'],
         ]);
+
+        $agent = $this->resolveAgent($request, $validated);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
 
         $memories = \App\Models\Memory::where('agent_id', $agent->id)
             ->whereIn('key', $validated['keys'])
@@ -185,6 +245,7 @@ class MemoryController extends Controller
             'relations' => $relations,
         ]);
 
+        /** @var \App\Models\Memory $memory */
         foreach ($memories as $memory) {
             $this->memories->update($memory, ['visibility' => 'archived']);
         }
@@ -199,7 +260,10 @@ class MemoryController extends Controller
 
     public function search(Request $request): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
 
         $request->validate([
             'q' => ['required', 'string', 'min:1', 'max:500'],
@@ -299,7 +363,10 @@ class MemoryController extends Controller
 
     public function commonsSearch(Request $request): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
 
         $request->validate([
             'q' => ['required', 'string', 'min:1', 'max:500'],
@@ -338,7 +405,11 @@ class MemoryController extends Controller
 
     public function share(Request $request, string $key): JsonResponse
     {
-        $agent = $request->attributes->get('agent');
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
+
         $memory = $this->memories->findByKey($agent, $key);
 
         if (! $memory) {

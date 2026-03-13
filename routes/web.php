@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\DashboardController;
 use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/health', fn () => response('ok', 200));
 
@@ -51,4 +52,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/dashboard/agents/{agent}', [DashboardController::class, 'destroy'])->name('dashboard.agents.destroy');
     Route::post('/dashboard/agents/{agent}/rotate', [DashboardController::class, 'rotateToken'])->name('dashboard.agents.rotate');
     Route::post('/logout', [MagicLinkController::class, 'logout'])->name('logout');
+
+    // Workspace Settings
+    Route::post('/workspaces', [\App\Http\Controllers\WorkspaceSettingsController::class, 'store'])->name('workspaces.store');
+    Route::get('/workspaces/{workspace}/settings', [\App\Http\Controllers\WorkspaceSettingsController::class, 'show'])->name('workspaces.settings');
+    Route::post('/workspaces/{workspace}/invite', [\App\Http\Controllers\WorkspaceSettingsController::class, 'inviteUser'])->name('workspaces.invite');
+    Route::delete('/workspaces/{workspace}/users/{user}', [\App\Http\Controllers\WorkspaceSettingsController::class, 'removeUser'])->name('workspaces.remove-user');
+    Route::post('/workspaces/{workspace}/token/rotate', [\App\Http\Controllers\WorkspaceSettingsController::class, 'rotateToken'])->name('workspaces.token.rotate');
 });

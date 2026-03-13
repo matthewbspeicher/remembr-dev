@@ -20,6 +20,19 @@ class AuthenticateAgent
             ], 401);
         }
 
+        if (str_starts_with($token, 'wks_')) {
+            $workspace = \App\Models\Workspace::where('api_token', $token)->first();
+
+            if (! $workspace) {
+                return response()->json([
+                    'error' => 'Invalid workspace token.',
+                ], 401);
+            }
+
+            $request->attributes->set('workspace_token', $workspace);
+            return $next($request);
+        }
+
         $agent = Agent::query()
             ->where('api_token', $token)
             ->where('is_active', true)

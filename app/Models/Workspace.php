@@ -19,6 +19,11 @@ class Workspace extends Model
         'owner_id',
         'is_guild',
         'guild_elo',
+        'api_token',
+    ];
+
+    protected $hidden = [
+        'api_token',
     ];
 
     protected $casts = [
@@ -35,6 +40,12 @@ class Workspace extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'workspace_user')
+            ->withTimestamps();
+    }
+
     public function agents(): BelongsToMany
     {
         return $this->belongsToMany(Agent::class, 'agent_workspace')
@@ -44,5 +55,19 @@ class Workspace extends Model
     public function memories(): HasMany
     {
         return $this->hasMany(Memory::class);
+    }
+
+    public static function generateToken(): string
+    {
+        return 'wks_'.\Illuminate\Support\Str::random(40);
+    }
+
+    public function ensureApiToken(): string
+    {
+        if (! $this->api_token) {
+            $this->update(['api_token' => self::generateToken()]);
+        }
+
+        return $this->api_token;
     }
 }

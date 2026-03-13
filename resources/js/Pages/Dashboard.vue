@@ -6,6 +6,7 @@ import { ref, computed } from 'vue';
 const props = defineProps({
     apiToken: String,
     agents: Array,
+    workspaces: Array,
 });
 
 const page = usePage();
@@ -68,6 +69,18 @@ function getConfigJson(agent) {
 function copyConfig(agent) {
     navigator.clipboard.writeText(getConfigJson(agent));
 }
+
+const workspaceForm = useForm({
+    name: '',
+    description: '',
+});
+
+function createWorkspace() {
+    workspaceForm.post('/workspaces', {
+        preserveScroll: true,
+        onSuccess: () => workspaceForm.reset(),
+    });
+}
 </script>
 
 <template>
@@ -103,27 +116,29 @@ function copyConfig(agent) {
         <section class="mb-10">
             <h2 class="text-lg font-semibold mb-3 text-gray-200">Register New Agent</h2>
             <form @submit.prevent="registerAgent" class="space-y-4">
-                <div>
-                    <label for="agent-name" class="block text-sm font-medium text-gray-300 mb-1">Agent Name</label>
-                    <input
-                        id="agent-name"
-                        v-model="agentForm.name"
-                        type="text"
-                        required
-                        class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                        placeholder="My Agent"
-                    />
-                    <p v-if="agentForm.errors.name" class="mt-1 text-sm text-red-400">{{ agentForm.errors.name }}</p>
-                </div>
-                <div>
-                    <label for="agent-desc" class="block text-sm font-medium text-gray-300 mb-1">Description (optional)</label>
-                    <input
-                        id="agent-desc"
-                        v-model="agentForm.description"
-                        type="text"
-                        class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                        placeholder="What does this agent do?"
-                    />
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="agent-name" class="block text-sm font-medium text-gray-300 mb-1">Agent Name</label>
+                        <input
+                            id="agent-name"
+                            v-model="agentForm.name"
+                            type="text"
+                            required
+                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                            placeholder="My Agent"
+                        />
+                        <p v-if="agentForm.errors.name" class="mt-1 text-sm text-red-400">{{ agentForm.errors.name }}</p>
+                    </div>
+                    <div>
+                        <label for="agent-desc" class="block text-sm font-medium text-gray-300 mb-1">Description (optional)</label>
+                        <input
+                            id="agent-desc"
+                            v-model="agentForm.description"
+                            type="text"
+                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                            placeholder="What does this agent do?"
+                        />
+                    </div>
                 </div>
                 <button
                     type="submit"
@@ -136,7 +151,7 @@ function copyConfig(agent) {
         </section>
 
         <!-- Agents List -->
-        <section>
+        <section class="mb-10">
             <h2 class="text-lg font-semibold mb-3 text-gray-200">Your Agents</h2>
             <div v-if="agents.length === 0" class="text-gray-500 text-sm">
                 No agents registered yet.
@@ -176,6 +191,75 @@ function copyConfig(agent) {
                             </button>
                         </div>
                         <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre"><code>{{ getConfigJson(agent) }}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Create Workspace -->
+        <section class="mb-10">
+            <h2 class="text-lg font-semibold mb-3 text-gray-200">Create a Workspace</h2>
+            <form @submit.prevent="createWorkspace" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="ws-name" class="block text-sm font-medium text-gray-300 mb-1">Workspace Name</label>
+                        <input
+                            id="ws-name"
+                            v-model="workspaceForm.name"
+                            type="text"
+                            required
+                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                            placeholder="My Team"
+                        />
+                        <p v-if="workspaceForm.errors.name" class="mt-1 text-sm text-red-400">{{ workspaceForm.errors.name }}</p>
+                    </div>
+                    <div>
+                        <label for="ws-desc" class="block text-sm font-medium text-gray-300 mb-1">Description (optional)</label>
+                        <input
+                            id="ws-desc"
+                            v-model="workspaceForm.description"
+                            type="text"
+                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                            placeholder="For internal docs & syncs"
+                        />
+                    </div>
+                </div>
+                <button
+                    type="submit"
+                    :disabled="workspaceForm.processing"
+                    class="rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-500 disabled:opacity-50 transition"
+                >
+                    {{ workspaceForm.processing ? 'Creating...' : 'Create Workspace' }}
+                </button>
+            </form>
+        </section>
+
+        <!-- Workspaces List -->
+        <section>
+            <h2 class="text-lg font-semibold mb-3 text-gray-200">Your Workspaces</h2>
+            <div v-if="workspaces.length === 0" class="text-gray-500 text-sm">
+                No workspaces available.
+            </div>
+            <div v-else class="space-y-3">
+                <div
+                    v-for="ws in workspaces"
+                    :key="ws.id"
+                    class="rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3"
+                >
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-col">
+                            <span class="font-medium text-white">{{ ws.name }}</span>
+                            <span class="text-sm text-gray-400" v-if="ws.description">{{ ws.description }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a
+                                v-if="page.props.auth.user.id === ws.owner_id"
+                                :href="`/workspaces/${ws.id}/settings`"
+                                class="rounded border border-indigo-600/50 hover:border-indigo-500 bg-indigo-900/20 px-4 py-2 text-sm font-medium text-indigo-300 hover:text-indigo-200 transition"
+                            >
+                                Settings
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
