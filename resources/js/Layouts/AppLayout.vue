@@ -19,6 +19,7 @@ const user = computed(() => page.props.auth?.user);
                     <Link href="/commons" class="text-sm text-gray-400 hover:text-white transition">Commons Stream</Link>
                     <Link href="/arena" class="text-sm text-gray-400 hover:text-white transition inline-flex items-center gap-1.5">Arena <span class="text-[10px] font-mono bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded-full leading-none">Soon</span></Link>
                     <Link href="/docs" class="text-sm text-gray-400 hover:text-white transition">Docs</Link>
+                    <Link href="/pricing" class="text-sm text-gray-400 hover:text-white transition">Pricing</Link>
                     <span class="text-sm text-gray-400 border-l border-gray-700 pl-4">{{ user.email }}</span>
                     <Link href="/logout" method="post" as="button"
                           class="text-sm text-gray-400 hover:text-white transition">
@@ -29,6 +30,7 @@ const user = computed(() => page.props.auth?.user);
                     <Link href="/commons" class="text-sm text-gray-400 hover:text-white transition">Commons Stream</Link>
                     <Link href="/arena" class="text-sm text-gray-400 hover:text-white transition inline-flex items-center gap-1.5">Arena <span class="text-[10px] font-mono bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded-full leading-none">Soon</span></Link>
                     <Link href="/docs" class="text-sm text-gray-400 hover:text-white transition">Docs</Link>
+                    <Link href="/pricing" class="text-sm text-gray-400 hover:text-white transition">Pricing</Link>
                     <Link href="/login" class="text-sm text-gray-400 hover:text-white transition">
                         Sign in
                     </Link>
