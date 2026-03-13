@@ -1,7 +1,7 @@
 # Structured Memory Types + MCP One-Liner Onboarding
 
 **Date:** 2026-03-13
-**Status:** Draft
+**Status:** Final
 **Scope:** Memory type enum, MCP npm publishing, skill.md refresh, commons seeder, SDK updates
 
 ---
@@ -43,7 +43,7 @@ Remembr stores memories as untyped text blobs. Agents can't filter by what kind 
 
 ```php
 Schema::table('memories', function (Blueprint $table) {
-    $table->string('type', 20)->default('note')->after('value');
+    $table->string('type', 20)->default('note');
     $table->index('type');
 });
 ```
@@ -51,6 +51,7 @@ Schema::table('memories', function (Blueprint $table) {
 - Column: `VARCHAR(20) NOT NULL DEFAULT 'note'`
 - Existing memories automatically get `'note'`
 - Index for fast filtering
+- Note: PostgreSQL ignores column ordering directives, so no `->after()` used
 
 ### 1.3 Validation
 
@@ -74,13 +75,28 @@ const TYPES = [
 
 ### 1.4 Search Integration
 
-**API filter:** Add optional `type` query parameter to search endpoints:
+**API filter:** Add optional `type` query parameter to all memory listing/search endpoints:
 - `GET /v1/memories/search?q=postgres&type=error_fix`
 - `GET /v1/commons/search?q=postgres&type=error_fix`
-- `GET /v1/memories?type=fact` (list endpoint)
+- `GET /v1/memories?type=fact` (agent list endpoint)
+- `GET /v1/commons?type=error_fix` (commons index endpoint)
 
-**Implementation in MemoryService:**
-- Add `->when($type, fn($q) => $q->where('type', $type))` to search and list queries
+**Implementation in MemoryService — updated method signatures (appending `?string $type = null`):**
+- `searchForAgent(Agent $agent, string $q, int $limit = 10, array $tags = [], ?string $type = null)`
+- `searchCommons(Agent $agent, string $q, int $limit = 10, array $tags = [], ?string $type = null)`
+- `listForAgent(Agent $agent, int $perPage = 20, array $tags = [], ?string $type = null)`
+- Each method adds `->when($type, fn($q) => $q->where('type', $type))` to its query
+
+**MemoryService::store() — add type to create attributes:**
+- Add `'type' => $data['type'] ?? 'note'` to the `updateOrCreate` attributes array
+
+**commonsIndex() in MemoryController:**
+- Accept `type` query parameter
+- When `type` is provided, bypass the `commons_front_page` cache (same pattern as tags filtering) and query directly with type filter
+
+**FormatsMemories trait (`app/Concerns/FormatsMemories.php`):**
+- Add `'type' => $memory->type` to the response array so type appears in all API responses
+
 - No RRF boost by type for now (keep it simple, add later if needed)
 
 ### 1.5 Model Changes
@@ -117,30 +133,21 @@ const TYPES = [
 
 ### 2.2 npm Package: `@remembr/mcp-server`
 
-**Changes to `mcp-server/package.json`:**
+The existing `mcp-server/package.json` already has `name`, `bin`, `keywords`, `license`, and `files` fields. The `index.js` already has the `#!/usr/bin/env node` shebang. Minimal changes needed:
 
-```json
-{
-  "name": "@remembr/mcp-server",
-  "version": "0.1.0",
-  "description": "MCP server for Remembr — persistent memory for AI agents",
-  "bin": {
-    "remembr-mcp": "./index.js"
-  },
-  "files": ["index.js", "package.json", "README.md"],
-  "keywords": ["mcp", "ai", "memory", "agent", "remembr"],
-  "license": "MIT"
-}
-```
+**Delta to `mcp-server/package.json`:**
+- Add `"package.json"` to the `files` array (currently missing — npm needs it)
+- Verify `name` is `@remembr/mcp-server` (currently correct)
+- Verify `bin` points to `./index.js` (currently correct)
 
-**Changes to `mcp-server/index.js`:**
-- Add `#!/usr/bin/env node` shebang as first line
-- Ensure `REMEMBR_BASE_URL` defaults to `https://remembr.dev`
+**Verify `mcp-server/index.js`:**
+- Shebang already present (line 1) — no change needed
+- `REMEMBR_BASE_URL` already defaults to `https://remembr.dev` — no change needed
 
-**New `mcp-server/README.md`:**
-- Quick setup instructions
+**Rewrite `mcp-server/README.md`:**
+- Quick setup instructions (the one-liner config block)
 - Environment variables reference
-- Link to full docs
+- Link to full docs at remembr.dev
 
 ### 2.3 MCP Tool Updates
 
@@ -164,6 +171,16 @@ Update `store_memory` tool schema to include `type`:
 ```
 
 Update `search_memories` and `search_commons` tools to accept optional `type` filter.
+
+### 2.3b Laravel MCP Tools
+
+The project also has Laravel-native MCP tools at `app/Mcp/Tools/`. These must also be updated:
+
+- `StoreMemoryTool.php` — add `type` parameter with enum constraint
+- `SearchMemoriesTool.php` — add optional `type` filter parameter
+- `SearchCommonsTool.php` — add optional `type` filter parameter
+- `ListMemoriesTool.php` — add optional `type` filter parameter
+- `UpdateMemoryTool.php` — add optional `type` parameter (type is mutable)
 
 ### 2.4 Dashboard Copy-Paste UX
 
@@ -202,11 +219,16 @@ Complete rewrite of `public/skill.md` to cover the full API surface:
 
 ### 4.1 Seeder Command
 
-`php artisan db:seed --class=CommonsSeeder`
+**Replaces** the existing `app/Console/Commands/SeedCommonsCommand.php` (`php artisan commons:seed`) which currently creates demo agents (`DesignBot`, `DevOpsAgent`, `ResearchBot`) with generic content. The new seeder focuses on curated developer knowledge with proper types.
+
+Also replaces `database/seeders/HivemindSeeder.php` if present. Both old seeding mechanisms are removed.
+
+**New command:** `php artisan db:seed --class=CommonsSeeder`
 
 - Creates a system agent: `name: "Remembr"`, `description: "Curated developer knowledge"`
 - Agent flagged with `metadata->is_system: true` for UI badge treatment
 - Idempotent: skips if system agent already exists
+- Memories are created **without embeddings** — run `php artisan memories:embed-missing` afterward to generate embeddings (documented as a two-step process in the seeder output)
 
 ### 4.2 Seed Content
 
@@ -279,9 +301,10 @@ Complete rewrite of `public/skill.md` to cover the full API surface:
 ### 5.1 JS/TS SDK (`sdk/js`)
 
 - Add `type` to `StoreOptions` interface in `types.ts`
+- Add `type` to `UpdateOptions` interface in `types.ts` (type is mutable after creation)
 - Add `type` to `Memory` interface
 - Add optional `type` parameter to `search()` and `searchCommons()` in `SearchOptions`
-- Add `type` to `remember()` method parameter forwarding
+- Add `type` to `remember()` and `update()` method parameter forwarding
 
 ### 5.2 PHP SDK (`sdk/src`)
 
@@ -298,6 +321,7 @@ Update the curl example on `Home.vue` to showcase the type field:
 ```bash
 curl -X POST https://remembr.dev/api/v1/memories \
   -H "Authorization: Bearer amc_..." \
+  -H "Content-Type: application/json" \
   -d '{"value":"IVFFlat needs >100 rows to build","type":"error_fix","tags":["postgresql","pgvector"]}'
 ```
 
@@ -313,28 +337,50 @@ curl -X POST https://remembr.dev/api/v1/memories \
 
 ### Modified Files
 - `app/Models/Memory.php` — add TYPES const, type to fillable, scopeOfType
-- `app/Http/Controllers/Api/MemoryController.php` — type validation + filter
-- `app/Services/MemoryService.php` — type filter in search/list
-- `mcp-server/index.js` — add shebang, update tool schemas with type
-- `mcp-server/package.json` — add bin, npm metadata, @remembr scope
+- `app/Http/Controllers/Api/MemoryController.php` — type validation + filter on store/update/list/search
+- `app/Services/MemoryService.php` — type in store attributes, type filter in search/list signatures
+- `app/Concerns/FormatsMemories.php` — add type to API response array
+- `app/Mcp/Tools/StoreMemoryTool.php` — add type parameter with enum
+- `app/Mcp/Tools/SearchMemoriesTool.php` — add type filter parameter
+- `app/Mcp/Tools/SearchCommonsTool.php` — add type filter parameter
+- `app/Mcp/Tools/ListMemoriesTool.php` — add type filter parameter
+- `app/Mcp/Tools/UpdateMemoryTool.php` — add type parameter
+- `mcp-server/index.js` — update tool schemas with type enum
+- `mcp-server/package.json` — add `"package.json"` to files array
 - `public/skill.md` — complete rewrite
-- `sdk/js/src/types.ts` — add type to interfaces
-- `sdk/js/src/index.ts` — forward type parameter
+- `sdk/js/src/types.ts` — add type to StoreOptions, UpdateOptions, Memory, SearchOptions
+- `sdk/js/src/index.ts` — forward type parameter in remember, update, search methods
 - `sdk/src/AgentMemoryClient.php` — add type parameter
 - `resources/js/Pages/Home.vue` — update curl example
 - `resources/js/Pages/Dashboard.vue` — add MCP config copy-paste card
 
 ### Coordination with Gemini
 Gemini is building: live demo bots (scheduled), interactive playground, quickstart video.
-The `type` migration should land before Gemini's playground work so playground memories can use types.
+
+**Sequencing constraint:** The `type` migration must land and be deployed before Gemini's playground work begins, so playground memories can use the type field. Consider merging the migration as a separate first PR if the full implementation takes time.
+
+### Files to Remove
+- `app/Console/Commands/SeedCommonsCommand.php` — replaced by CommonsSeeder
+- `database/seeders/HivemindSeeder.php` — if present, replaced by CommonsSeeder
 
 ---
 
 ## Testing
 
-- Migration test: verify column exists and defaults to 'note'
-- Validation test: reject invalid types, accept valid types
-- Search filter test: `?type=error_fix` returns only error_fix memories
-- Seeder test: run seeder, verify memories created with correct types
-- Embed-missing command test: verify it processes memories without embeddings
-- MCP tool test: verify type parameter accepted and forwarded
+All tests go in `tests/Feature/` following existing conventions:
+
+**In `tests/Feature/MemoryApiTest.php` (extend existing):**
+- Validation: reject invalid type, accept valid type on store
+- Validation: type is mutable on update
+- Search filter: `?type=error_fix` returns only error_fix memories
+- List filter: `?type=fact` returns only fact memories
+- Default: memory created without type defaults to 'note'
+
+**In `tests/Feature/CommonsSeederTest.php` (new):**
+- Run seeder, verify system agent created
+- Verify memories created with correct types and visibility='public'
+- Verify idempotent (running twice doesn't duplicate)
+
+**In `tests/Feature/EmbedMissingCommandTest.php` (new):**
+- Create memories without embeddings, run command, verify embeddings populated
+- Mock EmbeddingService to avoid real API calls in tests
