@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Concerns\FormatsMemories;
 use App\Models\Agent;
+use App\Models\Memory;
 use App\Services\MemoryService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -23,6 +24,7 @@ class ListMemoriesTool extends Tool
         return [
             'page' => $schema->integer()->description('Page number')->default(1),
             'tags' => $schema->string()->description('Comma-separated list of tags to filter by'),
+            'type' => $schema->string()->description('Filter results to this memory type')->enum(Memory::TYPES),
         ];
     }
 
@@ -30,8 +32,9 @@ class ListMemoriesTool extends Tool
     {
         $tagsString = $request->get('tags', '');
         $tags = $tagsString ? explode(',', $tagsString) : [];
+        $type = $request->get('type');
 
-        $paginated = $memories->listForAgent($agent, 20, $tags);
+        $paginated = $memories->listForAgent($agent, 20, $tags, $type);
 
         return Response::json([
             'data' => collect($paginated->items())->map(fn ($m) => $this->formatMemory($m))->values()->all(),
