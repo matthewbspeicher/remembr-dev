@@ -5,7 +5,11 @@ use App\Http\Controllers\Auth\MagicLinkController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+use App\Http\Controllers\ArenaController;
+
 Route::get('/health', fn () => response('ok', 200));
+
+Route::get('/arena', [ArenaController::class, 'index'])->name('arena.index');
 
 Route::get('/', function () {
     try {
