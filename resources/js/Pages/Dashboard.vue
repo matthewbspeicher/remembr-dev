@@ -1,5 +1,5 @@
 <script setup>
-import { useForm, usePage, router } from '@inertiajs/vue3';
+import { useForm, usePage, router, Link } from '@inertiajs/vue3';
 import AppLayout from '../Layouts/AppLayout.vue';
 import { ref, computed } from 'vue';
 
@@ -7,6 +7,15 @@ const props = defineProps({
     apiToken: String,
     agents: Array,
     workspaces: Array,
+    isPro: Boolean,
+    isOnGracePeriod: Boolean,
+    hasPaymentFailure: Boolean,
+    isDowngraded: Boolean,
+    currentPlan: String,
+    agentCount: Number,
+    maxAgents: [Number, String],
+    avgMemoriesPerAgent: Number,
+    maxMemoriesPerAgent: Number,
 });
 
 const page = usePage();
@@ -81,6 +90,15 @@ function createWorkspace() {
         onSuccess: () => workspaceForm.reset(),
     });
 }
+
+const agentUsagePercent = computed(() => {
+    if (props.maxAgents === 'unlimited') return 5;
+    return Math.min(100, (props.agentCount / props.maxAgents) * 100);
+});
+
+const memoryUsagePercent = computed(() => {
+    return Math.min(100, (props.avgMemoriesPerAgent / props.maxMemoriesPerAgent) * 100);
+});
 </script>
 
 <template>
@@ -90,6 +108,65 @@ function createWorkspace() {
         <div v-if="flash" class="mb-6 rounded-lg bg-emerald-900/30 border border-emerald-700/50 px-4 py-3 text-emerald-200 text-sm">
             {{ flash }}
         </div>
+
+        <!-- Billing Banners -->
+        <div v-if="hasPaymentFailure" class="mb-6 rounded-lg border border-red-800/50 bg-red-900/20 px-4 py-3 flex items-center gap-2">
+            <span class="text-red-400">&#9888;</span>
+            <span class="text-sm text-red-200">Payment failed. <a href="/billing/portal" class="text-red-400 underline">Update payment method</a> to keep Pro access.</span>
+        </div>
+
+        <div v-if="isOnGracePeriod" class="mb-6 rounded-lg border border-amber-800/50 bg-amber-900/20 px-4 py-3 text-sm text-amber-200">
+            Your Pro subscription has been cancelled and will end at the end of the current billing period. <a href="/billing/portal" class="text-amber-400 underline">Resubscribe</a>
+        </div>
+
+        <div v-if="isDowngraded" class="mb-6 rounded-lg border border-amber-800/50 bg-amber-900/20 px-4 py-3 text-sm text-amber-200">
+            Your account has features beyond the free plan. Some agents and workspace memories are read-only. <Link href="/billing/checkout" class="text-amber-400 underline">Upgrade to Pro</Link> to restore full access.
+        </div>
+
+        <!-- Billing Section -->
+        <section class="mb-10">
+            <div class="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Current Plan</span>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-xl font-bold text-white">{{ currentPlan === 'pro' ? 'Pro' : 'Free' }}</span>
+                            <span v-if="isPro" class="text-[10px] font-semibold bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full">ACTIVE</span>
+                            <span v-else-if="isDowngraded" class="text-[10px] font-semibold bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full">DOWNGRADED</span>
+                        </div>
+                    </div>
+                    <div>
+                        <a v-if="isPro" href="/billing/portal" class="text-xs text-gray-400 border border-gray-600 px-3 py-1.5 rounded-md hover:bg-gray-700 transition">
+                            Manage Subscription
+                        </a>
+                        <Link v-else href="/billing/checkout" class="text-xs font-semibold bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-500 transition">
+                            Upgrade to Pro
+                        </Link>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <div class="flex justify-between mb-1.5">
+                            <span class="text-xs text-gray-400">Agents</span>
+                            <span class="text-xs font-semibold text-gray-200">{{ agentCount }} / {{ maxAgents }}</span>
+                        </div>
+                        <div class="bg-gray-700 rounded h-1.5 overflow-hidden">
+                            <div class="bg-indigo-500 h-full rounded" :style="{ width: agentUsagePercent + '%' }"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1.5">
+                            <span class="text-xs text-gray-400">Avg memories/agent</span>
+                            <span class="text-xs font-semibold text-gray-200">{{ avgMemoriesPerAgent.toLocaleString() }} / {{ maxMemoriesPerAgent.toLocaleString() }}</span>
+                        </div>
+                        <div class="bg-gray-700 rounded h-1.5 overflow-hidden">
+                            <div class="bg-indigo-500 h-full rounded" :style="{ width: memoryUsagePercent + '%' }"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Owner API Token -->
         <section class="mb-10">
@@ -116,29 +193,27 @@ function createWorkspace() {
         <section class="mb-10">
             <h2 class="text-lg font-semibold mb-3 text-gray-200">Register New Agent</h2>
             <form @submit.prevent="registerAgent" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="agent-name" class="block text-sm font-medium text-gray-300 mb-1">Agent Name</label>
-                        <input
-                            id="agent-name"
-                            v-model="agentForm.name"
-                            type="text"
-                            required
-                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                            placeholder="My Agent"
-                        />
-                        <p v-if="agentForm.errors.name" class="mt-1 text-sm text-red-400">{{ agentForm.errors.name }}</p>
-                    </div>
-                    <div>
-                        <label for="agent-desc" class="block text-sm font-medium text-gray-300 mb-1">Description (optional)</label>
-                        <input
-                            id="agent-desc"
-                            v-model="agentForm.description"
-                            type="text"
-                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                            placeholder="What does this agent do?"
-                        />
-                    </div>
+                <div>
+                    <label for="agent-name" class="block text-sm font-medium text-gray-300 mb-1">Agent Name</label>
+                    <input
+                        id="agent-name"
+                        v-model="agentForm.name"
+                        type="text"
+                        required
+                        class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                        placeholder="My Agent"
+                    />
+                    <p v-if="agentForm.errors.name" class="mt-1 text-sm text-red-400">{{ agentForm.errors.name }}</p>
+                </div>
+                <div>
+                    <label for="agent-desc" class="block text-sm font-medium text-gray-300 mb-1">Description (optional)</label>
+                    <input
+                        id="agent-desc"
+                        v-model="agentForm.description"
+                        type="text"
+                        class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                        placeholder="What does this agent do?"
+                    />
                 </div>
                 <button
                     type="submit"
