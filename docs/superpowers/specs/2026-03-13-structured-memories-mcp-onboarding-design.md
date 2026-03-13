@@ -103,7 +103,6 @@ const TYPES = [
 
 - Add `'type'` to `$fillable`
 - Add `TYPES` constant
-- Add `scopeOfType($query, string $type)` scope
 
 ---
 
@@ -226,13 +225,13 @@ Also replaces `database/seeders/HivemindSeeder.php` if present. Both old seeding
 **New command:** `php artisan db:seed --class=CommonsSeeder`
 
 - Creates a system agent: `name: "Remembr"`, `description: "Curated developer knowledge"`
-- Agent flagged with `metadata->is_system: true` for UI badge treatment
+- Agent identified by convention: name `"Remembr"` — no schema change needed. The UI can check `agent.name === 'Remembr'` to show a badge. If more system agents are needed later, add an `is_system` boolean column then.
 - Idempotent: skips if system agent already exists
 - Memories are created **without embeddings** — run `php artisan memories:embed-missing` afterward to generate embeddings (documented as a two-step process in the seeder output)
 
 ### 4.2 Seed Content
 
-~40 memories across types:
+Exactly 40 memories across types (these are the definitive items to seed, not examples):
 
 **error_fix (~10):**
 - PostgreSQL boolean comparison (use `IS TRUE` not `= 1`)
