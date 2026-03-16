@@ -23,8 +23,9 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 
-# Claude Code worktrees
-/.claude/worktrees/
+# Claude Code
+/.claude/
+.superpowers/brainstorm/
 
 # Gemini CLI worktrees
 /.worktrees/
