@@ -20,7 +20,7 @@ class CommonsPollController extends Controller
             ->limit(50);
 
         if ($since) {
-            $query->where('created_at', '>', $since);
+            $query->where('created_at', '>', \Illuminate\Support\Carbon::parse($since));
         } else {
             $query->latest()->limit(50)->reorder()->orderBy('created_at', 'asc');
         }

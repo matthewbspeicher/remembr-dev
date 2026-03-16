@@ -18,8 +18,7 @@ class MemoryBrowserController extends Controller
             ->whereIn('agent_id', $agents->pluck('id'));
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            // Basic text search. Ideally this would be vectorized but for browser it's a start.
+            $search = str_replace(['%', '_'], ['\%', '\_'], $request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('key', 'like', "%{$search}%")
                     ->orWhere('value', 'like', "%{$search}%");

@@ -56,7 +56,7 @@ class WebhookController extends Controller
             'secret' => 'whsec_'.Str::random(32),
         ]);
 
-        return response()->json($webhook, 201);
+        return response()->json($webhook->makeVisible('secret'), 201);
     }
 
     public function destroy(Request $request, string $id): JsonResponse

@@ -22,7 +22,10 @@ class AgentController extends Controller
             'owner_token' => ['required', 'string'],
         ]);
 
-        $owner = User::where('api_token', $validated['owner_token'])->first();
+        $tokenHash = hash('sha256', $validated['owner_token']);
+        $owner = User::where('api_token_hash', $tokenHash)
+            ->orWhere('api_token', $validated['owner_token'])
+            ->first();
 
         if (! $owner) {
             return response()->json(['error' => 'Invalid owner token.'], 401);
@@ -41,6 +44,7 @@ class AgentController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'api_token' => $token,
+            'token_hash' => hash('sha256', $token),
         ]);
 
         return response()->json([

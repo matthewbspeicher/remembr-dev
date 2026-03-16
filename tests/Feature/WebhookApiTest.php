@@ -121,7 +121,7 @@ it('can delete a webhook', function () {
     expect(WebhookSubscription::count())->toBe(0);
 });
 
-it('queues a webhook job when a memory is shared', function () {
+it('queues the webhook listener when a memory is shared', function () {
     Queue::fake();
 
     $sender = Agent::factory()->create(['owner_id' => $this->owner->id]);
@@ -130,18 +130,18 @@ it('queues a webhook job when a memory is shared', function () {
         'value' => 'shared content',
     ]);
 
-    $webhook = WebhookSubscription::create([
+    WebhookSubscription::create([
         'agent_id' => $this->agent->id,
         'url' => 'https://example.com/webhook',
         'events' => ['memory.shared'],
         'secret' => 'secret',
     ]);
 
-    // This listener should be called when MemoryShared is fired
     \App\Events\MemoryShared::dispatch($memory, $this->agent);
 
-    Queue::assertPushed(DispatchWebhook::class, function ($job) use ($webhook) {
-        return $job->subscription->id === $webhook->id && $job->event === 'memory.shared';
+    // TriggerWebhooks is now queued (ShouldQueue), so it gets pushed as a queued listener
+    Queue::assertPushed(\Illuminate\Events\CallQueuedListener::class, function ($job) {
+        return $job->class === \App\Listeners\TriggerWebhooks::class;
     });
 });
 

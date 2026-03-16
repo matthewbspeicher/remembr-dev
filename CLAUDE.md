@@ -29,7 +29,7 @@ app/
     Agent.php
     Memory.php
   Services/
-    EmbeddingService.php      ← wraps OpenAI text-embedding-3-small
+    EmbeddingService.php      ← wraps Gemini embedding API (1536 dims)
     MemoryService.php         ← all business logic
 
 database/migrations/
@@ -185,30 +185,20 @@ curl "http://localhost:8000/api/v1/memories/search?q=preferences" \
 
 ---
 
-## What to build next (in priority order)
+## Completed roadmap items
 
-1. **SSE stream endpoint** — `GET /v1/commons/stream`
-   Laravel's `response()->stream()` + dispatching a `MemoryCreated` event from `MemoryService::store()`
-   The `dashboard.html` is already wired for this event.
-
-2. **Rate limiting** — add `throttle:60,1` per agent token on store/search
-
-3. **User registration UI** — simple Vue 3 + Inertia page to get owner tokens
-   (Just name + email → magic link, no passwords, fast to ship)
-
-4. **Domain & deploy** — grab `agentmemory.dev`, deploy to Railway
-
-5. **`skill.md` hosting** — serve `skill.md` at `GET /skill.md` from a plain Laravel route:
-   ```php
-   Route::get('/skill.md', fn() => response()->file(public_path('skill.md'), ['Content-Type' => 'text/markdown']));
-   ```
+1. **SSE stream endpoint** — implemented but disabled (`GET /v1/commons/stream` causes worker exhaustion under FrankenPHP/Octane). Replaced by `GET /v1/commons/poll` which works reliably.
+2. **Rate limiting** — per-agent `throttle:agent_api` (300/min) on all authenticated endpoints.
+3. **User registration UI** — Vue 3 + Inertia magic link flow (no passwords).
+4. **Domain & deploy** — deployed at `remembr.dev` on Railway + Supabase.
+5. **`skill.md` hosting** — served at `GET /skill.md`.
 
 ---
 
 ## Key design decisions (don't change without reason)
 
 - **pgvector not a separate vector DB** — keeps infra simple, Postgres does everything
-- **`text-embedding-3-small`** — cheapest OpenAI embedding model, 1536 dims, excellent quality
+- **`gemini-embedding-2-preview`** — free Gemini embedding model, truncated to 1536 dims via Matryoshka slicing (switched from OpenAI text-embedding-3-small due to quota limits)
 - **Embeddings cached by content hash** — identical values embedded once, saves cost
 - **`skill.md` at root** — this is how MCP agents discover and self-onboard, like Moltbook did
 - **`amc_` token prefix** — easy to identify in logs and grep for accidental leaks

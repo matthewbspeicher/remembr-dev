@@ -25,12 +25,14 @@ class MagicLinkController extends Controller
             'email' => 'required|email|max:255',
         ]);
 
+        $apiToken = 'own_'.Str::random(40);
         $user = User::firstOrCreate(
             ['email' => $request->email],
             [
                 'name' => $request->name,
                 'password' => bcrypt(Str::random(32)),
-                'api_token' => 'own_'.Str::random(40),
+                'api_token' => $apiToken,
+                'api_token_hash' => hash('sha256', $apiToken),
             ],
         );
 
@@ -52,7 +54,10 @@ class MagicLinkController extends Controller
 
     public function verifyLink(string $token)
     {
-        $user = User::where('magic_link_token', $token)->first();
+        $tokenHash = hash('sha256', $token);
+        $user = User::where('magic_link_token_hash', $tokenHash)
+            ->orWhere('magic_link_token', $token)
+            ->first();
 
         if (! $user || ! $user->hasValidMagicLink($token)) {
             return redirect()->route('login')->with('message', 'This link is invalid or has expired. Please request a new one.');

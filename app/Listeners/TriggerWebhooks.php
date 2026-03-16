@@ -5,8 +5,9 @@ namespace App\Listeners;
 use App\Events\MemoryShared;
 use App\Jobs\DispatchWebhook;
 use App\Models\WebhookSubscription;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class TriggerWebhooks
+class TriggerWebhooks implements ShouldQueue
 {
     public function handle(MemoryShared $event): void
     {

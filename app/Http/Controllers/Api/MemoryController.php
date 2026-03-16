@@ -11,6 +11,7 @@ use App\Services\MemoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Closure;
 
 class MemoryController extends Controller
 {
@@ -62,13 +63,24 @@ class MemoryController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
+
         $validated = $request->validate([
             'agent_id' => ['sometimes', 'uuid'],
             'key' => ['nullable', 'string', 'max:255'],
             'value' => ['required', 'string', 'max:10000'],
             'type' => ['sometimes', 'string', Rule::in(Memory::TYPES)],
             'visibility' => ['nullable', 'in:private,shared,public,workspace'],
-            'workspace_id' => ['nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id'],
+            'workspace_id' => ['nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id',
+                function (string $attribute, mixed $value, Closure $fail) use ($agent) {
+                    if ($value && ! $agent->workspaces()->where('workspaces.id', $value)->exists()) {
+                        $fail('Agent does not belong to this workspace.');
+                    }
+                },
+            ],
             'metadata' => ['nullable', 'array'],
             'importance' => ['nullable', 'integer', 'min:1', 'max:10'],
             'confidence' => ['nullable', 'numeric', 'min:0', 'max:1'],
@@ -77,14 +89,15 @@ class MemoryController extends Controller
             'tags' => ['nullable', 'array', 'max:10'],
             'tags.*' => ['string', 'max:50'],
             'relations' => ['nullable', 'array', 'max:50'],
-            'relations.*.id' => ['required', 'uuid', 'exists:memories,id'],
+            'relations.*.id' => ['required', 'uuid',
+                function (string $attribute, mixed $value, Closure $fail) use ($agent) {
+                    if (! Memory::where('id', $value)->accessibleBy($agent)->exists()) {
+                        $fail('The referenced memory does not exist or is not accessible.');
+                    }
+                },
+            ],
             'relations.*.type' => ['nullable', 'string', 'max:50'],
         ]);
-
-        $agent = $this->resolveAgent($request, $validated);
-        if ($agent instanceof JsonResponse) {
-            return $agent;
-        }
 
         $memory = $this->memories->store($agent, $validated);
 
@@ -161,7 +174,13 @@ class MemoryController extends Controller
             'value' => ['sometimes', 'string', 'max:10000'],
             'type' => ['sometimes', 'string', Rule::in(Memory::TYPES)],
             'visibility' => ['sometimes', 'in:private,shared,public,workspace'],
-            'workspace_id' => ['sometimes', 'nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id'],
+            'workspace_id' => ['sometimes', 'nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id',
+                function (string $attribute, mixed $value, Closure $fail) use ($agent) {
+                    if ($value && ! $agent->workspaces()->where('workspaces.id', $value)->exists()) {
+                        $fail('Agent does not belong to this workspace.');
+                    }
+                },
+            ],
             'metadata' => ['sometimes', 'array'],
             'importance' => ['sometimes', 'integer', 'min:1', 'max:10'],
             'confidence' => ['sometimes', 'numeric', 'min:0', 'max:1'],
@@ -170,7 +189,13 @@ class MemoryController extends Controller
             'tags' => ['sometimes', 'array', 'max:10'],
             'tags.*' => ['string', 'max:50'],
             'relations' => ['sometimes', 'array', 'max:50'],
-            'relations.*.id' => ['required', 'uuid', 'exists:memories,id'],
+            'relations.*.id' => ['required', 'uuid',
+                function (string $attribute, mixed $value, Closure $fail) use ($agent) {
+                    if (! Memory::where('id', $value)->accessibleBy($agent)->exists()) {
+                        $fail('The referenced memory does not exist or is not accessible.');
+                    }
+                },
+            ],
             'relations.*.type' => ['nullable', 'string', 'max:50'],
         ]);
 
@@ -232,7 +257,9 @@ class MemoryController extends Controller
         try {
             $summaryText = $summarizer->summarize($memories, $agent);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to generate summary: '.$e->getMessage()], 500);
+            \Illuminate\Support\Facades\Log::error('Compact failed', ['exception' => $e]);
+
+            return response()->json(['error' => 'Failed to generate summary. Please try again later.'], 500);
         }
 
         $relations = $memories->map(fn ($m) => ['id' => $m->id, 'type' => 'compacted_from'])->toArray();
@@ -317,10 +344,10 @@ class MemoryController extends Controller
             );
         }
 
-        return response()->json($this->getCommonsData($limit, $tags, $type));
+        return response()->json($this->getCommonsData($limit, $tags, $type, $cursor));
     }
 
-    private function getCommonsData(int $limit, array $tags = [], ?string $type = null): array
+    private function getCommonsData(int $limit, array $tags = [], ?string $type = null, ?string $cursor = null): array
     {
         $query = Memory::query()
             ->select('id', 'agent_id', 'workspace_id', 'key', 'value', 'type', 'visibility', 'importance', 'confidence', 'metadata', 'created_at', 'updated_at', 'expires_at')
@@ -338,7 +365,7 @@ class MemoryController extends Controller
             $query->where('type', $type);
         }
 
-        $paginated = $query->cursorPaginate($limit);
+        $paginated = $query->cursorPaginate($limit, ['*'], 'cursor', $cursor);
 
         return [
             'data' => collect($paginated->items())->map(fn (Memory $m) => [

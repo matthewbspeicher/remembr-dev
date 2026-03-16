@@ -7,6 +7,7 @@ use App\Models\Agent;
 use App\Models\Memory;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class MemoryService
 {
@@ -20,14 +21,6 @@ class MemoryService
 
     public function store(Agent $agent, array $data): Memory
     {
-        // Enforce per-agent quota — only for genuinely new memories (not updates)
-        $key = $data['key'] ?? null;
-        $isUpdate = $key && Memory::where('agent_id', $agent->id)->where('key', $key)->exists();
-
-        if (! $isUpdate && $agent->memories()->count() >= $agent->max_memories) {
-            abort(422, "Memory quota exceeded. This agent is limited to {$agent->max_memories} memories.");
-        }
-
         if (isset($data['ttl'])) {
             $data['expires_at'] = $this->parseTtl($data['ttl']);
         }
@@ -37,37 +30,52 @@ class MemoryService
             $metadata['tags'] = $data['tags'];
         }
 
+        // Embed before the transaction to keep the lock window short
         $embedding = $this->embeddings->embed($data['value']);
 
-        $memory = Memory::updateOrCreate(
-            [
-                'agent_id' => $agent->id,
-                'key' => $data['key'] ?? null,
-            ],
-            [
-                'value' => $data['value'],
-                'type' => $data['type'] ?? 'note',
-                'embedding' => '['.implode(',', $embedding).']',
-                'metadata' => $metadata,
-                'visibility' => $data['visibility'] ?? 'private',
-                'workspace_id' => $data['workspace_id'] ?? null,
-                'importance' => $data['importance'] ?? 5,
-                'confidence' => $data['confidence'] ?? 1.0,
-                'expires_at' => $data['expires_at'] ?? null,
-            ]
-        );
+        $memory = DB::transaction(function () use ($agent, $data, $metadata, $embedding) {
+            // Lock the agent row to serialize concurrent quota checks
+            $agent = Agent::lockForUpdate()->find($agent->id);
+
+            $key = $data['key'] ?? null;
+            $isUpdate = $key && Memory::where('agent_id', $agent->id)->where('key', $key)->exists();
+
+            if (! $isUpdate && $agent->memories()->count() >= $agent->max_memories) {
+                abort(422, "Memory quota exceeded. This agent is limited to {$agent->max_memories} memories.");
+            }
+
+            $memory = Memory::updateOrCreate(
+                [
+                    'agent_id' => $agent->id,
+                    'key' => $data['key'] ?? null,
+                ],
+                [
+                    'value' => $data['value'],
+                    'type' => $data['type'] ?? 'note',
+                    'embedding' => '['.implode(',', $embedding).']',
+                    'metadata' => $metadata,
+                    'visibility' => $data['visibility'] ?? 'private',
+                    'workspace_id' => $data['workspace_id'] ?? null,
+                    'importance' => $data['importance'] ?? 5,
+                    'confidence' => $data['confidence'] ?? 1.0,
+                    'expires_at' => $data['expires_at'] ?? null,
+                ]
+            );
+
+            if (isset($data['relations'])) {
+                $syncData = [];
+                foreach ($data['relations'] as $relation) {
+                    $syncData[$relation['id']] = ['type' => $relation['type'] ?? 'related'];
+                }
+                $memory->relatedTo()->sync($syncData);
+                $memory->load('relatedTo');
+            }
+
+            return $memory;
+        });
 
         if ($memory->visibility === 'public') {
             MemoryCreated::dispatch($memory->load('agent'));
-        }
-
-        if (isset($data['relations'])) {
-            $syncData = [];
-            foreach ($data['relations'] as $relation) {
-                $syncData[$relation['id']] = ['type' => $relation['type'] ?? 'related'];
-            }
-            $memory->relatedTo()->sync($syncData);
-            $memory->load('relatedTo');
         }
 
         return $memory;
@@ -95,20 +103,24 @@ class MemoryService
             }
         }
 
-        if (isset($data['relations'])) {
-            $syncData = [];
-            foreach ($data['relations'] as $relation) {
-                $syncData[$relation['id']] = ['type' => $relation['type'] ?? 'related'];
+        // Strip agent_id to prevent reassignment
+        unset($data['agent_id']);
+
+        return DB::transaction(function () use ($memory, $data) {
+            if (isset($data['relations'])) {
+                $syncData = [];
+                foreach ($data['relations'] as $relation) {
+                    $syncData[$relation['id']] = ['type' => $relation['type'] ?? 'related'];
+                }
+                $memory->relatedTo()->sync($syncData);
+                unset($data['relations']);
             }
-            $memory->relatedTo()->sync($syncData);
-            unset($data['relations']);
-        }
 
-        $memory->update($data);
+            $memory->update($data);
+            $memory->load('relatedTo');
 
-        $memory->load('relatedTo');
-
-        return $memory->fresh();
+            return $memory->fresh();
+        });
     }
 
     private function parseTtl(string $ttl): \Illuminate\Support\Carbon

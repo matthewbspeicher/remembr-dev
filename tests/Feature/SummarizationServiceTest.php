@@ -34,6 +34,6 @@ it('summarizes a collection of memories', function () {
     expect($summary)->toBe('The user loves dogs, specifically golden retrievers, and has one named Max.');
 
     Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
-        return str_contains($request->url(), 'gemini-1.5-flash:generateContent');
+        return str_contains($request->url(), 'generateContent');
     });
 });

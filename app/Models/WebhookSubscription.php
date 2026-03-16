@@ -21,6 +21,11 @@ class WebhookSubscription extends Model
         'failure_count',
     ];
 
+    protected $hidden = [
+        'secret',
+        'embedding',
+    ];
+
     protected $attributes = [
         'is_active' => true,
         'failure_count' => 0,

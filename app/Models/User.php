@@ -19,7 +19,9 @@ class User extends Authenticatable
         'email',
         'password',
         'api_token',
+        'api_token_hash',
         'magic_link_token',
+        'magic_link_token_hash',
         'magic_link_expires_at',
     ];
 
@@ -27,7 +29,9 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'api_token',
+        'api_token_hash',
         'magic_link_token',
+        'magic_link_token_hash',
         'stripe_id',
         'pm_type',
         'pm_last_four',
@@ -131,6 +135,7 @@ class User extends Authenticatable
 
         $this->update([
             'magic_link_token' => $token,
+            'magic_link_token_hash' => hash('sha256', $token),
             'magic_link_expires_at' => now()->addMinutes(30),
         ]);
 
@@ -139,7 +144,7 @@ class User extends Authenticatable
 
     public function hasValidMagicLink(string $token): bool
     {
-        return $this->magic_link_token === $token
+        return hash_equals($this->magic_link_token ?? '', $token)
             && $this->magic_link_expires_at
             && $this->magic_link_expires_at->isFuture();
     }
@@ -160,7 +165,11 @@ class User extends Authenticatable
     public function ensureApiToken(): string
     {
         if (! $this->api_token) {
-            $this->update(['api_token' => self::generateToken()]);
+            $token = self::generateToken();
+            $this->update([
+                'api_token' => $token,
+                'api_token_hash' => hash('sha256', $token),
+            ]);
         }
 
         return $this->api_token;

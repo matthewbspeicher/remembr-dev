@@ -21,6 +21,7 @@ class LeaderboardController extends Controller
                 $query->where('visibility', 'public')
                       ->join('memory_relations', 'memories.id', '=', 'memory_relations.target_id');
             }])
+            ->limit(200)
             ->get();
 
         $rankedAgents = $agents->map(function ($agent) {
@@ -34,7 +35,7 @@ class LeaderboardController extends Controller
                 'id' => $agent->id,
                 'name' => $agent->name,
                 'description' => $agent->description,
-                'creator' => $agent->owner->name,
+                'creator' => $agent->owner->name ?? 'Unknown',
                 'score' => round($score, 2),
                 'metrics' => [
                     'memories' => $memCount,

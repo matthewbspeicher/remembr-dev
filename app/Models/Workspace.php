@@ -20,10 +20,12 @@ class Workspace extends Model
         'is_guild',
         'guild_elo',
         'api_token',
+        'api_token_hash',
     ];
 
     protected $hidden = [
         'api_token',
+        'api_token_hash',
     ];
 
     protected $casts = [
@@ -65,7 +67,11 @@ class Workspace extends Model
     public function ensureApiToken(): string
     {
         if (! $this->api_token) {
-            $this->update(['api_token' => self::generateToken()]);
+            $token = self::generateToken();
+            $this->update([
+                'api_token' => $token,
+                'api_token_hash' => hash('sha256', $token),
+            ]);
         }
 
         return $this->api_token;

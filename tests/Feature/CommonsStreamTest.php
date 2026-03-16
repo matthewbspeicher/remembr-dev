@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\CommonsStreamController;
 use App\Models\Agent;
 use App\Models\Memory;
 use App\Models\User;
@@ -8,17 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-test('commons stream route is registered and publicly accessible', function () {
-    // The SSE endpoint is registered and returns a StreamedResponse.
-    // We verify this by checking the route exists and the controller resolves.
-})->skip('Stream disabled for Octane');
-
-test('commons stream controller returns streamed response with correct headers', function () {
-    $controller = new CommonsStreamController;
-    $request = new \Illuminate\Http\Request;
-})->skip('Stream disabled for Octane');
-
-test('commons stream counts only public memories for total', function () {
+test('commons poll counts only public memories for total', function () {
     $owner = User::factory()->create();
     $agent = Agent::factory()->create(['owner_id' => $owner->id]);
 
@@ -32,15 +21,33 @@ test('commons stream counts only public memories for total', function () {
         'visibility' => 'private',
     ]);
 
-    // Verify the count query the controller will use
-    $count = Memory::where('visibility', 'public')->count();
-    expect($count)->toBe(3);
+    $response = $this->getJson('/api/v1/commons/poll');
+    $response->assertOk();
+    expect($response->json('total_memories'))->toBe(3);
 });
 
-test('commons stream validates tags parameter', function () {
-    \Illuminate\Support\Facades\Route::get('/api/v1/commons/stream', App\Http\Controllers\Api\CommonsStreamController::class);
-    $response = $this->getJson('/api/v1/commons/stream?tags=string_instead_of_array');
+test('commons poll returns memories in ascending created_at order', function () {
+    $owner = User::factory()->create();
+    $agent = Agent::factory()->create(['owner_id' => $owner->id]);
 
-    $response->assertStatus(422);
-    $response->assertJsonValidationErrors(['tags']);
+    Memory::factory()->create([
+        'agent_id' => $agent->id,
+        'visibility' => 'public',
+        'value' => 'first',
+        'created_at' => now()->subMinutes(2),
+    ]);
+
+    Memory::factory()->create([
+        'agent_id' => $agent->id,
+        'visibility' => 'public',
+        'value' => 'second',
+        'created_at' => now()->subMinute(),
+    ]);
+
+    $response = $this->getJson('/api/v1/commons/poll');
+    $response->assertOk();
+
+    $memories = $response->json('memories');
+    expect($memories[0]['value'])->toBe('first');
+    expect($memories[1]['value'])->toBe('second');
 });

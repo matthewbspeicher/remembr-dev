@@ -19,6 +19,7 @@ class Agent extends Model
         'name',
         'description',
         'api_token',
+        'token_hash',
         'is_active',
         'max_memories',
         'last_seen_at',
@@ -26,6 +27,7 @@ class Agent extends Model
 
     protected $hidden = [
         'api_token',
+        'token_hash',
     ];
 
     protected $casts = [
@@ -36,6 +38,11 @@ class Agent extends Model
     public static function generateToken(): string
     {
         return 'amc_'.Str::random(60);
+    }
+
+    public static function hashToken(string $token): string
+    {
+        return hash('sha256', $token);
     }
 
     public function owner(): BelongsTo

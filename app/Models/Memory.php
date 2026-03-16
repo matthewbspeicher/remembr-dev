@@ -79,8 +79,9 @@ class Memory extends Model
 
     public function scopeNotExpired(Builder $query): Builder
     {
-        $now = now()->format('Y-m-d H:i:s');
-        return $query->whereRaw("(expires_at IS NULL OR expires_at > '{$now}')");
+        return $query->where(function ($q) {
+            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+        });
     }
 
     public function scopePublic(Builder $query): Builder
@@ -151,15 +152,15 @@ class Memory extends Model
     {
         // Replace spaces with | for to_tsquery (OR search) to improve recall
         // Ranking will handle relevance
-        $tsQuery = implode(' | ', array_filter(explode(' ', $searchTerm)));
+        $searchTerm = trim($searchTerm);
 
-        if (empty($tsQuery)) {
+        if (empty($searchTerm)) {
             return $query;
         }
 
         return $query
-            ->selectRaw('*, ts_rank(search_vector, to_tsquery(\'english\', ?)) AS rank', [$tsQuery])
-            ->whereRaw("search_vector @@ to_tsquery('english', ?)", [$tsQuery])
+            ->selectRaw('*, ts_rank(search_vector, websearch_to_tsquery(\'english\', ?)) AS rank', [$searchTerm])
+            ->whereRaw("search_vector @@ websearch_to_tsquery('english', ?)", [$searchTerm])
             ->orderByRaw('rank DESC')
             ->limit($limit);
     }

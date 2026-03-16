@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'agent.auth' => \App\Http\Middleware\AuthenticateAgent::class,
             'rate.headers' => \App\Http\Middleware\RateLimitHeaders::class,
+            'plan.limits' => \App\Http\Middleware\EnforcePlanLimits::class,
         ]);
         $middleware->validateCsrfTokens(except: ['stripe/*']);
     })

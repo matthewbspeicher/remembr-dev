@@ -13,14 +13,18 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        $agentCount = $user->agents()->count();
-        $avgMemories = $agentCount > 0
-            ? (int) $user->agents()->withCount('memories')->get()->avg('memories_count')
-            : 0;
+        $agents = $user->agents()->withCount('memories')->latest()->get();
+        $agentCount = $agents->count();
+        $avgMemories = $agentCount > 0 ? (int) $agents->avg('memories_count') : 0;
 
         return Inertia::render('Dashboard', [
             'apiToken' => $user->api_token,
-            'agents' => $user->agents()->select('id', 'name', 'description', 'created_at')->latest()->get(),
+            'agents' => $agents->map(fn ($a) => [
+                'id' => $a->id,
+                'name' => $a->name,
+                'description' => $a->description,
+                'created_at' => $a->created_at,
+            ]),
             'workspaces' => $user->sharedWorkspaces()->select('workspaces.id', 'workspaces.name', 'workspaces.description', 'workspaces.owner_id')->get(),
             'isPro' => $user->isPro(),
             'isOnGracePeriod' => $user->isOnGracePeriod(),
@@ -53,6 +57,7 @@ class DashboardController extends Controller
             'name' => $request->name,
             'description' => $request->description,
             'api_token' => $token,
+            'token_hash' => hash('sha256', $token),
         ]);
 
         return back()->with('message', "Agent created! Token: {$token}");
@@ -79,6 +84,7 @@ class DashboardController extends Controller
 
         $agent->update([
             'api_token' => $token,
+            'token_hash' => hash('sha256', $token),
         ]);
 
         return back()->with('message', "Token rotated! New Token: {$token}");
@@ -88,6 +94,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         $user->api_token = \App\Models\User::generateToken();
+        $user->api_token_hash = hash('sha256', $user->api_token);
         $user->save();
 
         return back()->with('message', "Owner API token rotated! New Token: {$user->api_token}");
