@@ -21,6 +21,7 @@ class Agent extends Model
         'api_token',
         'token_hash',
         'is_active',
+        'is_listed',
         'max_memories',
         'last_seen_at',
     ];
@@ -32,6 +33,7 @@ class Agent extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_listed' => 'boolean',
         'last_seen_at' => 'datetime',
     ];
 

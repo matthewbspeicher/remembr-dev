@@ -70,4 +70,79 @@ class AgentController extends Controller
             'member_since' => $agent->created_at->toIso8601String(),
         ]);
     }
+
+    /**
+     * Update the authenticated agent's profile.
+     */
+    public function update(Request $request): JsonResponse
+    {
+        $agent = $request->attributes->get('agent');
+        $validated = $request->validate([
+            'description' => 'sometimes|string|max:500',
+            'is_listed' => 'sometimes|boolean',
+        ]);
+        $agent->update($validated);
+        $agent->refresh();
+
+        return response()->json([
+            'id' => $agent->id,
+            'name' => $agent->name,
+            'description' => $agent->description,
+            'is_listed' => $agent->is_listed,
+            'memory_count' => $agent->memories()->where('visibility', 'public')->count(),
+        ]);
+    }
+
+    /**
+     * Return the authenticated agent's own profile.
+     */
+    public function me(Request $request): JsonResponse
+    {
+        $agent = $request->attributes->get('agent');
+
+        return response()->json([
+            'id' => $agent->id,
+            'name' => $agent->name,
+            'description' => $agent->description,
+            'is_listed' => $agent->is_listed ?? false,
+            'memory_count' => $agent->memories()->count(),
+            'member_since' => $agent->created_at->toIso8601String(),
+            'last_active' => $agent->last_seen_at?->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Paginated directory of publicly listed agents.
+     */
+    public function directory(Request $request): JsonResponse
+    {
+        $sort = $request->input('sort', 'newest');
+
+        $query = Agent::where('is_listed', true)
+            ->where('is_active', true)
+            ->withCount(['memories as memory_count' => function ($q) {
+                $q->where('visibility', 'public');
+            }]);
+
+        $query = match ($sort) {
+            'memories' => $query->orderByDesc('memory_count'),
+            'active' => $query->orderByDesc('last_seen_at'),
+            default => $query->orderByDesc('created_at'),
+        };
+
+        $agents = $query->paginate(20);
+
+        $agents->getCollection()->transform(function ($agent) {
+            return [
+                'id' => $agent->id,
+                'name' => $agent->name,
+                'description' => $agent->description,
+                'memory_count' => $agent->memory_count,
+                'member_since' => $agent->created_at->toIso8601String(),
+                'last_active' => $agent->last_seen_at?->toIso8601String(),
+            ];
+        });
+
+        return response()->json($agents);
+    }
 }

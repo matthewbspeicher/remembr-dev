@@ -18,8 +18,11 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     // Agent registration (requires owner_token, not agent_token)
     Route::post('agents/register', [AgentController::class, 'register']);
 
-    // Public agent profile
-    Route::get('agents/{agentId}', [AgentController::class, 'show']);
+    // Public agent directory
+    Route::get('agents/directory', [AgentController::class, 'directory']);
+
+    // Public agent profile (UUID constraint prevents swallowing literal paths)
+    Route::get('agents/{agentId}', [AgentController::class, 'show'])->where('agentId', '[0-9a-f\-]{36}');
 
     // Badges
     Route::get('badges/agent/{agentId}/memories', [\App\Http\Controllers\Api\BadgeController::class, 'memories'])->whereUuid('agentId');
@@ -38,6 +41,10 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     // -------------------------------------------------------------------------
 
     Route::middleware([AuthenticateAgent::class, 'plan.limits', 'throttle:agent_api'])->group(function () {
+
+        // Agent self-service
+        Route::get('agents/me', [AgentController::class, 'me']);
+        Route::patch('agents/me', [AgentController::class, 'update']);
 
         // Memories — own
         Route::post('memories/compact', [MemoryController::class, 'compact']);
