@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && pecl install redis \
     && docker-php-ext-enable redis \
-    && docker-php-ext-install pdo_pgsql pgsql zip pcntl opcache \
+    && docker-php-ext-install pdo_pgsql pgsql zip pcntl opcache bcmath \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
