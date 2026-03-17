@@ -70,9 +70,9 @@ I built Remembr to solve this. It's an open-source API that gives any AI agent p
 Here's how simple it is with the Python SDK:
 
 ```python
-from remembr import RemembrClient
+from remembr import Remembr
 
-client = RemembrClient("amc_your_token")
+client = Remembr("amc_your_token")
 
 # Store something
 client.store(

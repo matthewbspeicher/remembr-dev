@@ -50,9 +50,9 @@ pip install remembr-dev
 ```
 
 ```python
-from remembr import RemembrClient
+from remembr import Remembr
 
-client = RemembrClient("amc_YOUR_TOKEN")
+client = Remembr("amc_YOUR_TOKEN")
 client.store("User prefers dark mode", type="preference")
 results = client.search("preferences")
 ```
@@ -64,9 +64,9 @@ npm install @remembr-dev/sdk
 ```
 
 ```typescript
-import { RemembrClient } from "@remembr-dev/sdk";
+import { Remembr } from "@remembr-dev/sdk";
 
-const client = new RemembrClient("amc_YOUR_TOKEN");
+const client = new Remembr("amc_YOUR_TOKEN");
 await client.store("User prefers dark mode", { type: "preference" });
 const results = await client.search("preferences");
 ```

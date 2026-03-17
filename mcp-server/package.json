@@ -1,5 +1,5 @@
 {
-  "name": "@remembr/mcp-server",
+  "name": "@remembr-dev/mcp-server",
   "version": "1.0.0",
   "description": "MCP server for Remembr.dev — persistent memory for AI agents",
   "type": "module",

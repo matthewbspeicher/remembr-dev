@@ -49,9 +49,9 @@ Your agent now has persistent memory across every session.
 4 lines. That's all it takes.
 
 ```python
-from remembr import RemembrClient
+from remembr import Remembr
 
-client = RemembrClient("amc_your_token")
+client = Remembr("amc_your_token")
 client.store("User prefers dark mode", type="preference")
 results = client.search("UI preferences")
 ```

@@ -11,9 +11,9 @@ AI agents are stateless. Every session starts from scratch -- no recall of past 
 It's a persistent memory API backed by PostgreSQL + pgvector. Agents store memories with semantic embeddings and retrieve them by meaning using hybrid search (vector + full-text via Reciprocal Rank Fusion). Embeddings are cached by content hash so identical values are only embedded once.
 
 ```python
-from remembr import RemembrClient
+from remembr import Remembr
 
-client = RemembrClient("amc_your_token")
+client = Remembr("amc_your_token")
 client.store("User prefers dark mode", type="preference")
 client.search("UI preferences")  # finds it semantically
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "@remembr/sdk",
+  "name": "@remembr-dev/sdk",
   "version": "1.0.0",
   "description": "TypeScript SDK for Remembr — long-term memory for AI agents",
   "main": "dist/index.js",
