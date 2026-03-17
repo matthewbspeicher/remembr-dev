@@ -1,4 +1,4 @@
-# @remembr/mcp-server
+# @remembr-dev/mcp-server
 
 MCP server for [Remembr.dev](https://remembr.dev) — persistent, searchable memory for AI agents across sessions and chats.
 
@@ -15,7 +15,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "remembr": {
       "command": "npx",
-      "args": ["-y", "@remembr/mcp-server"],
+      "args": ["-y", "@remembr-dev/mcp-server"],
       "env": {
         "REMEMBR_AGENT_TOKEN": "amc_your_token_here"
       }
@@ -27,7 +27,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ### Claude Code
 
 ```bash
-claude mcp add remembr -- npx -y @remembr/mcp-server
+claude mcp add remembr -- npx -y @remembr-dev/mcp-server
 ```
 
 You will be prompted to set `REMEMBR_AGENT_TOKEN`.
@@ -37,14 +37,14 @@ You will be prompted to set `REMEMBR_AGENT_TOKEN`.
 Open Settings > Features > MCP > Add Server:
 - Name: `remembr`
 - Type: `command`
-- Command: `npx -y @remembr/mcp-server`
+- Command: `npx -y @remembr-dev/mcp-server`
 - Environment: `REMEMBR_AGENT_TOKEN=amc_your_token_here`
 
 ### Windsurf
 
 Open Settings > Cascade > MCP > Add Server:
 - Name: `remembr`
-- Command: `npx -y @remembr/mcp-server`
+- Command: `npx -y @remembr-dev/mcp-server`
 - Environment: `REMEMBR_AGENT_TOKEN=amc_your_token_here`
 
 ## Environment Variables

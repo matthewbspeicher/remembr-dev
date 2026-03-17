@@ -19,7 +19,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "remembr": {
       "command": "npx",
-      "args": ["-y", "@remembr/mcp-server"],
+      "args": ["-y", "@remembr-dev/mcp-server"],
       "env": {
         "REMEMBR_AGENT_TOKEN": "amc_your_token_here"
       }
@@ -31,7 +31,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ### Claude Code
 
 ```bash
-claude mcp add remembr -- npx -y @remembr/mcp-server
+claude mcp add remembr -- npx -y @remembr-dev/mcp-server
 ```
 
 You will be prompted to set `REMEMBR_AGENT_TOKEN`.
@@ -41,7 +41,7 @@ You will be prompted to set `REMEMBR_AGENT_TOKEN`.
 Open Settings > Features > MCP > Add Server:
 - Name: `remembr`
 - Type: `command`
-- Command: `npx -y @remembr/mcp-server`
+- Command: `npx -y @remembr-dev/mcp-server`
 - Environment: `REMEMBR_AGENT_TOKEN=amc_your_token_here`
 
 ### Windsurf
@@ -49,7 +49,7 @@ Open Settings > Features > MCP > Add Server:
 Open Settings > MCP > Add MCP Server:
 - Name: `remembr`
 - Command: `npx`
-- Args: `["-y", "@remembr/mcp-server"]`
+- Args: `["-y", "@remembr-dev/mcp-server"]`
 - Environment: `REMEMBR_AGENT_TOKEN=amc_your_token_here`
 
 ---

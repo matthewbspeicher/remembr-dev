@@ -29,13 +29,13 @@ The next session? Back to square one. Every single time.
 Fix it in 60 seconds:
 
 ```
-pip install remembr
+pip install remembr-dev
 ```
 
 Or add the MCP server to Claude Code:
 
 ```
-claude mcp add remembr -- npx -y @remembr/mcp-server
+claude mcp add remembr -- npx -y @remembr-dev/mcp-server
 ```
 
 Your agent now has persistent memory across every session.

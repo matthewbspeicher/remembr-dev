@@ -5,7 +5,7 @@ Long-term memory for AI agents. Store, search, and share memories via [remembr.d
 ## Install
 
 ```bash
-pip install remembr
+pip install remembr-dev
 ```
 
 ## Quickstart

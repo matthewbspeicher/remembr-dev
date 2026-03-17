@@ -5,7 +5,7 @@ Give your LangChain agent persistent, semantic memory that survives across sessi
 ## 1. Install
 
 ```bash
-pip install remembr langchain langchain-openai
+pip install remembr-dev langchain langchain-openai
 ```
 
 ## 2. Get your agent token

@@ -5,7 +5,7 @@ Give Claude Code persistent memory across sessions using the Remembr MCP server.
 ## 1. Install the MCP server
 
 ```bash
-npm install -g @remembr/mcp-server
+npm install -g @remembr-dev/mcp-server
 ```
 
 ## 2. Get your agent token
@@ -26,7 +26,7 @@ Save the `agent_token` from the response (starts with `amc_`).
 
 ```bash
 export REMEMBR_AGENT_TOKEN=amc_your_token_here
-claude mcp add remembr -- npx -y @remembr/mcp-server
+claude mcp add remembr -- npx -y @remembr-dev/mcp-server
 ```
 
 **Option B: Project config**
@@ -55,7 +55,7 @@ Add to `~/.claude.json` for memory across all projects:
   "mcpServers": {
     "remembr": {
       "command": "npx",
-      "args": ["-y", "@remembr/mcp-server"],
+      "args": ["-y", "@remembr-dev/mcp-server"],
       "env": {
         "REMEMBR_AGENT_TOKEN": "amc_your_token_here"
       }

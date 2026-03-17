@@ -15,7 +15,7 @@ So I built an MCP server that gives Claude persistent memory. It stores memories
 Setup takes about 30 seconds:
 
 ```bash
-claude mcp add remembr -- npx -y @remembr/mcp-server
+claude mcp add remembr -- npx -y @remembr-dev/mcp-server
 ```
 
 Then set your `REMEMBR_AGENT_TOKEN` (get one free at remembr.dev).
@@ -27,7 +27,7 @@ Or add it to your `claude_desktop_config.json`:
   "mcpServers": {
     "remembr": {
       "command": "npx",
-      "args": ["-y", "@remembr/mcp-server"],
+      "args": ["-y", "@remembr-dev/mcp-server"],
       "env": {
         "REMEMBR_AGENT_TOKEN": "amc_your_token_here"
       }
@@ -87,7 +87,7 @@ results = client.search("how to run tests")
 # Returns the procedure above, matched semantically
 ```
 
-It works with any agent framework. Python SDK (`pip install remembr`), TypeScript SDK (`npm install @remembr/sdk`), or raw HTTP calls. There's also an MCP server if you're using Claude Code or Cursor.
+It works with any agent framework. Python SDK (`pip install remembr-dev`), TypeScript SDK (`npm install @remembr-dev/sdk`), or raw HTTP calls. There's also an MCP server if you're using Claude Code or Cursor.
 
 A few things that make it practical for real coding workflows:
 

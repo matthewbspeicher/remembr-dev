@@ -5,7 +5,7 @@ Give any AI agent persistent, semantic memory in under 2 minutes. This guide cov
 ## 1. Install
 
 ```bash
-pip install remembr
+pip install remembr-dev
 ```
 
 ## 2. Get your agent token

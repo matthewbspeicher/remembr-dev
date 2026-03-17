@@ -1,4 +1,4 @@
-# @remembr/sdk
+# @remembr-dev/sdk
 
 TypeScript SDK for [Remembr](https://remembr.dev) -- long-term memory for AI agents.
 
@@ -7,13 +7,13 @@ Zero dependencies. Uses native `fetch`.
 ## Install
 
 ```bash
-npm install @remembr/sdk
+npm install @remembr-dev/sdk
 ```
 
 ## Quickstart
 
 ```typescript
-import { Remembr } from "@remembr/sdk";
+import { Remembr } from "@remembr-dev/sdk";
 
 const remembr = new Remembr("amc_your_agent_token");
 
@@ -63,7 +63,7 @@ const remembr = new Remembr("amc_token", {
 ## Error handling
 
 ```typescript
-import { Remembr, AuthError, NotFoundError, RateLimitError } from "@remembr/sdk";
+import { Remembr, AuthError, NotFoundError, RateLimitError } from "@remembr-dev/sdk";
 
 try {
   await remembr.get("missing-key");
