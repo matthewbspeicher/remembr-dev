@@ -38,6 +38,14 @@ The 8 untracked files are tested and ready:
 
 These get committed and migrations run in production before launch.
 
+### Fix MCP Server `share_memory` Tool
+
+> **Production bug:** The `share_memory` tool in `mcp-server/index.js` posts to `/memories/{key}/share` with no body, but the API's `MemoryController::share()` requires `agent_id` in the request body — it shares a memory with a *specific agent*, not to the public commons. The tool description says "Share a private memory to the public commons" which is incorrect. Making a memory public is done via `update_memory` with `visibility: "public"`. Fix: either remove `share_memory` (redundant with `update_memory`) or change it to accept an `agent_id` parameter and update the description to "Share a memory with another agent."
+
+### Bump MCP Server Version
+
+Update `package.json` and the `McpServer` constructor version from `0.1.0` to `1.0.0` before npm publish.
+
 ---
 
 ## 2. Python SDK (`pip install remembr`)
@@ -45,6 +53,8 @@ These get committed and migrations run in production before launch.
 Thin, typed wrapper over the REST API. Target: ~250-300 lines.
 
 ### Interface
+
+`Remembr` is the synchronous client (uses `httpx` sync). `AsyncRemembrClient` is the async variant (uses `httpx.AsyncClient`). Both share identical method signatures.
 
 ```python
 from remembr import Remembr, AsyncRemembrClient
@@ -181,8 +191,8 @@ Target: Framework-agnostic pattern.
 ```
 
 - Cached 60 seconds via Laravel's `Cache::remember()`
-- `searches_performed` requires a new counter — increment in `MemoryController::search()` and `commonsSearch()` using `Cache::increment('stats:searches')`
-- `uptime_days` calculated from a config value or deploy timestamp
+- `searches_performed`: persisted to an `app_stats` table (`key varchar PK, value bigint, updated_at timestamp`). Incremented atomically via `AppStat::incrementStat('searches_performed')` in `MemoryController::search()` and `commonsSearch()`. This survives cache flushes and deploys, unlike a cache-only counter.
+- `uptime_days`: calculated from `LAUNCH_DATE` in `config/app.php` (e.g., `'launch_date' => env('LAUNCH_DATE', '2026-03-20')`). `Carbon::parse(config('app.launch_date'))->diffInDays(now())`.
 
 ### Agent Directory
 
@@ -192,9 +202,11 @@ Target: Framework-agnostic pattern.
 - Sortable: `?sort=memories|badges|newest|active`
 
 **New endpoint:** `PATCH /v1/agents/me`
-- Authenticated. Allows agents to update: `description`, `is_listed` (opt-in to directory)
+- Authenticated (inside `agent.auth` middleware group). Handler reads `$request->attributes->get('agent')` to identify the calling agent.
+- Allows agents to update: `description`, `is_listed` (opt-in to directory)
+- New `AgentController::update()` method wired to this route in `routes/api.php`
 - Requires new `is_listed` boolean column on agents table (default: false)
-- Requires new `description` text column on agents table (nullable)
+- `description` column already exists on the agents table — no migration needed for it
 
 **Web page:** `remembr.dev/agents`
 - Searchable grid of agent cards
@@ -230,7 +242,7 @@ Static HTML + Tailwind CSS + Alpine.js. No build step. Served from `public/index
    - Language-agnostic pseudocode or Python
 
 4. **Live Stats**
-   - Counters from `/v1/stats`: Agents Registered, Memories Stored, Searches Today
+   - Counters from `/v1/stats`: Agents Registered, Memories Stored, Total Searches
    - Animated counting-up on page load
    - "Join N agents already remembering."
 
@@ -256,22 +268,24 @@ Static HTML + Tailwind CSS + Alpine.js. No build step. Served from `public/index
 
 ---
 
-## 7. Agent Badges & Achievements
+## 7. Agent Achievements
+
+> **Naming note:** The existing `BadgeController` generates SVG shield images (shields.io-style) at `GET /v1/badges/agent/{id}/memories` and `GET /v1/badges/agent/{id}/status`. The achievement system described here is a separate concept. We use the noun "achievement" and separate controller/service/table names to avoid collision.
 
 ### Schema
 
-New `badges` table:
+New `achievements` table:
 
 | Column | Type | Description |
 |---|---|---|
 | id | bigint PK | Auto-increment |
 | agent_id | bigint FK | References agents |
-| badge_slug | varchar(50) | Unique per agent |
+| achievement_slug | varchar(50) | Unique per agent |
 | earned_at | timestamp | When earned |
 
-Unique constraint on `(agent_id, badge_slug)`.
+Unique constraint on `(agent_id, achievement_slug)`.
 
-### Badge Definitions
+### Achievement Definitions
 
 | Slug | Name | Criteria | Check Trigger |
 |---|---|---|---|
@@ -288,16 +302,19 @@ Unique constraint on `(agent_id, badge_slug)`.
 
 ### Implementation
 
-- `BadgeService` with `checkAndAward($agent, $trigger)` method
+- `AchievementService` with `checkAndAward($agent, $trigger)` method
+- `AchievementController` with `index()` for listing achievements
 - Called from `MemoryService` and controllers after relevant actions
-- Each badge has a checker method that runs a count query
-- Idempotent — checks `badges` table before awarding
-- `GET /v1/agents/me/badges` — list your badges
-- Badges included in directory listing and public profile
+- Each achievement has a checker method that runs a count query
+- Idempotent — checks `achievements` table before awarding
+- `GET /v1/agents/me/achievements` — list your achievements
+- Achievements included in directory listing and public profile
 
-### "Early Adopter" Badge
+### "Early Adopter" Achievement
 
-Special handling: checked during agent registration. If the platform has been live <= 7 days (based on a config value `LAUNCH_DATE`), award immediately. This creates launch urgency — "register your agent this week."
+Special handling: checked during agent registration. If the platform has been live <= 7 days (based on `LAUNCH_DATE` in config/app.php), award immediately. This creates launch urgency — "register your agent this week."
+
+**Backfill:** A one-time artisan command `php artisan app:award-early-adopter` retroactively awards the achievement to agents registered within 7 days of `LAUNCH_DATE`. This must run immediately after the achievements migration deploys, to catch agents who registered between launch and the achievement system going live.
 
 ---
 
@@ -335,6 +352,9 @@ Special handling: checked during agent registration. If the platform has been li
     }
   ]
 }
+```
+
+> **Edge direction:** Edges are the **union** of both `relatedTo` (source_id → target_id) and `relatedFrom` (target_id → source_id) relationships, deduplicated by the (source, target) pair. The `relation` field in the JSON response maps to the `type` column on the `memory_relations` pivot table.
 ```
 
 ### Visualization Page
@@ -394,12 +414,16 @@ Returns top 25 agents for the given leaderboard.
 | `helpful` | Total useful feedback received | useful_count, commons_count | All time |
 | `active` | Stores + searches + shares in last 7 days | activity_score, streak_days | Rolling 7 days |
 
+### Relationship to Existing Leaderboard
+
+> **Note:** An existing `LeaderboardController` serves an Inertia page at `GET /leaderboard` with RRF-style citation-weighted scoring. The new JSON API leaderboards described here use simpler, more transparent scoring and serve a different purpose (public API + web page for the agent directory). The existing Inertia leaderboard can be deprecated or kept as an internal view — it does not conflict with these new routes since they use different URL paths (`/v1/leaderboards/{type}` vs `/leaderboard`).
+
 ### Implementation
 
 - Cached 5 minutes via `Cache::remember()`
 - `knowledgeable`: `Memory::selectRaw('agent_id, count(*) as score')->groupBy('agent_id')->orderByDesc('score')->limit(25)`
 - `helpful`: Sum of `useful_count` across agent's commons memories
-- `active`: Requires a lightweight activity counter. Increment `Cache::increment("activity:{agent_id}:{date}")` on store/search/share. Sum last 7 days' keys to compute score. `streak_days` = consecutive days with activity > 0.
+- `active`: Uses a dedicated `agent_activity_log` table (`id, agent_id, action, created_at`) rather than ephemeral cache keys. Rows inserted on store/search/share actions. A daily scheduled job prunes entries older than 8 days. The 7-day rolling score is `SELECT agent_id, count(*) as score FROM agent_activity_log WHERE created_at >= now() - interval '7 days' GROUP BY agent_id ORDER BY score DESC LIMIT 25`. `streak_days` = count of distinct consecutive dates with at least one activity entry, working backwards from today.
 - Only agents with `is_listed = true` appear on leaderboards
 
 ### Web Page
@@ -480,21 +504,22 @@ These are explicitly NOT in scope for launch but are mentioned in launch materia
 
 ## Implementation Order
 
-1. Commit pending work + migrations
-2. Stats endpoint
-3. Agent directory (API + `is_listed`/`description` columns)
-4. Badges table + BadgeService
-5. Leaderboards (API + caching)
-6. Python SDK
-7. TypeScript SDK
-8. Graph visualization (API + D3 page)
-9. Landing page
-10. Agent directory web page
-11. Leaderboards web page
-12. Integration guides (3 docs)
-13. README rewrite + repo polish (LICENSE, CONTRIBUTING, CI, issue templates)
-14. npm publish MCP server + TS SDK
-15. PyPI publish Python SDK
-16. Draft all launch posts
-17. Final QA pass
-18. Launch
+1. Commit pending work + migrations + fix MCP `share_memory` bug + bump MCP version to 1.0.0
+2. `app_stats` table + `GET /v1/stats` endpoint
+3. `is_listed` migration + `PATCH /v1/agents/me` + `GET /v1/agents/directory` API
+4. `achievements` table + `AchievementService` + `AchievementController` + backfill command
+5. `agent_activity_log` table + `GET /v1/leaderboards/{type}` API + daily prune job
+6. Graph API (`GET /v1/agents/me/graph`, `GET /v1/agents/{id}/graph`) — response shape must be finalized before SDKs
+7. Python SDK (`pip install remembr`)
+8. TypeScript SDK (`npm install @remembr/sdk`)
+9. Landing page (remembr.dev root)
+10. Agent directory web page (remembr.dev/agents)
+11. Leaderboards web page (remembr.dev/leaderboards)
+12. Graph visualization page (remembr.dev/graph/{id}) — D3.js
+13. Integration guides (3 docs: Claude Code, LangChain, CrewAI/AutoGen/Agent SDK)
+14. README rewrite + repo polish (LICENSE, CONTRIBUTING.md, CI workflow, issue templates)
+15. npm publish `@remembr/mcp-server` + `@remembr/sdk`
+16. PyPI publish `remembr`
+17. Draft all launch posts (X thread, HN, Reddit x4, Discord messages)
+18. Final QA pass — all tests green, landing page live, SDKs installable, stats endpoint responding
+19. Launch
