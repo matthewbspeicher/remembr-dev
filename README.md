@@ -2,8 +2,8 @@
 
 [![Tests](https://github.com/matthewbspeicher/remembr-dev/actions/workflows/tests.yml/badge.svg)](https://github.com/matthewbspeicher/remembr-dev/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![npm](https://img.shields.io/npm/v/@remembr/mcp-server)](https://www.npmjs.com/package/@remembr/mcp-server)
-[![PyPI](https://img.shields.io/pypi/v/remembr)](https://pypi.org/project/remembr/)
+[![npm](https://img.shields.io/npm/v/@remembr-dev/mcp-server)](https://www.npmjs.com/package/@remembr-dev/mcp-server)
+[![PyPI](https://img.shields.io/pypi/v/remembr-dev)](https://pypi.org/project/remembr-dev/)
 
 **Long-term memory for AI agents. Open source.**
 
@@ -22,7 +22,7 @@ Sign up at [remembr.dev/login](https://remembr.dev/login) to get an owner token,
 Works with Claude Desktop, Claude Code, Cursor, Windsurf, and any MCP-compatible client.
 
 ```bash
-npm install -g @remembr/mcp-server
+npm install -g @remembr-dev/mcp-server
 ```
 
 Add to your MCP client configuration:
@@ -32,7 +32,7 @@ Add to your MCP client configuration:
   "mcpServers": {
     "remembr": {
       "command": "npx",
-      "args": ["-y", "@remembr/mcp-server"],
+      "args": ["-y", "@remembr-dev/mcp-server"],
       "env": {
         "REMEMBR_AGENT_TOKEN": "amc_YOUR_TOKEN"
       }
@@ -46,7 +46,7 @@ See [mcp-server/README.md](mcp-server/README.md) for per-client setup instructio
 ### Python SDK
 
 ```bash
-pip install remembr
+pip install remembr-dev
 ```
 
 ```python
@@ -60,11 +60,11 @@ results = client.search("preferences")
 ### TypeScript SDK
 
 ```bash
-npm install @remembr/sdk
+npm install @remembr-dev/sdk
 ```
 
 ```typescript
-import { RemembrClient } from "@remembr/sdk";
+import { RemembrClient } from "@remembr-dev/sdk";
 
 const client = new RemembrClient("amc_YOUR_TOKEN");
 await client.store("User prefers dark mode", { type: "preference" });
@@ -179,9 +179,9 @@ Full OpenAPI spec at [remembr.dev/docs](https://remembr.dev/docs). Agent self-on
 
 | SDK | Package | Source |
 |-----|---------|--------|
-| MCP Server | [@remembr/mcp-server](https://www.npmjs.com/package/@remembr/mcp-server) | [mcp-server/](mcp-server/) |
-| Python | [remembr](https://pypi.org/project/remembr/) | [sdk-python/](https://github.com/matthewbspeicher/remembr-python) |
-| TypeScript | [@remembr/sdk](https://www.npmjs.com/package/@remembr/sdk) | [sdk-typescript/](https://github.com/matthewbspeicher/remembr-typescript) |
+| MCP Server | [@remembr-dev/mcp-server](https://www.npmjs.com/package/@remembr-dev/mcp-server) | [mcp-server/](mcp-server/) |
+| Python | [remembr](https://pypi.org/project/remembr-dev/) | [sdk-python/](https://github.com/matthewbspeicher/remembr-python) |
+| TypeScript | [@remembr-dev/sdk](https://www.npmjs.com/package/@remembr-dev/sdk) | [sdk-typescript/](https://github.com/matthewbspeicher/remembr-typescript) |
 | PHP | [remembr/sdk](https://packagist.org/packages/remembr/sdk) | [sdk/](sdk/) |
 
 ---
