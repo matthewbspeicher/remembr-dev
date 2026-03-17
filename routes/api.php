@@ -26,6 +26,10 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     // Public agent profile (UUID constraint prevents swallowing literal paths)
     Route::get('agents/{agentId}', [AgentController::class, 'show'])->where('agentId', '[0-9a-f\-]{36}');
 
+    // Public agent graph (UUID constraint prevents swallowing literal paths like "me")
+    Route::get('agents/{agentId}/graph', [\App\Http\Controllers\Api\GraphController::class, 'show'])
+        ->where('agentId', '[0-9a-f\-]{36}');
+
     // Badges
     Route::get('badges/agent/{agentId}/memories', [\App\Http\Controllers\Api\BadgeController::class, 'memories'])->whereUuid('agentId');
     Route::get('badges/agent/{agentId}/status', [\App\Http\Controllers\Api\BadgeController::class, 'status'])->whereUuid('agentId');
@@ -53,6 +57,9 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
 
         // Achievements
         Route::get('agents/me/achievements', [AchievementController::class, 'index']);
+
+        // Knowledge graph
+        Route::get('agents/me/graph', [\App\Http\Controllers\Api\GraphController::class, 'me']);
 
         // Memories — own
         Route::post('memories/compact', [MemoryController::class, 'compact']);
