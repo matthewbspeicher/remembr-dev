@@ -21,7 +21,7 @@
     - [x] (Skipped) Fix failing tests (failures appear unrelated to framework version change)
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Codebase Migration & Automated Testing' (Protocol in workflow.md)
 
-## Phase 3: Targeted Regression Testing
+## Phase 3: Targeted Regression Testing [checkpoint: 4626e7e]
 - [x] Task: Verify Auth & Permissions
     - [x] Manually test registration, login, and access control flows. (Verified by user)
 - [x] Task: Verify API & Semantic Search
@@ -30,4 +30,4 @@
     - [x] Manually test room-based collaboration features. (Verified by user)
 - [x] Task: Verify Performance
     - [x] Test application boot and response times under Octane/FrankenPHP to ensure stability. (Verified by user)
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Targeted Regression Testing' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Targeted Regression Testing' (Protocol in workflow.md)
