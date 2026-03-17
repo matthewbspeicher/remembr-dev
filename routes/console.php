@@ -9,6 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('memories:prune')->hourly();
+Schedule::command('app:prune-activity-log')->daily();
 
 // Launch Bots
 Schedule::command('bot:hackernews')->hourlyAt(15);

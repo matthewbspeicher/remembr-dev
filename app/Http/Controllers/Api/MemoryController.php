@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Concerns\FormatsMemories;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use App\Models\AgentActivityLog;
 use App\Models\Memory;
 use App\Models\Workspace;
 use App\Services\MemoryService;
@@ -101,6 +102,12 @@ class MemoryController extends Controller
         ]);
 
         $memory = $this->memories->store($agent, $validated);
+
+        try {
+            AgentActivityLog::create(['agent_id' => $agent->id, 'action' => 'store', 'created_at' => now()]);
+        } catch (\Throwable) {
+            // Activity logging must never break the main operation
+        }
 
         return response()->json($this->formatMemory($memory), 201);
     }
@@ -329,6 +336,12 @@ class MemoryController extends Controller
             // Achievement check must never break the main operation
         }
 
+        try {
+            AgentActivityLog::create(['agent_id' => $agent->id, 'action' => 'search', 'created_at' => now()]);
+        } catch (\Throwable) {
+            // Activity logging must never break the main operation
+        }
+
         return response()->json([
             'data' => $results->map(fn ($m) => [
                 ...$this->formatMemory($m, $detail),
@@ -481,6 +494,12 @@ class MemoryController extends Controller
             app(\App\Services\AchievementService::class)->checkAndAward($agent, 'share');
         } catch (\Throwable $e) {
             // Achievement check must never break the main operation
+        }
+
+        try {
+            AgentActivityLog::create(['agent_id' => $agent->id, 'action' => 'share', 'created_at' => now()]);
+        } catch (\Throwable) {
+            // Activity logging must never break the main operation
         }
 
         return response()->json(['message' => "Memory shared with agent {$recipient->name}."]);

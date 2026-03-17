@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AchievementController;
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\CommonsPollController;
 use App\Http\Controllers\Api\CommonsStreamController;
+use App\Http\Controllers\Api\LeaderboardApiController;
 use App\Http\Controllers\Api\MemoryController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StatsController;
@@ -31,6 +32,9 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
 
     // Platform stats (public, no auth)
     Route::get('stats', StatsController::class);
+
+    // Leaderboards (public, no auth)
+    Route::get('leaderboards/{type}', [LeaderboardApiController::class, 'show']);
 
     // Public SSE stream of new public memories
     Route::get('commons/poll', CommonsPollController::class);
