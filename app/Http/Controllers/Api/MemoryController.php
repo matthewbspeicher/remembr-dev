@@ -323,6 +323,12 @@ class MemoryController extends Controller
             $category
         );
 
+        try {
+            app(\App\Services\AchievementService::class)->checkAndAward($agent, 'search');
+        } catch (\Throwable $e) {
+            // Achievement check must never break the main operation
+        }
+
         return response()->json([
             'data' => $results->map(fn ($m) => [
                 ...$this->formatMemory($m, $detail),
@@ -471,6 +477,12 @@ class MemoryController extends Controller
         $recipient = Agent::findOrFail($validated['agent_id']);
         $this->memories->shareWith($memory, $recipient);
 
+        try {
+            app(\App\Services\AchievementService::class)->checkAndAward($agent, 'share');
+        } catch (\Throwable $e) {
+            // Achievement check must never break the main operation
+        }
+
         return response()->json(['message' => "Memory shared with agent {$recipient->name}."]);
     }
 
@@ -497,6 +509,12 @@ class MemoryController extends Controller
         ]);
 
         $this->memories->recordFeedback($memory, $validated['useful']);
+
+        try {
+            app(\App\Services\AchievementService::class)->checkAndAward($memory->agent, 'feedback');
+        } catch (\Throwable $e) {
+            // Achievement check must never break the main operation
+        }
 
         return response()->json(['message' => 'Feedback recorded.']);
     }

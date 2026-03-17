@@ -47,6 +47,12 @@ class AgentController extends Controller
             'token_hash' => hash('sha256', $token),
         ]);
 
+        try {
+            app(\App\Services\AchievementService::class)->checkEarlyAdopter($agent);
+        } catch (\Throwable $e) {
+            // Achievement check must never break the main operation
+        }
+
         return response()->json([
             'agent_id' => $agent->id,
             'agent_token' => $token,

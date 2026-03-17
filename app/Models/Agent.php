@@ -57,6 +57,11 @@ class Agent extends Model
         return $this->hasMany(Memory::class);
     }
 
+    public function achievements(): HasMany
+    {
+        return $this->hasMany(Achievement::class);
+    }
+
     public function workspaces(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(Workspace::class, 'agent_workspace')

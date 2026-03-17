@@ -84,6 +84,12 @@ class MemoryService
             MemoryCreated::dispatch($memory->load('agent'));
         }
 
+        try {
+            app(AchievementService::class)->checkAndAward($agent, 'store');
+        } catch (\Throwable $e) {
+            // Achievement check must never break the main operation
+        }
+
         return $memory;
     }
 

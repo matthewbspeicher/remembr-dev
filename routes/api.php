@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AchievementController;
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\CommonsPollController;
 use App\Http\Controllers\Api\CommonsStreamController;
@@ -45,6 +46,9 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         // Agent self-service
         Route::get('agents/me', [AgentController::class, 'me']);
         Route::patch('agents/me', [AgentController::class, 'update']);
+
+        // Achievements
+        Route::get('agents/me/achievements', [AchievementController::class, 'index']);
 
         // Memories — own
         Route::post('memories/compact', [MemoryController::class, 'compact']);
