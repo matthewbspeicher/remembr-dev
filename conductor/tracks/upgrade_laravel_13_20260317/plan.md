@@ -22,12 +22,12 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Codebase Migration & Automated Testing' (Protocol in workflow.md)
 
 ## Phase 3: Targeted Regression Testing
-- [ ] Task: Verify Auth & Permissions
-    - [ ] Manually test registration, login, and access control flows.
-- [ ] Task: Verify API & Semantic Search
-    - [ ] Manually test hybrid search, embeddings integration, and `pgvector` functionality.
-- [ ] Task: Verify Agent Workspaces
-    - [ ] Manually test room-based collaboration features.
-- [ ] Task: Verify Performance
-    - [ ] Test application boot and response times under Octane/FrankenPHP to ensure stability.
+- [x] Task: Verify Auth & Permissions
+    - [x] Manually test registration, login, and access control flows. (Verified by user)
+- [x] Task: Verify API & Semantic Search
+    - [x] Manually test hybrid search, embeddings integration, and `pgvector` functionality. (Verified by user)
+- [x] Task: Verify Agent Workspaces
+    - [x] Manually test room-based collaboration features. (Verified by user)
+- [x] Task: Verify Performance
+    - [x] Test application boot and response times under Octane/FrankenPHP to ensure stability. (Verified by user)
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Targeted Regression Testing' (Protocol in workflow.md)
