@@ -123,12 +123,21 @@ class AgentController extends Controller
     public function directory(Request $request): JsonResponse
     {
         $sort = $request->input('sort', 'newest');
+        $search = $request->input('q');
 
         $query = Agent::where('is_listed', true)
             ->where('is_active', true)
             ->withCount(['memories as memory_count' => function ($q) {
                 $q->where('visibility', 'public');
             }]);
+
+        if ($search) {
+            $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('name', 'ilike', $like)
+                  ->orWhere('description', 'ilike', $like);
+            });
+        }
 
         $query = match ($sort) {
             'memories' => $query->orderByDesc('memory_count'),
