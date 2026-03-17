@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Agent;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class SummarizationService
@@ -34,12 +35,94 @@ class SummarizationService
         $prompt .= "Memories to compact:\n".$context."\n\n";
         $prompt .= 'Provide ONLY the final summary text.';
 
+        return $this->callGemini($prompt);
+    }
+
+    /**
+     * Generate a concise one-sentence summary of a memory value.
+     * Returns null for very short values that are already their own summary.
+     */
+    public function generateSummary(string $value): ?string
+    {
+        // Short values don't need a summary — they're already concise
+        if (mb_strlen($value) < 80) {
+            return null;
+        }
+
+        $prompt = "Summarize the following text in one concise sentence (max 30 words).\n";
+        $prompt .= "Do not add preamble, labels, or quotation marks. Return ONLY the summary sentence.\n\n";
+        $prompt .= "Text: {$value}";
+
+        try {
+            return $this->callGemini($prompt, 0.1);
+        } catch (\Exception $e) {
+            Log::warning('Summary generation failed, storing without summary', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Extract durable memories from a conversation transcript.
+     * Returns an array of memory objects with value, type, key, and importance.
+     */
+    public function extractMemories(string $transcript, Agent $agent): array
+    {
+        $validTypes = implode(', ', \App\Models\Memory::TYPES);
+
+        $prompt = "You are an AI assistant analyzing a conversation transcript for an agent named '{$agent->name}'.\n";
+        $prompt .= "Extract durable facts, preferences, procedures, and lessons learned from this conversation.\n";
+        $prompt .= "Only extract information worth remembering long-term. Skip greetings, small talk, and transient content.\n\n";
+        $prompt .= "For each extracted memory, return a JSON array of objects with:\n";
+        $prompt .= "- \"value\": the memory content (concise, standalone, max 500 chars)\n";
+        $prompt .= "- \"type\": one of [{$validTypes}]\n";
+        $prompt .= "- \"key\": a short kebab-case key for deduplication (max 50 chars)\n";
+        $prompt .= "- \"importance\": 1-10 rating of how important this is to remember\n\n";
+        $prompt .= "Return ONLY a valid JSON array. No preamble, no markdown fences, no explanation.\n";
+        $prompt .= "If nothing worth extracting, return an empty array: []\n\n";
+        $prompt .= "Transcript:\n{$transcript}";
+
+        $raw = $this->callGemini($prompt, 0.2);
+
+        // Strip any markdown code fences the model might add
+        $raw = preg_replace('/^```(?:json)?\s*/i', '', $raw);
+        $raw = preg_replace('/\s*```$/', '', $raw);
+
+        $parsed = json_decode(trim($raw), true);
+        if (! is_array($parsed)) {
+            Log::warning('Session extraction returned invalid JSON', ['raw' => $raw]);
+
+            return [];
+        }
+
+        // Validate and sanitize each extracted memory
+        $validTypes = \App\Models\Memory::TYPES;
+
+        return array_values(array_filter(array_map(function ($item) use ($validTypes) {
+            if (! isset($item['value']) || ! is_string($item['value'])) {
+                return null;
+            }
+
+            return [
+                'value' => mb_substr($item['value'], 0, 500),
+                'type' => in_array($item['type'] ?? '', $validTypes) ? $item['type'] : 'note',
+                'key' => isset($item['key']) ? mb_substr($item['key'], 0, 50) : null,
+                'importance' => max(1, min(10, (int) ($item['importance'] ?? 5))),
+            ];
+        }, $parsed)));
+    }
+
+    /**
+     * Call the Gemini API with a prompt and return the text response.
+     */
+    private function callGemini(string $prompt, float $temperature = 0.2): string
+    {
         $response = Http::post('https://generativelanguage.googleapis.com/v1beta/models/'.self::MODEL.':generateContent?key='.$this->apiKey, [
             'contents' => [
                 ['parts' => [['text' => $prompt]]],
             ],
             'generationConfig' => [
-                'temperature' => 0.2,
+                'temperature' => $temperature,
             ],
         ]);
 

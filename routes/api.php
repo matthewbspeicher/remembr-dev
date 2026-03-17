@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\CommonsPollController;
 use App\Http\Controllers\Api\CommonsStreamController;
 use App\Http\Controllers\Api\MemoryController;
+use App\Http\Controllers\Api\SessionController;
 use App\Http\Middleware\AuthenticateAgent;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +46,12 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
 
         // Sharing
         Route::post('/memories/{key}/share', [MemoryController::class, 'share']);
+
+        // Feedback
+        Route::post('/memories/{key}/feedback', [MemoryController::class, 'feedback']);
+
+        // Session extraction
+        Route::post('sessions/extract', [SessionController::class, 'extract']);
 
         // Workspaces
         Route::get('/workspaces', [\App\Http\Controllers\Api\WorkspaceController::class, 'index']);

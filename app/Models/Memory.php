@@ -23,12 +23,17 @@ class Memory extends Model
         'workspace_id',
         'key',
         'value',
+        'summary',
         'type',
+        'category',
         'embedding',
         'metadata',
         'visibility',
         'importance',
         'confidence',
+        'access_count',
+        'useful_count',
+        'last_accessed_at',
         'expires_at',
     ];
 
@@ -36,6 +41,9 @@ class Memory extends Model
         'metadata' => 'array',
         'importance' => 'integer',
         'confidence' => 'float',
+        'access_count' => 'integer',
+        'useful_count' => 'integer',
+        'last_accessed_at' => 'datetime',
         'expires_at' => 'datetime',
     ];
 
@@ -92,6 +100,11 @@ class Memory extends Model
     public function scopeOfType(Builder $query, string $type): Builder
     {
         return $query->where('type', $type);
+    }
+
+    public function scopeInCategory(Builder $query, string $category): Builder
+    {
+        return $query->where('category', $category);
     }
 
     public function scopeAccessibleBy(Builder $query, Agent $agent): Builder

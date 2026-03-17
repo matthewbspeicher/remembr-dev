@@ -73,6 +73,7 @@ class MemoryController extends Controller
             'key' => ['nullable', 'string', 'max:255'],
             'value' => ['required', 'string', 'max:10000'],
             'type' => ['sometimes', 'string', Rule::in(Memory::TYPES)],
+            'category' => ['nullable', 'string', 'max:100'],
             'visibility' => ['nullable', 'in:private,shared,public,workspace'],
             'workspace_id' => ['nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id',
                 function (string $attribute, mixed $value, Closure $fail) use ($agent) {
@@ -122,7 +123,12 @@ class MemoryController extends Controller
             return response()->json(['error' => 'Memory not found.'], 404);
         }
 
-        return response()->json($this->formatMemory($memory));
+        // Track access for relevance feedback
+        $this->memories->recordAccess($memory);
+
+        $detail = $request->query('detail', 'full');
+
+        return response()->json($this->formatMemory($memory, $detail));
     }
 
     // -------------------------------------------------------------------------
@@ -139,10 +145,12 @@ class MemoryController extends Controller
 
         $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
         $type = $request->query('type');
-        $paginated = $this->memories->listForAgent($agent, 20, $tags, $type);
+        $category = $request->query('category');
+        $detail = $request->query('detail', 'full');
+        $paginated = $this->memories->listForAgent($agent, 20, $tags, $type, $category);
 
         return response()->json([
-            'data' => collect($paginated->items())->map(fn ($m) => $this->formatMemory($m)),
+            'data' => collect($paginated->items())->map(fn ($m) => $this->formatMemory($m, $detail)),
             'meta' => [
                 'total' => $paginated->total(),
                 'per_page' => $paginated->perPage(),
@@ -173,6 +181,7 @@ class MemoryController extends Controller
         $validated = $request->validate([
             'value' => ['sometimes', 'string', 'max:10000'],
             'type' => ['sometimes', 'string', Rule::in(Memory::TYPES)],
+            'category' => ['sometimes', 'nullable', 'string', 'max:100'],
             'visibility' => ['sometimes', 'in:private,shared,public,workspace'],
             'workspace_id' => ['sometimes', 'nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id',
                 function (string $attribute, mixed $value, Closure $fail) use ($agent) {
@@ -300,18 +309,21 @@ class MemoryController extends Controller
 
         $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
         $type = $request->query('type');
+        $category = $request->query('category');
+        $detail = $request->query('detail', 'full');
 
         $results = $this->memories->searchForAgent(
             $agent,
             $request->string('q'),
             $request->integer('limit', 10),
             $tags,
-            $type
+            $type,
+            $category
         );
 
         return response()->json([
             'data' => $results->map(fn ($m) => [
-                ...$this->formatMemory($m),
+                ...$this->formatMemory($m, $detail),
                 'similarity' => round($m->similarity ?? 0, 4),
             ]),
         ]);
@@ -405,18 +417,21 @@ class MemoryController extends Controller
 
         $tags = $request->has('tags') ? explode(',', $request->input('tags')) : [];
         $type = $request->query('type');
+        $category = $request->query('category');
+        $detail = $request->query('detail', 'full');
 
         $results = $this->memories->searchCommons(
             $agent,
             $request->string('q'),
             $request->integer('limit', 10),
             $tags,
-            $type
+            $type,
+            $category
         );
 
         return response()->json([
             'data' => $results->map(fn ($m) => [
-                ...$this->formatMemory($m),
+                ...$this->formatMemory($m, $detail),
                 'agent' => [
                     'id' => $m->agent->id,
                     'name' => $m->agent->name,
@@ -453,5 +468,32 @@ class MemoryController extends Controller
         $this->memories->shareWith($memory, $recipient);
 
         return response()->json(['message' => "Memory shared with agent {$recipient->name}."]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Relevance feedback
+    // POST /v1/memories/{key}/feedback
+    // -------------------------------------------------------------------------
+
+    public function feedback(Request $request, string $key): JsonResponse
+    {
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
+
+        $memory = $this->memories->findByKey($agent, $key);
+
+        if (! $memory) {
+            return response()->json(['error' => 'Memory not found.'], 404);
+        }
+
+        $validated = $request->validate([
+            'useful' => ['required', 'boolean'],
+        ]);
+
+        $this->memories->recordFeedback($memory, $validated['useful']);
+
+        return response()->json(['message' => 'Feedback recorded.']);
     }
 }

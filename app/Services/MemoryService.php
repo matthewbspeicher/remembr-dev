@@ -13,6 +13,7 @@ class MemoryService
 {
     public function __construct(
         private readonly EmbeddingService $embeddings,
+        private readonly SummarizationService $summarizer,
     ) {}
 
     // -------------------------------------------------------------------------
@@ -33,7 +34,10 @@ class MemoryService
         // Embed before the transaction to keep the lock window short
         $embedding = $this->embeddings->embed($data['value']);
 
-        $memory = DB::transaction(function () use ($agent, $data, $metadata, $embedding) {
+        // Generate summary for longer memories
+        $summary = $data['summary'] ?? $this->summarizer->generateSummary($data['value']);
+
+        $memory = DB::transaction(function () use ($agent, $data, $metadata, $embedding, $summary) {
             // Lock the agent row to serialize concurrent quota checks
             $agent = Agent::lockForUpdate()->find($agent->id);
 
@@ -51,7 +55,9 @@ class MemoryService
                 ],
                 [
                     'value' => $data['value'],
+                    'summary' => $summary,
                     'type' => $data['type'] ?? 'note',
+                    'category' => $data['category'] ?? null,
                     'embedding' => '['.implode(',', $embedding).']',
                     'metadata' => $metadata,
                     'visibility' => $data['visibility'] ?? 'private',
@@ -85,6 +91,8 @@ class MemoryService
     {
         if (isset($data['value']) && $data['value'] !== $memory->value) {
             $data['embedding'] = '['.implode(',', $this->embeddings->embed($data['value'])).']';
+            // Regenerate summary when value changes
+            $data['summary'] = $this->summarizer->generateSummary($data['value']);
         }
 
         if (isset($data['ttl'])) {
@@ -155,7 +163,7 @@ class MemoryService
             ->first();
     }
 
-    public function listForAgent(Agent $agent, int $perPage = 20, array $tags = [], ?string $type = null): LengthAwarePaginator
+    public function listForAgent(Agent $agent, int $perPage = 20, array $tags = [], ?string $type = null, ?string $category = null): LengthAwarePaginator
     {
         $query = Memory::query()
             ->accessibleBy($agent)
@@ -168,6 +176,7 @@ class MemoryService
         }
 
         $query->when($type, fn ($query) => $query->where('type', $type));
+        $query->when($category, fn ($query) => $query->inCategory($category));
 
         return $query->paginate($perPage);
     }
@@ -176,7 +185,7 @@ class MemoryService
     // Search
     // -------------------------------------------------------------------------
 
-    public function searchForAgent(Agent $agent, string $q, int $limit = 10, array $tags = [], ?string $type = null): Collection
+    public function searchForAgent(Agent $agent, string $q, int $limit = 10, array $tags = [], ?string $type = null, ?string $category = null): Collection
     {
         $embedding = $this->embeddings->embed($q);
 
@@ -193,6 +202,7 @@ class MemoryService
             $vectorQuery->withTags($tags);
         }
         $vectorQuery->when($type, fn ($query) => $query->where('type', $type));
+        $vectorQuery->when($category, fn ($query) => $query->inCategory($category));
         $vectorResults = $vectorQuery->get();
 
         // 2. Keyword Search
@@ -206,6 +216,7 @@ class MemoryService
             $keywordQuery->withTags($tags);
         }
         $keywordQuery->when($type, fn ($query) => $query->where('type', $type));
+        $keywordQuery->when($category, fn ($query) => $query->inCategory($category));
         $keywordResults = $keywordQuery->get();
 
         // 3. Reciprocal Rank Fusion
@@ -217,7 +228,7 @@ class MemoryService
         return collect($results);
     }
 
-    public function searchCommons(Agent $agent, string $q, int $limit = 10, array $tags = [], ?string $type = null): Collection
+    public function searchCommons(Agent $agent, string $q, int $limit = 10, array $tags = [], ?string $type = null, ?string $category = null): Collection
     {
         $embedding = $this->embeddings->embed($q);
 
@@ -234,6 +245,7 @@ class MemoryService
             $vectorQuery->withTags($tags);
         }
         $vectorQuery->when($type, fn ($query) => $query->where('type', $type));
+        $vectorQuery->when($category, fn ($query) => $query->inCategory($category));
         $vectorResults = $vectorQuery->get();
 
         // 2. Keyword Search
@@ -247,6 +259,7 @@ class MemoryService
             $keywordQuery->withTags($tags);
         }
         $keywordQuery->when($type, fn ($query) => $query->where('type', $type));
+        $keywordQuery->when($category, fn ($query) => $query->inCategory($category));
         $keywordResults = $keywordQuery->get();
 
         // 3. Reciprocal Rank Fusion
@@ -312,6 +325,15 @@ class MemoryService
 
             // Calculate final augmented score
             $scores[$id] = $baseScore * $importanceMultiplier * $confidenceMultiplier * $timeDecayMultiplier;
+
+            // Relevance multiplier — boost memories marked useful by agents
+            if ($memory->access_count > 0) {
+                $usefulRatio = $memory->useful_count / $memory->access_count;
+                $relevanceMultiplier = 0.8 + (0.4 * $usefulRatio); // range: 0.8 to 1.2
+            } else {
+                $relevanceMultiplier = 1.0; // neutral for never-accessed
+            }
+            $scores[$id] *= $relevanceMultiplier;
         }
 
         // Sort by final score descending
@@ -339,5 +361,23 @@ class MemoryService
     public function revokeShare(Memory $memory, Agent $recipient): void
     {
         $memory->sharedWith()->detach($recipient->id);
+    }
+
+    // -------------------------------------------------------------------------
+    // Access Tracking & Feedback
+    // -------------------------------------------------------------------------
+
+    public function recordAccess(Memory $memory): void
+    {
+        $memory->increment('access_count');
+        $memory->update(['last_accessed_at' => now()]);
+    }
+
+    public function recordFeedback(Memory $memory, bool $useful): void
+    {
+        if ($useful) {
+            $memory->increment('useful_count');
+        }
+        // Access is tracked separately — feedback alone doesn't count as access
     }
 }

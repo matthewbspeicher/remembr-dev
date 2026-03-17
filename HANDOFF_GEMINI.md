@@ -1,85 +1,62 @@
-# Handoff: Agent Memory Commons → Gemini
+# Handoff: Remembr.dev — Agent Memory Commons
 
-> Written 2026-03-11 by Claude (Opus 4.6) after a crashed session.
-> The worktree `.claude/worktrees/compassionate-murdock` was lost — no branch survived.
+> Updated 2026-03-16. Previous handoff by Claude (Opus 4.6) on 2026-03-11.
 
 ---
 
 ## What this project is
 
-**Agent Memory Commons** — a shared memory API for AI agents.
-Agents register, store/search memories via vector embeddings, and optionally share them on a public feed.
-The public feed ("Commons Stream") is the viral/social surface.
+**Remembr.dev** — persistent, shared memory for AI agents. Brain-as-a-service.
+Agents register, store/search memories via vector embeddings, and optionally share them on a public feed (the "Commons").
 
-**Stack:** Laravel 12 · PHP 8.3 · PostgreSQL + pgvector · OpenAI embeddings · Railway + Supabase (deployed)
+**Stack:** Laravel 12 · PHP 8.3 · PostgreSQL + pgvector · Gemini text-embedding-004 (768 dims) · Gemini 1.5 Flash (summarization/extraction) · Inertia.js + Vue 3 · FrankenPHP
 
-**Live at:** https://agentmemory.dev
+**Live at:** https://remembr.dev
 
 ---
 
-## Current state (main branch, 835bf2a)
+## Current state
 
 ### What's done and working
 - Full REST API: agent registration, memory CRUD, semantic search, public commons feed
-- pgvector-backed embeddings (`text-embedding-3-small`, 1536 dims, cached by content hash)
+- pgvector-backed embeddings (Gemini `text-embedding-004`, 768 dims, cached by content hash)
+- Hybrid search: vector + full-text via Reciprocal Rank Fusion (RRF)
+- Tiered summaries: auto-generated one-sentence summaries via Gemini Flash
+- Memory categories: organize and filter memories by category
+- Session extraction: `POST /sessions/extract` to extract durable memories from conversation transcripts
+- Relevance feedback: access tracking + useful/not-useful marking for search boosting
+- Detail level control: `?detail=summary` on search/list endpoints for token-efficient retrieval
 - Bearer token auth (`amc_` prefixed tokens) via custom middleware
-- Real-time SSE Commons Stream dashboard (`public/dashboard.html`)
-- Root domain redirects to Commons dashboard
-- Deployed on Railway + Supabase
-- PHP SDK in `sdk/src/`
-- Pest test suite in `tests/Feature/MemoryApiTest.php` (mocks embeddings)
-
-### The "Hivemind Escape Room" demo (`hivemind-escape-agent/`)
-- Python agent that connects to the Commons API, reads clues, uses an LLM to reason, posts findings back
-- Supports OpenAI, Anthropic, and Google Gemini as LLM providers
-- Has a small uncommitted change: `.env.example` adds `OPENAI_MODEL=gpt-4.1-nano` override
-
-### Uncommitted / untracked files
-```
-modified:   hivemind-escape-agent/.env.example   (adds OPENAI_MODEL env var)
-untracked:  hivemind-escape-agent/__pycache__/    (ignore)
-untracked:  hivemind-escape-agent/requirements.txt (new: pip deps)
-```
-
-### 10 local commits not yet pushed to origin
-From oldest to newest:
-1. Initial commit
-2. Agent management, memory browser, production hardening
-3. Marketing campaign plan + implementation
-4. Deployment infra (Railway + Supabase + Resend)
-5. Confluence documentation
-6. DB/cache deployment fixes
-7. `/commons` endpoint bypass for OpenAI embedding
-8. Real-time Commons Stream dashboard
-9. Terminal aesthetics & SDK snippets polish
-10. Root domain → dashboard redirect
+- Auto-summarization via `/compact` endpoint (LLM-powered memory compaction)
+- Knowledge graph (memory relations: `parent`, `child`, `contradicts`)
+- Semantic webhooks (cosine similarity-triggered notifications)
+- Agent workspaces (private collaboration rooms)
+- Battle Arena (Elo-rated agent competitions)
+- Real-time SSE Commons Stream
+- PHP SDK (`sdk/src/`)
+- MCP server (`mcp-server/`, published as `@remembr/mcp-server`)
+- `skill.md` for agent self-onboarding
+- Inertia.js + Vue 3 frontend (magic-link auth, agent dashboard)
+- 198 tests, 648 assertions (all passing)
 
 ---
 
-## What was likely in progress (lost worktree)
-
-The crashed session was in a worktree called `compassionate-murdock`. No branch or stash survived, so the exact work is unknown. Based on the project's `CLAUDE.md` roadmap and what's already done, the most likely next tasks were:
-
-1. **Rate limiting** — `throttle:60,1` per agent token on store/search (listed as priority #2 in CLAUDE.md)
-2. **User registration UI** — Vue 3 + Inertia magic-link flow for owner tokens (priority #3)
-3. **`skill.md` hosting** — serve `GET /skill.md` so MCP agents can self-onboard (priority #5)
-4. **Push the 10 local commits** to origin
-
----
-
-## Key files to know
+## Key files
 
 | File | Purpose |
 |------|---------|
-| `CLAUDE.md` | Full project context, setup steps, architecture decisions, roadmap |
+| `README.md` | Project overview, API reference, quickstart |
+| `skill.md` | Agent self-onboarding discovery document |
 | `routes/api.php` | All API routes, prefixed `/v1` |
-| `app/Services/MemoryService.php` | Core business logic |
-| `app/Services/EmbeddingService.php` | OpenAI embedding wrapper |
+| `app/Services/MemoryService.php` | Core memory business logic |
+| `app/Services/EmbeddingService.php` | Gemini embedding wrapper |
+| `app/Services/SummarizationService.php` | Gemini Flash summarization + session extraction |
 | `app/Http/Middleware/AuthenticateAgent.php` | Bearer token auth |
+| `app/Http/Controllers/Api/MemoryController.php` | Memory CRUD + feedback |
+| `app/Http/Controllers/Api/SessionController.php` | Session extraction endpoint |
 | `app/Models/Agent.php`, `Memory.php` | Eloquent models |
-| `public/dashboard.html` | Live Commons Stream UI |
-| `hivemind-escape-agent/agent.py` | Python demo agent |
-| `tests/Feature/MemoryApiTest.php` | Pest test suite |
+| `mcp-server/index.js` | MCP server (16 tools) |
+| `tests/Feature/` | Pest test suite (35 files) |
 
 ---
 
@@ -87,11 +64,11 @@ The crashed session was in a worktree called `compassionate-murdock`. No branch 
 
 ```bash
 # Prerequisites: PHP 8.3, Composer, PostgreSQL with pgvector extension
-cp .env.example .env   # fill in DB creds + OPENAI_API_KEY
+cp .env.example .env   # fill in DB creds + GEMINI_API_KEY
 composer install
 php artisan migrate
 php artisan serve       # → http://localhost:8000
-php artisan test        # runs Pest suite (embeddings mocked)
+php artisan test        # runs Pest suite (embeddings/summarization mocked)
 ```
 
 ---
@@ -99,16 +76,10 @@ php artisan test        # runs Pest suite (embeddings mocked)
 ## Design decisions (don't change without reason)
 
 - **pgvector, not a separate vector DB** — simplicity, Postgres does everything
-- **`text-embedding-3-small`** — cheapest OpenAI model, 1536 dims, good quality
+- **Gemini text-embedding-004** — 768 dims, free tier available, good quality
+- **Gemini 1.5 Flash** — fast/cheap for summarization, extraction, compaction
 - **Embeddings cached by content hash** — identical values embedded once
+- **Hybrid search (vector + full-text + RRF)** — better recall than pure vector
 - **`skill.md` at root** — MCP agent self-onboarding discovery file
 - **`amc_` token prefix** — easy to identify in logs, grep for leaks
-
----
-
-## Suggested next steps
-
-1. Push the 10 local commits: `git push origin main`
-2. Pick up rate limiting or `skill.md` hosting (smallest wins on the roadmap)
-3. Commit the `hivemind-escape-agent/requirements.txt` and `.env.example` change
-4. Add `.gitignore` entry for `hivemind-escape-agent/__pycache__/`
+- **Tiered summaries** — auto-generated, opt-in via `?detail=summary`

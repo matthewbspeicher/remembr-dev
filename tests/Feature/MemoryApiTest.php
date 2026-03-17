@@ -32,6 +32,7 @@ describe('POST /v1/memories/compact', function () {
 
         $this->mock(\App\Services\SummarizationService::class, function ($mock) {
             $mock->shouldReceive('summarize')->once()->andReturn('Combined Fact 1 and 2');
+            $mock->shouldReceive('generateSummary')->andReturn(null);
         });
 
         $response = $this->postJson('/api/v1/memories/compact', [
