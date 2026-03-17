@@ -296,6 +296,8 @@ class MemoryController extends Controller
 
     public function search(Request $request): JsonResponse
     {
+        \App\Models\AppStat::incrementStat('searches_performed');
+
         $agent = $this->resolveAgent($request);
         if ($agent instanceof JsonResponse) {
             return $agent;
@@ -404,6 +406,8 @@ class MemoryController extends Controller
 
     public function commonsSearch(Request $request): JsonResponse
     {
+        \App\Models\AppStat::incrementStat('searches_performed');
+
         $agent = $this->resolveAgent($request);
         if ($agent instanceof JsonResponse) {
             return $agent;

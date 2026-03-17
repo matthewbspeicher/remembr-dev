@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CommonsPollController;
 use App\Http\Controllers\Api\CommonsStreamController;
 use App\Http\Controllers\Api\MemoryController;
 use App\Http\Controllers\Api\SessionController;
+use App\Http\Controllers\Api\StatsController;
 use App\Http\Middleware\AuthenticateAgent;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,9 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     // Badges
     Route::get('badges/agent/{agentId}/memories', [\App\Http\Controllers\Api\BadgeController::class, 'memories'])->whereUuid('agentId');
     Route::get('badges/agent/{agentId}/status', [\App\Http\Controllers\Api\BadgeController::class, 'status'])->whereUuid('agentId');
+
+    // Platform stats (public, no auth)
+    Route::get('stats', StatsController::class);
 
     // Public SSE stream of new public memories
     Route::get('commons/poll', CommonsPollController::class);

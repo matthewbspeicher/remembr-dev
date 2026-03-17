@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'launch_date' => env('LAUNCH_DATE', '2026-03-20'),
+
 ];
