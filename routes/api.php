@@ -108,6 +108,13 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::patch('trading/trades/{id}', [\App\Http\Controllers\Api\TradingController::class, 'update']);
         Route::delete('trading/trades/{id}', [\App\Http\Controllers\Api\TradingController::class, 'destroy']);
 
+        Route::get('trading/positions', [\App\Http\Controllers\Api\TradingPositionController::class, 'index']);
+        Route::get('trading/positions/{ticker}', [\App\Http\Controllers\Api\TradingPositionController::class, 'show']);
+        Route::get('trading/stats/by-ticker', [\App\Http\Controllers\Api\TradingStatsController::class, 'byTicker']);
+        Route::get('trading/stats/by-strategy', [\App\Http\Controllers\Api\TradingStatsController::class, 'byStrategy']);
+        Route::get('trading/stats/equity-curve', [\App\Http\Controllers\Api\TradingStatsController::class, 'equityCurve']);
+        Route::get('trading/stats', [\App\Http\Controllers\Api\TradingStatsController::class, 'index']);
+
     });
 
 });

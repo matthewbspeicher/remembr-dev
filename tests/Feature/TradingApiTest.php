@@ -333,3 +333,157 @@ describe('DELETE /v1/trading/trades/{id}', function () {
         $response->assertUnprocessable();
     });
 });
+
+// ---------------------------------------------------------------------------
+// GET /v1/trading/positions
+// ---------------------------------------------------------------------------
+
+describe('GET /v1/trading/positions', function () {
+    it('returns current open positions', function () {
+        $agent = makeAgent(makeOwner());
+
+        Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'ticker' => 'AAPL',
+            'direction' => 'long',
+            'entry_price' => '100.00000000',
+            'quantity' => '10.00000000',
+            'status' => 'open',
+            'paper' => true,
+        ]);
+
+        app(\App\Services\TradingService::class)->recalculatePosition($agent, 'AAPL', true);
+
+        $response = $this->getJson('/api/v1/trading/positions', withAgent($agent));
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonFragment(['ticker' => 'AAPL']);
+    });
+
+    it('filters by paper flag', function () {
+        $agent = makeAgent(makeOwner());
+        $service = app(\App\Services\TradingService::class);
+
+        Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'ticker' => 'AAPL',
+            'status' => 'open',
+            'paper' => true,
+        ]);
+        $service->recalculatePosition($agent, 'AAPL', true);
+
+        Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'ticker' => 'TSLA',
+            'status' => 'open',
+            'paper' => false,
+        ]);
+        $service->recalculatePosition($agent, 'TSLA', false);
+
+        $response = $this->getJson('/api/v1/trading/positions?paper=true', withAgent($agent));
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'data');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// GET /v1/trading/stats
+// ---------------------------------------------------------------------------
+
+describe('GET /v1/trading/stats', function () {
+    it('returns aggregate stats for the agent', function () {
+        $agent = makeAgent(makeOwner());
+
+        Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'status' => 'closed',
+            'pnl' => '100.00000000',
+            'pnl_percent' => '10.0000',
+            'entry_at' => now(),
+            'paper' => true,
+        ]);
+
+        app(\App\Services\TradingService::class)->recalculateStats($agent, true);
+
+        $response = $this->getJson('/api/v1/trading/stats?paper=true', withAgent($agent));
+
+        $response->assertOk()
+            ->assertJsonFragment([
+                'total_trades' => 1,
+                'win_count' => 1,
+            ]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// GET /v1/trading/stats/by-ticker
+// ---------------------------------------------------------------------------
+
+describe('GET /v1/trading/stats/by-ticker', function () {
+    it('returns per-ticker breakdown', function () {
+        $agent = makeAgent(makeOwner());
+
+        Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'ticker' => 'AAPL',
+            'status' => 'closed',
+            'pnl' => '100.00000000',
+            'pnl_percent' => '10.0000',
+            'entry_at' => now(),
+            'paper' => true,
+        ]);
+
+        Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'ticker' => 'TSLA',
+            'status' => 'closed',
+            'pnl' => '-50.00000000',
+            'pnl_percent' => '-5.0000',
+            'entry_at' => now(),
+            'paper' => true,
+        ]);
+
+        $response = $this->getJson('/api/v1/trading/stats/by-ticker?paper=true', withAgent($agent));
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// GET /v1/trading/stats/equity-curve
+// ---------------------------------------------------------------------------
+
+describe('GET /v1/trading/stats/equity-curve', function () {
+    it('returns cumulative PnL time series', function () {
+        $agent = makeAgent(makeOwner());
+
+        Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'status' => 'closed',
+            'pnl' => '100.00000000',
+            'entry_at' => '2026-03-01',
+            'exit_at' => '2026-03-01',
+            'paper' => true,
+        ]);
+
+        Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'status' => 'closed',
+            'pnl' => '50.00000000',
+            'entry_at' => '2026-03-02',
+            'exit_at' => '2026-03-02',
+            'paper' => true,
+        ]);
+
+        $response = $this->getJson('/api/v1/trading/stats/equity-curve?paper=true', withAgent($agent));
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $data = $response->json('data');
+        expect((float) $data[1]['cumulative_pnl'])->toBe(150.0);
+    });
+});
