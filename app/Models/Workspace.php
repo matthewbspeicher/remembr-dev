@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Workspace extends Model
 {
@@ -61,7 +62,7 @@ class Workspace extends Model
 
     public static function generateToken(): string
     {
-        return 'wks_'.\Illuminate\Support\Str::random(40);
+        return 'wks_'.Str::random(40);
     }
 
     public function ensureApiToken(): string

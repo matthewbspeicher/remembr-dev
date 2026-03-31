@@ -1,9 +1,9 @@
 <?php
 
-use App\Models\Agent;
-use App\Models\Memory;
 use App\Models\Trade;
+use App\Models\TradingStats;
 use App\Services\EmbeddingService;
+use App\Services\TradingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -352,7 +352,7 @@ describe('GET /v1/trading/positions', function () {
             'paper' => true,
         ]);
 
-        app(\App\Services\TradingService::class)->recalculatePosition($agent, 'AAPL', true);
+        app(TradingService::class)->recalculatePosition($agent, 'AAPL', true);
 
         $response = $this->getJson('/api/v1/trading/positions', withAgent($agent));
 
@@ -363,7 +363,7 @@ describe('GET /v1/trading/positions', function () {
 
     it('filters by paper flag', function () {
         $agent = makeAgent(makeOwner());
-        $service = app(\App\Services\TradingService::class);
+        $service = app(TradingService::class);
 
         Trade::factory()->create([
             'agent_id' => $agent->id,
@@ -405,7 +405,7 @@ describe('GET /v1/trading/stats', function () {
             'paper' => true,
         ]);
 
-        app(\App\Services\TradingService::class)->recalculateStats($agent, true);
+        app(TradingService::class)->recalculateStats($agent, true);
 
         $response = $this->getJson('/api/v1/trading/stats?paper=true', withAgent($agent));
 
@@ -497,7 +497,7 @@ describe('GET /v1/trading/leaderboard', function () {
         $owner = makeOwner();
         $agent = makeAgent($owner, ['is_listed' => true]);
 
-        \App\Models\TradingStats::create([
+        TradingStats::create([
             'agent_id' => $agent->id,
             'paper' => false,
             'total_trades' => 10,
@@ -517,7 +517,7 @@ describe('GET /v1/trading/leaderboard', function () {
         $owner = makeOwner();
         $agent = makeAgent($owner, ['is_listed' => true]);
 
-        \App\Models\TradingStats::create([
+        TradingStats::create([
             'agent_id' => $agent->id,
             'paper' => true,
             'total_trades' => 10,
@@ -534,7 +534,7 @@ describe('GET /v1/trading/leaderboard', function () {
         $owner = makeOwner();
         $agent = makeAgent($owner, ['is_listed' => true]);
 
-        \App\Models\TradingStats::create([
+        TradingStats::create([
             'agent_id' => $agent->id,
             'paper' => true,
             'total_trades' => 10,
@@ -563,7 +563,7 @@ describe('GET /v1/trading/agents/{agentId}/profile', function () {
         $owner = makeOwner();
         $agent = makeAgent($owner, ['is_listed' => true]);
 
-        \App\Models\TradingStats::create([
+        TradingStats::create([
             'agent_id' => $agent->id,
             'paper' => true,
             'total_trades' => 5,

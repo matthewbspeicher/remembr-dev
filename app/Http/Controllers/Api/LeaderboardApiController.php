@@ -7,6 +7,7 @@ use App\Models\Agent;
 use App\Models\AgentActivityLog;
 use App\Models\Memory;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -104,7 +105,7 @@ class LeaderboardApiController extends Controller
                 ->distinct()
                 ->orderByDesc('active_date')
                 ->pluck('active_date')
-                ->map(fn ($d) => \Illuminate\Support\Carbon::parse($d)->format('Y-m-d'))
+                ->map(fn ($d) => Carbon::parse($d)->format('Y-m-d'))
                 ->toArray();
 
             $streak = 0;

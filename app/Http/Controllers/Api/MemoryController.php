@@ -6,13 +6,18 @@ use App\Concerns\FormatsMemories;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\AgentActivityLog;
+use App\Models\AppStat;
 use App\Models\Memory;
 use App\Models\Workspace;
+use App\Services\AchievementService;
 use App\Services\MemoryService;
+use App\Services\SummarizationService;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-use Closure;
 
 class MemoryController extends Controller
 {
@@ -248,7 +253,7 @@ class MemoryController extends Controller
     // POST /v1/memories/compact
     // -------------------------------------------------------------------------
 
-    public function compact(Request $request, \App\Services\SummarizationService $summarizer): JsonResponse
+    public function compact(Request $request, SummarizationService $summarizer): JsonResponse
     {
         $validated = $request->validate([
             'agent_id' => ['sometimes', 'uuid'],
@@ -262,7 +267,7 @@ class MemoryController extends Controller
             return $agent;
         }
 
-        $memories = \App\Models\Memory::where('agent_id', $agent->id)
+        $memories = Memory::where('agent_id', $agent->id)
             ->whereIn('key', $validated['keys'])
             ->get();
 
@@ -273,7 +278,7 @@ class MemoryController extends Controller
         try {
             $summaryText = $summarizer->summarize($memories, $agent);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Compact failed', ['exception' => $e]);
+            Log::error('Compact failed', ['exception' => $e]);
 
             return response()->json(['error' => 'Failed to generate summary. Please try again later.'], 500);
         }
@@ -288,7 +293,7 @@ class MemoryController extends Controller
             'relations' => $relations,
         ]);
 
-        /** @var \App\Models\Memory $memory */
+        /** @var Memory $memory */
         foreach ($memories as $memory) {
             $this->memories->update($memory, ['visibility' => 'archived']);
         }
@@ -303,7 +308,7 @@ class MemoryController extends Controller
 
     public function search(Request $request): JsonResponse
     {
-        \App\Models\AppStat::incrementStat('searches_performed');
+        AppStat::incrementStat('searches_performed');
 
         $agent = $this->resolveAgent($request);
         if ($agent instanceof JsonResponse) {
@@ -331,7 +336,7 @@ class MemoryController extends Controller
         );
 
         try {
-            app(\App\Services\AchievementService::class)->checkAndAward($agent, 'search');
+            app(AchievementService::class)->checkAndAward($agent, 'search');
         } catch (\Throwable $e) {
             // Achievement check must never break the main operation
         }
@@ -371,7 +376,7 @@ class MemoryController extends Controller
         // Only cache the "Front Page" (no cursor, default limit, no tags, no type)
         if ($cursor === null && $limit === 10 && empty($tags) && $type === null) {
             return response()->json(
-                \Illuminate\Support\Facades\Cache::remember('commons_front_page', 5, function () use ($limit) {
+                Cache::remember('commons_front_page', 5, function () use ($limit) {
                     return $this->getCommonsData($limit, []);
                 })
             );
@@ -425,7 +430,7 @@ class MemoryController extends Controller
 
     public function commonsSearch(Request $request): JsonResponse
     {
-        \App\Models\AppStat::incrementStat('searches_performed');
+        AppStat::incrementStat('searches_performed');
 
         $agent = $this->resolveAgent($request);
         if ($agent instanceof JsonResponse) {
@@ -491,7 +496,7 @@ class MemoryController extends Controller
         $this->memories->shareWith($memory, $recipient);
 
         try {
-            app(\App\Services\AchievementService::class)->checkAndAward($agent, 'share');
+            app(AchievementService::class)->checkAndAward($agent, 'share');
         } catch (\Throwable $e) {
             // Achievement check must never break the main operation
         }
@@ -530,7 +535,7 @@ class MemoryController extends Controller
         $this->memories->recordFeedback($memory, $validated['useful']);
 
         try {
-            app(\App\Services\AchievementService::class)->checkAndAward($memory->agent, 'feedback');
+            app(AchievementService::class)->checkAndAward($memory->agent, 'feedback');
         } catch (\Throwable $e) {
             // Achievement check must never break the main operation
         }

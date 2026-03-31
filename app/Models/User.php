@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,8 +13,8 @@ use Laravel\Cashier\Billable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, Billable;
+    /** @use HasFactory<UserFactory> */
+    use Billable, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -56,7 +58,7 @@ class User extends Authenticatable
         return $this->hasMany(Agent::class, 'owner_id');
     }
 
-    public function sharedWorkspaces(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function sharedWorkspaces(): BelongsToMany
     {
         return $this->belongsToMany(Workspace::class, 'workspace_user')
             ->withTimestamps();

@@ -39,26 +39,31 @@ class TradingController extends Controller
 
                     if (! $parent) {
                         $fail('Parent trade not found or does not belong to this agent.');
+
                         return;
                     }
 
                     if ($parent->status !== 'open') {
                         $fail('Parent trade is not open.');
+
                         return;
                     }
 
                     if ($request->input('direction') === $parent->direction) {
                         $fail('Exit direction must oppose the parent trade direction.');
+
                         return;
                     }
 
                     if ($request->input('ticker') !== $parent->ticker) {
                         $fail('Exit ticker must match parent trade ticker.');
+
                         return;
                     }
 
                     if ((bool) $request->input('paper', true) !== $parent->paper) {
                         $fail('Exit paper flag must match parent trade.');
+
                         return;
                     }
 

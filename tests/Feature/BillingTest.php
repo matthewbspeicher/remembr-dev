@@ -1,9 +1,14 @@
 <?php
 
+use App\Listeners\SyncAgentQuotas;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\EmbeddingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use Laravel\Cashier\Checkout;
+use Laravel\Cashier\Events\WebhookReceived;
+use Laravel\Cashier\SubscriptionBuilder;
 
 uses(RefreshDatabase::class);
 
@@ -14,19 +19,19 @@ uses(RefreshDatabase::class);
 function makeProUser(array $overrides = []): User
 {
     $user = makeOwner(array_merge([
-        'stripe_id' => 'cus_test_' . Str::random(10),
+        'stripe_id' => 'cus_test_'.Str::random(10),
     ], $overrides));
 
     $subscription = $user->subscriptions()->create([
         'type' => 'default',
-        'stripe_id' => 'sub_test_' . Str::random(10),
+        'stripe_id' => 'sub_test_'.Str::random(10),
         'stripe_status' => 'active',
         'stripe_price' => config('stripe.pro_price_id') ?: 'price_test',
         'quantity' => 1,
     ]);
 
     $subscription->items()->create([
-        'stripe_id' => 'si_test_' . Str::random(10),
+        'stripe_id' => 'si_test_'.Str::random(10),
         'stripe_product' => 'prod_test',
         'stripe_price' => config('stripe.pro_price_id') ?: 'price_test',
         'quantity' => 1,
@@ -83,7 +88,7 @@ describe('plan helpers', function () {
     it('returns true for isDowngraded when not pro but has more than 3 agents', function () {
         $user = makeOwner();
         for ($i = 0; $i < 4; $i++) {
-            makeAgent($user, ['api_token' => 'amc_' . \Illuminate\Support\Str::random(40)]);
+            makeAgent($user, ['api_token' => 'amc_'.Str::random(40)]);
         }
         expect($user->isDowngraded())->toBeTrue();
     });
@@ -97,7 +102,7 @@ describe('plan helpers', function () {
     it('returns false for isDowngraded for pro user with many agents', function () {
         $user = makeProUser();
         for ($i = 0; $i < 5; $i++) {
-            makeAgent($user, ['api_token' => 'amc_' . \Illuminate\Support\Str::random(40)]);
+            makeAgent($user, ['api_token' => 'amc_'.Str::random(40)]);
         }
         expect($user->isDowngraded())->toBeFalse();
     });
@@ -128,7 +133,7 @@ describe('agent creation cap', function () {
     it('blocks free user from registering 4th agent via API', function () {
         $owner = makeOwner();
         for ($i = 0; $i < 3; $i++) {
-            makeAgent($owner, ['api_token' => 'amc_' . \Illuminate\Support\Str::random(40)]);
+            makeAgent($owner, ['api_token' => 'amc_'.Str::random(40)]);
         }
 
         $response = $this->postJson('/api/v1/agents/register', [
@@ -153,7 +158,7 @@ describe('agent creation cap', function () {
     it('blocks free user from registering 4th agent via dashboard', function () {
         $owner = makeOwner();
         for ($i = 0; $i < 3; $i++) {
-            makeAgent($owner, ['api_token' => 'amc_' . \Illuminate\Support\Str::random(40)]);
+            makeAgent($owner, ['api_token' => 'amc_'.Str::random(40)]);
         }
 
         $response = $this->actingAs($owner)->post('/dashboard/agents', [
@@ -200,9 +205,9 @@ describe('soft lock on downgrade', function () {
 
     beforeEach(function () {
         // Mock embeddings for memory store tests
-        $mock = Mockery::mock(\App\Services\EmbeddingService::class);
+        $mock = Mockery::mock(EmbeddingService::class);
         $mock->shouldReceive('embed')->andReturn(array_fill(0, 1536, 0.1));
-        app()->instance(\App\Services\EmbeddingService::class, $mock);
+        app()->instance(EmbeddingService::class, $mock);
     });
 
     it('blocks write on 4th agent when downgraded', function () {
@@ -298,12 +303,12 @@ describe('billing routes', function () {
     it('creates checkout session for authenticated user', function () {
         $user = makeOwner(['stripe_id' => 'cus_checkout_test']);
 
-        $checkoutMock = Mockery::mock(\Laravel\Cashier\Checkout::class);
+        $checkoutMock = Mockery::mock(Checkout::class);
         $checkoutMock->shouldReceive('toResponse')->andReturn(
             redirect('https://checkout.stripe.com/test')
         );
 
-        $builderMock = Mockery::mock(\Laravel\Cashier\SubscriptionBuilder::class);
+        $builderMock = Mockery::mock(SubscriptionBuilder::class);
         $builderMock->shouldReceive('checkout')->andReturn($checkoutMock);
 
         $userMock = Mockery::mock($user)->makePartial();
@@ -339,7 +344,7 @@ describe('quota sync', function () {
         expect($agent->fresh()->max_memories)->toBe(1000);
 
         // Simulate subscription created webhook
-        $event = new \Laravel\Cashier\Events\WebhookReceived([
+        $event = new WebhookReceived([
             'type' => 'customer.subscription.created',
             'data' => ['object' => ['customer' => 'cus_sync_test']],
         ]);
@@ -359,7 +364,7 @@ describe('quota sync', function () {
             'quantity' => 1,
         ]);
 
-        $listener = new \App\Listeners\SyncAgentQuotas();
+        $listener = new SyncAgentQuotas;
         $listener->handle($event);
 
         expect($agent->fresh()->max_memories)->toBe(10000);
@@ -372,12 +377,12 @@ describe('quota sync', function () {
         // Delete the subscription to simulate downgrade
         $user->subscriptions()->delete();
 
-        $event = new \Laravel\Cashier\Events\WebhookReceived([
+        $event = new WebhookReceived([
             'type' => 'customer.subscription.deleted',
             'data' => ['object' => ['customer' => 'cus_downgrade_test']],
         ]);
 
-        $listener = new \App\Listeners\SyncAgentQuotas();
+        $listener = new SyncAgentQuotas;
         $listener->handle($event);
 
         expect($agent->fresh()->max_memories)->toBe(1000);

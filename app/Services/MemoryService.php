@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\Events\MemoryCreated;
+use App\Events\MemoryShared;
 use App\Models\Agent;
 use App\Models\Memory;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MemoryService
 {
@@ -137,7 +140,7 @@ class MemoryService
         });
     }
 
-    private function parseTtl(string $ttl): \Illuminate\Support\Carbon
+    private function parseTtl(string $ttl): Carbon
     {
         $value = (int) substr($ttl, 0, -1);
         $unit = substr($ttl, -1);
@@ -229,7 +232,7 @@ class MemoryService
         $results = $this->fuseResults($vectorResults, $keywordResults, $limit);
 
         $duration = (microtime(true) - $start) * 1000;
-        \Illuminate\Support\Facades\Log::info("Hybrid search (Agent) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
+        Log::info("Hybrid search (Agent) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
 
         return collect($results);
     }
@@ -272,7 +275,7 @@ class MemoryService
         $results = $this->fuseResults($vectorResults, $keywordResults, $limit);
 
         $duration = (microtime(true) - $start) * 1000;
-        \Illuminate\Support\Facades\Log::info("Hybrid search (Commons) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
+        Log::info("Hybrid search (Commons) completed in {$duration}ms", ['agent_id' => $agent->id, 'limit' => $limit, 'tags' => $tags]);
 
         return collect($results);
     }
@@ -361,7 +364,7 @@ class MemoryService
     public function shareWith(Memory $memory, Agent $recipient): void
     {
         $memory->sharedWith()->syncWithoutDetaching([$recipient->id]);
-        \App\Events\MemoryShared::dispatch($memory, $recipient);
+        MemoryShared::dispatch($memory, $recipient);
     }
 
     public function revokeShare(Memory $memory, Agent $recipient): void

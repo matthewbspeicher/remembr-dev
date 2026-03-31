@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class DispatchWebhook implements ShouldQueue
 {
@@ -53,7 +54,7 @@ class DispatchWebhook implements ShouldQueue
         }
 
         $body = [
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'event' => $this->event,
             'timestamp' => now()->toIso8601String(),
             'data' => $this->payload,

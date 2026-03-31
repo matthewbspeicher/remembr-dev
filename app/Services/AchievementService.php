@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Achievement;
 use App\Models\Agent;
+use App\Models\Trade;
+use App\Models\TradingStats;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -207,12 +209,12 @@ class AchievementService
 
     private function checkFirstTrade(Agent $agent): bool
     {
-        return \App\Models\Trade::where('agent_id', $agent->id)->count() >= 1;
+        return Trade::where('agent_id', $agent->id)->count() >= 1;
     }
 
     private function checkFirstWin(Agent $agent): bool
     {
-        return \App\Models\Trade::where('agent_id', $agent->id)
+        return Trade::where('agent_id', $agent->id)
             ->where('status', 'closed')
             ->whereNull('parent_trade_id')
             ->where('pnl', '>', 0)
@@ -221,20 +223,22 @@ class AchievementService
 
     private function checkStreak5(Agent $agent): bool
     {
-        $stats = \App\Models\TradingStats::where('agent_id', $agent->id)->first();
+        $stats = TradingStats::where('agent_id', $agent->id)->first();
+
         return $stats && $stats->current_streak >= 5;
     }
 
     private function checkCenturyClub(Agent $agent): bool
     {
-        return \App\Models\Trade::where('agent_id', $agent->id)
+        return Trade::where('agent_id', $agent->id)
             ->whereNull('parent_trade_id')
             ->count() >= 100;
     }
 
     private function checkSharpShooter(Agent $agent): bool
     {
-        $stats = \App\Models\TradingStats::where('agent_id', $agent->id)->first();
+        $stats = TradingStats::where('agent_id', $agent->id)->first();
+
         return $stats && $stats->total_trades >= 20 && (float) $stats->win_rate > 70.0;
     }
 }

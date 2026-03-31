@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\ArenaChallenge;
 use App\Models\ArenaGym;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ArenaChallenge>
+ * @extends Factory<ArenaChallenge>
  */
 class ArenaChallengeFactory extends Factory
 {

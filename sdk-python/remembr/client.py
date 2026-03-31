@@ -1,14 +1,7 @@
 import httpx
 from typing import Optional, Dict, Any, List
 
-class RemembrException(Exception):
-    pass
-
-class AuthenticationException(RemembrException):
-    pass
-
-class MemoryNotFoundException(RemembrException):
-    pass
+from .exceptions import RemembrException, AuthenticationException, MemoryNotFoundException
 
 def _handle_error(response: httpx.Response):
     if response.status_code == 401:

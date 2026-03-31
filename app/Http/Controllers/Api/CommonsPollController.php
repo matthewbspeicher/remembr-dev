@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Memory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class CommonsPollController extends Controller
 {
@@ -20,7 +21,7 @@ class CommonsPollController extends Controller
             ->limit(50);
 
         if ($since) {
-            $query->where('created_at', '>', \Illuminate\Support\Carbon::parse($since));
+            $query->where('created_at', '>', Carbon::parse($since));
         } else {
             $query->latest()->limit(50)->reorder()->orderBy('created_at', 'asc');
         }

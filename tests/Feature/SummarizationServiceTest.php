@@ -3,6 +3,7 @@
 use App\Models\Agent;
 use App\Models\Memory;
 use App\Services\SummarizationService;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 it('summarizes a collection of memories', function () {
@@ -33,7 +34,7 @@ it('summarizes a collection of memories', function () {
 
     expect($summary)->toBe('The user loves dogs, specifically golden retrievers, and has one named Max.');
 
-    Http::assertSent(function (\Illuminate\Http\Client\Request $request) {
+    Http::assertSent(function (Request $request) {
         return str_contains($request->url(), 'generateContent');
     });
 });

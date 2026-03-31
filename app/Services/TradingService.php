@@ -99,6 +99,7 @@ class TradingService
                 ->where('ticker', $ticker)
                 ->where('paper', $paper)
                 ->delete();
+
             return;
         }
 
@@ -159,6 +160,7 @@ class TradingService
                     'current_streak' => 0,
                 ]
             );
+
             return;
         }
 

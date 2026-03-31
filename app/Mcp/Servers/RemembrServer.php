@@ -12,6 +12,7 @@ use App\Mcp\Tools\StoreMemoryTool;
 use App\Mcp\Tools\UpdateMemoryTool;
 use App\Models\Agent;
 use Illuminate\Container\Container;
+use Illuminate\Http\Request;
 use Laravel\Mcp\Server;
 
 class RemembrServer extends Server
@@ -41,8 +42,8 @@ class RemembrServer extends Server
 
         // Web transport: agent is set on the HTTP request by the agent.auth middleware
         try {
-            /** @var \Illuminate\Http\Request $httpRequest */
-            $httpRequest = $container->make(\Illuminate\Http\Request::class);
+            /** @var Request $httpRequest */
+            $httpRequest = $container->make(Request::class);
             $agent = $httpRequest->attributes->get('agent');
         } catch (\Throwable) {
             // Not in an HTTP context (stdio transport)

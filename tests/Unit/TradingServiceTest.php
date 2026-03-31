@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Agent;
 use App\Models\Trade;
 use App\Services\TradingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

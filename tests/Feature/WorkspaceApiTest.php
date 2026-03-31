@@ -4,6 +4,7 @@ use App\Models\Agent;
 use App\Models\Memory;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\EmbeddingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -123,9 +124,9 @@ describe('Workspaces API', function () {
     });
 
     it('allows an agent to publish a memory to a workspace', function () {
-        $mock = Mockery::mock(\App\Services\EmbeddingService::class);
+        $mock = Mockery::mock(EmbeddingService::class);
         $mock->shouldReceive('embed')->andReturn(array_fill(0, 1536, 0.1));
-        app()->instance(\App\Services\EmbeddingService::class, $mock);
+        app()->instance(EmbeddingService::class, $mock);
 
         $user = User::factory()->create(['stripe_id' => 'cus_test_wp1']);
         $sub = $user->subscriptions()->create([

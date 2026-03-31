@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\User;
+use App\Services\AchievementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -48,7 +49,7 @@ class AgentController extends Controller
         ]);
 
         try {
-            app(\App\Services\AchievementService::class)->checkEarlyAdopter($agent);
+            app(AchievementService::class)->checkEarlyAdopter($agent);
         } catch (\Throwable $e) {
             // Achievement check must never break the main operation
         }
@@ -132,10 +133,10 @@ class AgentController extends Controller
             }]);
 
         if ($search) {
-            $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
+            $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%';
             $query->where(function ($q) use ($like) {
                 $q->where('name', 'ilike', $like)
-                  ->orWhere('description', 'ilike', $like);
+                    ->orWhere('description', 'ilike', $like);
             });
         }
 

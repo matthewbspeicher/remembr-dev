@@ -2,12 +2,21 @@
 
 use App\Http\Controllers\Api\AchievementController;
 use App\Http\Controllers\Api\AgentController;
+use App\Http\Controllers\Api\ArenaProfileController;
+use App\Http\Controllers\Api\BadgeController;
 use App\Http\Controllers\Api\CommonsPollController;
 use App\Http\Controllers\Api\CommonsStreamController;
+use App\Http\Controllers\Api\GraphController;
 use App\Http\Controllers\Api\LeaderboardApiController;
 use App\Http\Controllers\Api\MemoryController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StatsController;
+use App\Http\Controllers\Api\TradingController;
+use App\Http\Controllers\Api\TradingLeaderboardController;
+use App\Http\Controllers\Api\TradingPositionController;
+use App\Http\Controllers\Api\TradingStatsController;
+use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\WorkspaceController;
 use App\Http\Middleware\AuthenticateAgent;
 use Illuminate\Support\Facades\Route;
 
@@ -27,12 +36,12 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     Route::get('agents/{agentId}', [AgentController::class, 'show'])->where('agentId', '[0-9a-f\-]{36}');
 
     // Public agent graph (UUID constraint prevents swallowing literal paths like "me")
-    Route::get('agents/{agentId}/graph', [\App\Http\Controllers\Api\GraphController::class, 'show'])
+    Route::get('agents/{agentId}/graph', [GraphController::class, 'show'])
         ->where('agentId', '[0-9a-f\-]{36}');
 
     // Badges
-    Route::get('badges/agent/{agentId}/memories', [\App\Http\Controllers\Api\BadgeController::class, 'memories'])->whereUuid('agentId');
-    Route::get('badges/agent/{agentId}/status', [\App\Http\Controllers\Api\BadgeController::class, 'status'])->whereUuid('agentId');
+    Route::get('badges/agent/{agentId}/memories', [BadgeController::class, 'memories'])->whereUuid('agentId');
+    Route::get('badges/agent/{agentId}/status', [BadgeController::class, 'status'])->whereUuid('agentId');
 
     // Platform stats (public, no auth)
     Route::get('stats', StatsController::class);
@@ -46,10 +55,10 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     // Route::get('commons/stream', CommonsStreamController::class);
 
     // Trading — public
-    Route::get('trading/leaderboard', [\App\Http\Controllers\Api\TradingLeaderboardController::class, 'leaderboard']);
-    Route::get('trading/agents/{agentId}/profile', [\App\Http\Controllers\Api\TradingLeaderboardController::class, 'agentProfile'])
+    Route::get('trading/leaderboard', [TradingLeaderboardController::class, 'leaderboard']);
+    Route::get('trading/agents/{agentId}/profile', [TradingLeaderboardController::class, 'agentProfile'])
         ->where('agentId', '[0-9a-f\-]{36}');
-    Route::get('trading/agents/{agentId}/trades', [\App\Http\Controllers\Api\TradingLeaderboardController::class, 'agentTrades'])
+    Route::get('trading/agents/{agentId}/trades', [TradingLeaderboardController::class, 'agentTrades'])
         ->where('agentId', '[0-9a-f\-]{36}');
 
     // -------------------------------------------------------------------------
@@ -66,7 +75,7 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::get('agents/me/achievements', [AchievementController::class, 'index']);
 
         // Knowledge graph
-        Route::get('agents/me/graph', [\App\Http\Controllers\Api\GraphController::class, 'me']);
+        Route::get('agents/me/graph', [GraphController::class, 'me']);
 
         // Memories — own
         Route::post('memories/compact', [MemoryController::class, 'compact']);
@@ -87,15 +96,15 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::post('sessions/extract', [SessionController::class, 'extract']);
 
         // Workspaces
-        Route::get('/workspaces', [\App\Http\Controllers\Api\WorkspaceController::class, 'index']);
-        Route::post('/workspaces', [\App\Http\Controllers\Api\WorkspaceController::class, 'store']);
-        Route::post('/workspaces/{id}/join', [\App\Http\Controllers\Api\WorkspaceController::class, 'join']);
+        Route::get('/workspaces', [WorkspaceController::class, 'index']);
+        Route::post('/workspaces', [WorkspaceController::class, 'store']);
+        Route::post('/workspaces/{id}/join', [WorkspaceController::class, 'join']);
 
         // Webhooks
-        Route::get('/webhooks', [\App\Http\Controllers\Api\WebhookController::class, 'index']);
-        Route::post('/webhooks', [\App\Http\Controllers\Api\WebhookController::class, 'store']);
-        Route::delete('/webhooks/{id}', [\App\Http\Controllers\Api\WebhookController::class, 'destroy']);
-        Route::post('/webhooks/{id}/test', [\App\Http\Controllers\Api\WebhookController::class, 'test']);
+        Route::get('/webhooks', [WebhookController::class, 'index']);
+        Route::post('/webhooks', [WebhookController::class, 'store']);
+        Route::delete('/webhooks/{id}', [WebhookController::class, 'destroy']);
+        Route::post('/webhooks/{id}/test', [WebhookController::class, 'test']);
 
         // Commons — public memory generic list across all agents
         Route::get('commons', [MemoryController::class, 'commonsIndex']);
@@ -104,23 +113,23 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::get('commons/search', [MemoryController::class, 'commonsSearch']);
 
         // Arena
-        Route::get('arena/profile', [\App\Http\Controllers\Api\ArenaProfileController::class, 'show']);
-        Route::put('arena/profile', [\App\Http\Controllers\Api\ArenaProfileController::class, 'update']);
-        Route::patch('arena/profile', [\App\Http\Controllers\Api\ArenaProfileController::class, 'update']);
+        Route::get('arena/profile', [ArenaProfileController::class, 'show']);
+        Route::put('arena/profile', [ArenaProfileController::class, 'update']);
+        Route::patch('arena/profile', [ArenaProfileController::class, 'update']);
 
         // Trading
-        Route::post('trading/trades', [\App\Http\Controllers\Api\TradingController::class, 'store']);
-        Route::get('trading/trades', [\App\Http\Controllers\Api\TradingController::class, 'index']);
-        Route::get('trading/trades/{id}', [\App\Http\Controllers\Api\TradingController::class, 'show']);
-        Route::patch('trading/trades/{id}', [\App\Http\Controllers\Api\TradingController::class, 'update']);
-        Route::delete('trading/trades/{id}', [\App\Http\Controllers\Api\TradingController::class, 'destroy']);
+        Route::post('trading/trades', [TradingController::class, 'store']);
+        Route::get('trading/trades', [TradingController::class, 'index']);
+        Route::get('trading/trades/{id}', [TradingController::class, 'show']);
+        Route::patch('trading/trades/{id}', [TradingController::class, 'update']);
+        Route::delete('trading/trades/{id}', [TradingController::class, 'destroy']);
 
-        Route::get('trading/positions', [\App\Http\Controllers\Api\TradingPositionController::class, 'index']);
-        Route::get('trading/positions/{ticker}', [\App\Http\Controllers\Api\TradingPositionController::class, 'show']);
-        Route::get('trading/stats/by-ticker', [\App\Http\Controllers\Api\TradingStatsController::class, 'byTicker']);
-        Route::get('trading/stats/by-strategy', [\App\Http\Controllers\Api\TradingStatsController::class, 'byStrategy']);
-        Route::get('trading/stats/equity-curve', [\App\Http\Controllers\Api\TradingStatsController::class, 'equityCurve']);
-        Route::get('trading/stats', [\App\Http\Controllers\Api\TradingStatsController::class, 'index']);
+        Route::get('trading/positions', [TradingPositionController::class, 'index']);
+        Route::get('trading/positions/{ticker}', [TradingPositionController::class, 'show']);
+        Route::get('trading/stats/by-ticker', [TradingStatsController::class, 'byTicker']);
+        Route::get('trading/stats/by-strategy', [TradingStatsController::class, 'byStrategy']);
+        Route::get('trading/stats/equity-curve', [TradingStatsController::class, 'equityCurve']);
+        Route::get('trading/stats', [TradingStatsController::class, 'index']);
 
     });
 

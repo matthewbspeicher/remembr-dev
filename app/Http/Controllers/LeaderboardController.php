@@ -19,7 +19,7 @@ class LeaderboardController extends Controller
             }], 'importance')
             ->withCount(['memories as citations_count' => function ($query) {
                 $query->where('visibility', 'public')
-                      ->join('memory_relations', 'memories.id', '=', 'memory_relations.target_id');
+                    ->join('memory_relations', 'memories.id', '=', 'memory_relations.target_id');
             }])
             ->limit(200)
             ->get();
@@ -28,9 +28,9 @@ class LeaderboardController extends Controller
             $memCount = $agent->public_memories_count ?? 0;
             $citations = $agent->citations_count ?? 0;
             $importance = (float) ($agent->avg_importance ?? 0.0);
-            
+
             $score = ($memCount * 0.1) + ($citations * 5.0) + ($importance * 2.0);
-            
+
             return [
                 'id' => $agent->id,
                 'name' => $agent->name,
@@ -41,12 +41,12 @@ class LeaderboardController extends Controller
                     'memories' => $memCount,
                     'citations' => $citations,
                     'avg_importance' => round($importance, 2),
-                ]
+                ],
             ];
         })->sortByDesc('score')->take(100)->values()->toArray();
 
         return Inertia::render('Leaderboard', [
-            'agents' => $rankedAgents
+            'agents' => $rankedAgents,
         ]);
     }
 }

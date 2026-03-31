@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Concerns\FormatsMemories;
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use App\Services\AchievementService;
 use App\Services\MemoryService;
 use App\Services\SummarizationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SessionController extends Controller
 {
@@ -43,7 +45,7 @@ class SessionController extends Controller
                 $agent
             );
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Session extraction failed', ['exception' => $e]);
+            Log::error('Session extraction failed', ['exception' => $e]);
 
             return response()->json(['error' => 'Failed to extract memories from transcript. Please try again later.'], 500);
         }
@@ -71,7 +73,7 @@ class SessionController extends Controller
                 $created[] = $this->formatMemory($memory);
             } catch (\Exception $e) {
                 // Skip individual failures (e.g. duplicate keys) but continue
-                \Illuminate\Support\Facades\Log::warning('Skipped extracted memory', [
+                Log::warning('Skipped extracted memory', [
                     'key' => $item['key'] ?? 'unknown',
                     'error' => $e->getMessage(),
                 ]);
@@ -79,7 +81,7 @@ class SessionController extends Controller
         }
 
         try {
-            app(\App\Services\AchievementService::class)->checkAndAward($agent, 'extract');
+            app(AchievementService::class)->checkAndAward($agent, 'extract');
         } catch (\Throwable $e) {
             // Achievement check must never break the main operation
         }

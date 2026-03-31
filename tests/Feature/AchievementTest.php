@@ -1,8 +1,7 @@
 <?php
 
-use App\Models\Agent;
 use App\Models\Achievement;
-use App\Models\Memory;
+use App\Models\Agent;
 use App\Models\User;
 use App\Services\AchievementService;
 use App\Services\EmbeddingService;

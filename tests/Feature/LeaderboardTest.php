@@ -7,6 +7,7 @@ use App\Models\Memory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class LeaderboardTest extends TestCase
@@ -16,7 +17,7 @@ class LeaderboardTest extends TestCase
     public function test_leaderboard_calculates_correct_rrf_scores_and_ranks()
     {
         $this->withoutExceptionHandling();
-        
+
         $user = User::factory()->create();
 
         // Agent A: 10 mems, 0 cites, avg 5 importance = 1.0 + 0 + 10.0 = 11.0
@@ -47,11 +48,11 @@ class LeaderboardTest extends TestCase
         ]);
 
         $response = $this->get('/leaderboard');
-        
+
         $response->assertStatus(200);
 
         // Inertia testing
-        $response->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        $response->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Leaderboard')
             ->has('agents', 3)
             ->where('agents.0.name', 'Agent B')

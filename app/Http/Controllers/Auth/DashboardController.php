@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -93,7 +94,7 @@ class DashboardController extends Controller
     public function rotateOwnerToken(Request $request)
     {
         $user = $request->user();
-        $user->api_token = \App\Models\User::generateToken();
+        $user->api_token = User::generateToken();
         $user->api_token_hash = hash('sha256', $user->api_token);
         $user->save();
 

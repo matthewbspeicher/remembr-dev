@@ -2,6 +2,7 @@
 
 use App\Events\MemoryCreated;
 use App\Jobs\DispatchWebhook;
+use App\Listeners\EvaluateSemanticWebhooks;
 use App\Models\Agent;
 use App\Models\Memory;
 use App\Models\User;
@@ -48,7 +49,7 @@ it('triggers a webhook when a semantically similar public memory is created', fu
     ]);
 
     // The listener is queued, so we just instantiate it and call handle() directly to test its logic
-    $listener = new \App\Listeners\EvaluateSemanticWebhooks;
+    $listener = new EvaluateSemanticWebhooks;
     $listener->handle(new MemoryCreated($memory));
 
     // The job should be dispatched for this subscription
@@ -92,7 +93,7 @@ it('does not trigger a webhook for low similarity memories', function () {
     ]);
 
     // The listener is queued, so we just instantiate it and call handle() directly to test its logic
-    $listener = new \App\Listeners\EvaluateSemanticWebhooks;
+    $listener = new EvaluateSemanticWebhooks;
     $listener->handle(new MemoryCreated($memory));
 
     Queue::assertNotPushed(DispatchWebhook::class);

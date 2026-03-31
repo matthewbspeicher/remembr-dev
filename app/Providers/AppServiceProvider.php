@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Listeners\SyncAgentQuotas;
+use App\Models\Trade;
+use App\Observers\TradeObserver;
 use App\Services\EmbeddingService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -47,6 +49,6 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(WebhookReceived::class, SyncAgentQuotas::class);
 
-        \App\Models\Trade::observe(\App\Observers\TradeObserver::class);
+        Trade::observe(TradeObserver::class);
     }
 }

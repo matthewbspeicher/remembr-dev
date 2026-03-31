@@ -1,10 +1,8 @@
 <?php
 
-use App\Models\Agent;
 use App\Models\Memory;
-use App\Models\User;
-use App\Models\Workspace;
 use App\Models\WebhookSubscription;
+use App\Models\Workspace;
 use App\Services\EmbeddingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

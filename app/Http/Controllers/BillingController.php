@@ -28,7 +28,7 @@ class BillingController extends Controller
 
         return $user->newSubscription('default', $priceId)
             ->checkout([
-                'success_url' => route('billing.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'success_url' => route('billing.success').'?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('pricing'),
             ]);
     }

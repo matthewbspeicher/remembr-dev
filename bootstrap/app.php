@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Middleware\AuthenticateAgent;
+use App\Http\Middleware\EnforcePlanLimits;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RateLimitHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,12 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
+            HandleInertiaRequests::class,
         ]);
         $middleware->alias([
-            'agent.auth' => \App\Http\Middleware\AuthenticateAgent::class,
-            'rate.headers' => \App\Http\Middleware\RateLimitHeaders::class,
-            'plan.limits' => \App\Http\Middleware\EnforcePlanLimits::class,
+            'agent.auth' => AuthenticateAgent::class,
+            'rate.headers' => RateLimitHeaders::class,
+            'plan.limits' => EnforcePlanLimits::class,
         ]);
         $middleware->validateCsrfTokens(except: ['stripe/*']);
     })

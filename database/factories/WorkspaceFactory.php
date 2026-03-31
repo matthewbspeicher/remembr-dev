@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Workspace>
+ * @extends Factory<Workspace>
  */
 class WorkspaceFactory extends Factory
 {
@@ -19,8 +21,8 @@ class WorkspaceFactory extends Factory
         return [
             'name' => fake()->company(),
             'description' => fake()->sentence(),
-            'owner_id' => \App\Models\User::factory(),
-            'api_token' => \App\Models\Workspace::generateToken(),
+            'owner_id' => User::factory(),
+            'api_token' => Workspace::generateToken(),
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Agent;
+use App\Models\Workspace;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +24,7 @@ class AuthenticateAgent
         // Workspace token authentication
         if (str_starts_with($token, 'wks_')) {
             $tokenHash = hash('sha256', $token);
-            $workspace = \App\Models\Workspace::where('api_token_hash', $tokenHash)
+            $workspace = Workspace::where('api_token_hash', $tokenHash)
                 ->orWhere('api_token', $token)
                 ->first();
 

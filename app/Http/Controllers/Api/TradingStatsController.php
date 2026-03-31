@@ -93,7 +93,7 @@ class TradingStatsController extends Controller
             ->where('paper', $paper)
             ->where('status', 'closed')
             ->whereNull('parent_trade_id')
-            ->selectRaw("DATE(exit_at) as date")
+            ->selectRaw('DATE(exit_at) as date')
             ->selectRaw('SUM(pnl) as daily_pnl')
             ->groupByRaw('DATE(exit_at)')
             ->orderByRaw('DATE(exit_at)')
@@ -102,6 +102,7 @@ class TradingStatsController extends Controller
         $cumulative = '0';
         $data = $dailyPnl->map(function ($row) use (&$cumulative) {
             $cumulative = bcadd($cumulative, (string) $row->daily_pnl, 8);
+
             return [
                 'date' => $row->date,
                 'cumulative_pnl' => (float) $cumulative,

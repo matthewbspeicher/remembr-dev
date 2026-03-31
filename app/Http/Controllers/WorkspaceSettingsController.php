@@ -89,7 +89,7 @@ class WorkspaceSettingsController extends Controller
             abort(403);
         }
 
-        $workspace->update(['api_token' => \App\Models\Workspace::generateToken()]);
+        $workspace->update(['api_token' => Workspace::generateToken()]);
 
         return back()->with('success', 'API Token rotated successfully.');
     }

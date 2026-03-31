@@ -15,6 +15,7 @@ class Trade extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     const DIRECTIONS = ['long', 'short'];
+
     const STATUSES = ['open', 'closed', 'cancelled'];
 
     protected $fillable = [
@@ -111,6 +112,7 @@ class Trade extends Model
     public function remainingQuantity(): string
     {
         $childrenQty = $this->children()->sum('quantity');
+
         return bcsub($this->quantity, $childrenQty, 8);
     }
 }

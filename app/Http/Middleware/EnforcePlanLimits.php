@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Agent;
 use App\Models\Memory;
 use Closure;
 use Illuminate\Http\Request;

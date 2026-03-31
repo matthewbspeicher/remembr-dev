@@ -11,7 +11,7 @@ return new class extends Migration
     {
         // Use raw SQL to avoid full column rewrite (Supabase maintenance_work_mem limit)
         DB::statement("ALTER TABLE memories ALTER COLUMN type SET DEFAULT 'note'");
-        DB::statement("ALTER TABLE memories ALTER COLUMN type SET NOT NULL");
+        DB::statement('ALTER TABLE memories ALTER COLUMN type SET NOT NULL');
 
         Schema::table('memories', function (Blueprint $table) {
             $table->index('type');

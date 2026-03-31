@@ -1,5 +1,10 @@
 <?php
 
+use App\Models\Agent;
+use App\Models\User;
+use Illuminate\Support\Str;
+use Tests\TestCase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -11,11 +16,11 @@
 |
 */
 
-pest()->extend(Tests\TestCase::class)
+pest()->extend(TestCase::class)
  // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
-pest()->extend(Tests\TestCase::class)
+pest()->extend(TestCase::class)
     ->in('Unit');
 
 /*
@@ -44,22 +49,22 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function makeOwner(array $overrides = []): \App\Models\User
+function makeOwner(array $overrides = []): User
 {
-    return \App\Models\User::factory()->create(array_merge([
+    return User::factory()->create(array_merge([
         'api_token' => 'owner_test_token',
     ], $overrides));
 }
 
-function makeAgent(\App\Models\User $owner, array $overrides = []): \App\Models\Agent
+function makeAgent(User $owner, array $overrides = []): Agent
 {
-    return \App\Models\Agent::factory()->create(array_merge([
+    return Agent::factory()->create(array_merge([
         'owner_id' => $owner->id,
-        'api_token' => 'amc_' . \Illuminate\Support\Str::random(40),
+        'api_token' => 'amc_'.Str::random(40),
     ], $overrides));
 }
 
-function withAgent(\App\Models\Agent $agent): array
+function withAgent(Agent $agent): array
 {
     return ['Authorization' => "Bearer {$agent->api_token}"];
 }

@@ -2,10 +2,14 @@
 
 use App\Events\MemoryShared;
 use App\Jobs\DispatchWebhook;
+use App\Listeners\TriggerWebhooks;
 use App\Models\Agent;
 use App\Models\Memory;
 use App\Models\User;
+use App\Models\WebhookDelivery;
 use App\Models\WebhookSubscription;
+use App\Services\EmbeddingService;
+use Illuminate\Events\CallQueuedListener;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -34,7 +38,7 @@ it('can register a webhook', function () {
 });
 
 it('can register a semantic webhook', function () {
-    $this->mock(\App\Services\EmbeddingService::class, function ($mock) {
+    $this->mock(EmbeddingService::class, function ($mock) {
         $mock->shouldReceive('embed')
             ->andReturn(array_fill(0, 1536, 0.1));
     });
@@ -137,11 +141,11 @@ it('queues the webhook listener when a memory is shared', function () {
         'secret' => 'secret',
     ]);
 
-    \App\Events\MemoryShared::dispatch($memory, $this->agent);
+    MemoryShared::dispatch($memory, $this->agent);
 
     // TriggerWebhooks is now queued (ShouldQueue), so it gets pushed as a queued listener
-    Queue::assertPushed(\Illuminate\Events\CallQueuedListener::class, function ($job) {
-        return $job->class === \App\Listeners\TriggerWebhooks::class;
+    Queue::assertPushed(CallQueuedListener::class, function ($job) {
+        return $job->class === TriggerWebhooks::class;
     });
 });
 
@@ -167,7 +171,7 @@ it('dispatches the webhook correctly via HTTP', function () {
             && $request['data']['foo'] === 'bar';
     });
 
-    expect(\App\Models\WebhookDelivery::count())->toBe(1);
+    expect(WebhookDelivery::count())->toBe(1);
     expect($webhook->fresh()->failure_count)->toBe(0);
 });
 
@@ -188,7 +192,7 @@ it('increments failure count and deactivates after 10 failures', function () {
 
     try {
         $job->handle();
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // HTTP exception thrown
     }
 

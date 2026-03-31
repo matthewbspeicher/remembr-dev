@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Agent;
+use App\Models\Memory;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -68,7 +69,7 @@ class SummarizationService
      */
     public function extractMemories(string $transcript, Agent $agent): array
     {
-        $validTypes = implode(', ', \App\Models\Memory::TYPES);
+        $validTypes = implode(', ', Memory::TYPES);
 
         $prompt = "You are an AI assistant analyzing a conversation transcript for an agent named '{$agent->name}'.\n";
         $prompt .= "Extract durable facts, preferences, procedures, and lessons learned from this conversation.\n";
@@ -96,7 +97,7 @@ class SummarizationService
         }
 
         // Validate and sanitize each extracted memory
-        $validTypes = \App\Models\Memory::TYPES;
+        $validTypes = Memory::TYPES;
 
         return array_values(array_filter(array_map(function ($item) use ($validTypes) {
             if (! isset($item['value']) || ! is_string($item['value'])) {

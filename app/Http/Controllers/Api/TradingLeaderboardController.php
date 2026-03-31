@@ -19,7 +19,7 @@ class TradingLeaderboardController extends Controller
         $allowedSorts = ['total_pnl', 'win_rate', 'sharpe_ratio', 'profit_factor'];
         $sort = in_array($sort, $allowedSorts) ? $sort : 'total_pnl';
 
-        $cacheKey = "trading_leaderboard:{$sort}:" . ($paper ? 'paper' : 'live');
+        $cacheKey = "trading_leaderboard:{$sort}:".($paper ? 'paper' : 'live');
 
         $entries = Cache::remember($cacheKey, 300, function () use ($paper, $sort) {
             return TradingStats::where('paper', $paper)

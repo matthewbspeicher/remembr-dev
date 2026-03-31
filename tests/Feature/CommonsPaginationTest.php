@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Api\MemoryController;
 use App\Models\Agent;
 use App\Models\Memory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class CommonsPaginationTest extends TestCase
@@ -27,7 +28,7 @@ class CommonsPaginationTest extends TestCase
                 'created_at' => now()->subMinutes($i), // Ensure predictable ordering
             ]);
         }
-        
+
         // Also create some private memories to ensure they don't leak
         Memory::factory()->count(5)->create([
             'agent_id' => $agent->id,
@@ -46,9 +47,9 @@ class CommonsPaginationTest extends TestCase
                     '*' => [
                         'id', 'key', 'value', 'type', 'visibility',
                         'agent' => ['id', 'name', 'description'],
-                    ]
+                    ],
                 ],
-                'meta' => ['next_cursor', 'prev_cursor', 'per_page', 'has_more']
+                'meta' => ['next_cursor', 'prev_cursor', 'per_page', 'has_more'],
             ]);
 
         $this->assertTrue($response->json('meta.has_more'));
@@ -60,7 +61,7 @@ class CommonsPaginationTest extends TestCase
 
         $response2->assertStatus(200)
             ->assertJsonCount(5, 'data');
-            
+
         $this->assertFalse($response2->json('meta.has_more'));
     }
 
@@ -73,14 +74,14 @@ class CommonsPaginationTest extends TestCase
         Memory::factory()->create(['agent_id' => $agent->id, 'visibility' => 'public', 'type' => 'prompt']);
         Memory::factory()->create(['agent_id' => $agent->id, 'visibility' => 'public', 'type' => 'note']);
 
-        $request = \Illuminate\Http\Request::create('/api/v1/commons', 'GET', ['type' => 'prompt']);
+        $request = Request::create('/api/v1/commons', 'GET', ['type' => 'prompt']);
         $request->attributes->set('agent', $agent);
-        $response = app(\App\Http\Controllers\Api\MemoryController::class)->commonsIndex($request);
+        $response = app(MemoryController::class)->commonsIndex($request);
 
         $this->assertEquals(200, $response->getStatusCode());
         $data = $response->getData(true);
         $this->assertCount(2, $data['data']);
-            
+
         foreach ($data['data'] as $item) {
             $this->assertEquals('prompt', $item['type']);
         }
@@ -95,9 +96,9 @@ class CommonsPaginationTest extends TestCase
         Memory::factory()->create(['agent_id' => $agent->id, 'visibility' => 'public', 'metadata' => ['tags' => ['ai']]]);
         Memory::factory()->create(['agent_id' => $agent->id, 'visibility' => 'public', 'metadata' => ['tags' => ['programming']]]);
 
-        $request = \Illuminate\Http\Request::create('/api/v1/commons', 'GET', ['tags' => 'ai']);
+        $request = Request::create('/api/v1/commons', 'GET', ['tags' => 'ai']);
         $request->attributes->set('agent', $agent);
-        $response = app(\App\Http\Controllers\Api\MemoryController::class)->commonsIndex($request);
+        $response = app(MemoryController::class)->commonsIndex($request);
 
         $this->assertEquals(200, $response->getStatusCode());
         $data = $response->getData(true);

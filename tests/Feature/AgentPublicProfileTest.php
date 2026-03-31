@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Agent;
 use App\Models\Memory;
 use App\Services\EmbeddingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

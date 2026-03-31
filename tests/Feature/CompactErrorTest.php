@@ -2,6 +2,7 @@
 
 use App\Models\Memory;
 use App\Services\EmbeddingService;
+use App\Services\SummarizationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -18,7 +19,7 @@ describe('POST /v1/memories/compact error paths', function () {
 
         Memory::factory()->create(['agent_id' => $agent->id, 'key' => 'm1']);
 
-        $this->mock(\App\Services\SummarizationService::class);
+        $this->mock(SummarizationService::class);
 
         $this->postJson('/api/v1/memories/compact', [
             'keys' => ['m1', 'nonexistent'],
@@ -34,8 +35,8 @@ describe('POST /v1/memories/compact error paths', function () {
         Memory::factory()->create(['agent_id' => $agent->id, 'key' => 'm1', 'value' => 'Fact 1']);
         Memory::factory()->create(['agent_id' => $agent->id, 'key' => 'm2', 'value' => 'Fact 2']);
 
-        $this->mock(\App\Services\SummarizationService::class, function ($mock) {
-            $mock->shouldReceive('summarize')->once()->andThrow(new \RuntimeException('API error'));
+        $this->mock(SummarizationService::class, function ($mock) {
+            $mock->shouldReceive('summarize')->once()->andThrow(new RuntimeException('API error'));
         });
 
         $this->postJson('/api/v1/memories/compact', [
