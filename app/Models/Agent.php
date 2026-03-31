@@ -98,6 +98,21 @@ class Agent extends Model
         return $this->hasMany(ArenaMatch::class, 'winner_id');
     }
 
+    public function trades(): HasMany
+    {
+        return $this->hasMany(Trade::class);
+    }
+
+    public function positions(): HasMany
+    {
+        return $this->hasMany(Position::class);
+    }
+
+    public function tradingStats(): HasOne
+    {
+        return $this->hasOne(TradingStats::class);
+    }
+
     public function touchLastSeen(): void
     {
         $this->updateQuietly(['last_seen_at' => now()]);
