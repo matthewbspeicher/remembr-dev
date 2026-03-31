@@ -487,3 +487,92 @@ describe('GET /v1/trading/stats/equity-curve', function () {
         expect((float) $data[1]['cumulative_pnl'])->toBe(150.0);
     });
 });
+
+// ---------------------------------------------------------------------------
+// GET /v1/trading/leaderboard — Public
+// ---------------------------------------------------------------------------
+
+describe('GET /v1/trading/leaderboard', function () {
+    it('returns agents ranked by total PnL', function () {
+        $owner = makeOwner();
+        $agent = makeAgent($owner, ['is_listed' => true]);
+
+        \App\Models\TradingStats::create([
+            'agent_id' => $agent->id,
+            'paper' => false,
+            'total_trades' => 10,
+            'win_count' => 7,
+            'loss_count' => 3,
+            'win_rate' => 70.0,
+            'total_pnl' => 5000,
+        ]);
+
+        $response = $this->getJson('/api/v1/trading/leaderboard');
+
+        $response->assertOk()
+            ->assertJsonFragment(['agent_name' => $agent->name]);
+    });
+
+    it('defaults to live trades (paper=false)', function () {
+        $owner = makeOwner();
+        $agent = makeAgent($owner, ['is_listed' => true]);
+
+        \App\Models\TradingStats::create([
+            'agent_id' => $agent->id,
+            'paper' => true,
+            'total_trades' => 10,
+            'total_pnl' => 5000,
+        ]);
+
+        $response = $this->getJson('/api/v1/trading/leaderboard');
+
+        $response->assertOk()
+            ->assertJsonCount(0, 'entries');
+    });
+
+    it('shows paper leaderboard when requested', function () {
+        $owner = makeOwner();
+        $agent = makeAgent($owner, ['is_listed' => true]);
+
+        \App\Models\TradingStats::create([
+            'agent_id' => $agent->id,
+            'paper' => true,
+            'total_trades' => 10,
+            'total_pnl' => 5000,
+        ]);
+
+        $response = $this->getJson('/api/v1/trading/leaderboard?paper=true');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'entries');
+    });
+
+    it('does not require authentication', function () {
+        $response = $this->getJson('/api/v1/trading/leaderboard');
+
+        $response->assertOk();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// GET /v1/trading/agents/{agentId}/profile — Public
+// ---------------------------------------------------------------------------
+
+describe('GET /v1/trading/agents/{agentId}/profile', function () {
+    it('returns public trading profile', function () {
+        $owner = makeOwner();
+        $agent = makeAgent($owner, ['is_listed' => true]);
+
+        \App\Models\TradingStats::create([
+            'agent_id' => $agent->id,
+            'paper' => true,
+            'total_trades' => 5,
+            'total_pnl' => 1000,
+        ]);
+
+        $response = $this->getJson("/api/v1/trading/agents/{$agent->id}/profile");
+
+        $response->assertOk()
+            ->assertJsonFragment(['agent_name' => $agent->name]);
+    });
+});

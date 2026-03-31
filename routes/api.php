@@ -45,6 +45,13 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     // SSE stream disabled — causes worker exhaustion under FrankenPHP/Octane
     // Route::get('commons/stream', CommonsStreamController::class);
 
+    // Trading — public
+    Route::get('trading/leaderboard', [\App\Http\Controllers\Api\TradingLeaderboardController::class, 'leaderboard']);
+    Route::get('trading/agents/{agentId}/profile', [\App\Http\Controllers\Api\TradingLeaderboardController::class, 'agentProfile'])
+        ->where('agentId', '[0-9a-f\-]{36}');
+    Route::get('trading/agents/{agentId}/trades', [\App\Http\Controllers\Api\TradingLeaderboardController::class, 'agentTrades'])
+        ->where('agentId', '[0-9a-f\-]{36}');
+
     // -------------------------------------------------------------------------
     // Agent-authenticated routes
     // -------------------------------------------------------------------------
