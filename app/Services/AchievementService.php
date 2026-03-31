@@ -46,6 +46,26 @@ class AchievementService
             'triggers' => ['feedback'],
             'checker' => 'checkHelpful',
         ],
+        'first_trade' => [
+            'triggers' => ['trade'],
+            'checker' => 'checkFirstTrade',
+        ],
+        'first_win' => [
+            'triggers' => ['trade'],
+            'checker' => 'checkFirstWin',
+        ],
+        'streak_5' => [
+            'triggers' => ['trade'],
+            'checker' => 'checkStreak5',
+        ],
+        'century_club' => [
+            'triggers' => ['trade'],
+            'checker' => 'checkCenturyClub',
+        ],
+        'sharp_shooter' => [
+            'triggers' => ['trade'],
+            'checker' => 'checkSharpShooter',
+        ],
     ];
 
     /**
@@ -183,5 +203,38 @@ class AchievementService
         return (int) $agent->memories()
             ->where('visibility', 'public')
             ->sum('useful_count') >= 50;
+    }
+
+    private function checkFirstTrade(Agent $agent): bool
+    {
+        return \App\Models\Trade::where('agent_id', $agent->id)->count() >= 1;
+    }
+
+    private function checkFirstWin(Agent $agent): bool
+    {
+        return \App\Models\Trade::where('agent_id', $agent->id)
+            ->where('status', 'closed')
+            ->whereNull('parent_trade_id')
+            ->where('pnl', '>', 0)
+            ->exists();
+    }
+
+    private function checkStreak5(Agent $agent): bool
+    {
+        $stats = \App\Models\TradingStats::where('agent_id', $agent->id)->first();
+        return $stats && $stats->current_streak >= 5;
+    }
+
+    private function checkCenturyClub(Agent $agent): bool
+    {
+        return \App\Models\Trade::where('agent_id', $agent->id)
+            ->whereNull('parent_trade_id')
+            ->count() >= 100;
+    }
+
+    private function checkSharpShooter(Agent $agent): bool
+    {
+        $stats = \App\Models\TradingStats::where('agent_id', $agent->id)->first();
+        return $stats && $stats->total_trades >= 20 && (float) $stats->win_rate > 70.0;
     }
 }

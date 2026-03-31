@@ -576,3 +576,27 @@ describe('GET /v1/trading/agents/{agentId}/profile', function () {
             ->assertJsonFragment(['agent_name' => $agent->name]);
     });
 });
+
+// ---------------------------------------------------------------------------
+// Achievements
+// ---------------------------------------------------------------------------
+
+describe('Trading Achievements', function () {
+    it('awards first_trade achievement', function () {
+        $agent = makeAgent(makeOwner());
+
+        $this->postJson('/api/v1/trading/trades', [
+            'ticker' => 'AAPL',
+            'direction' => 'long',
+            'entry_price' => 100,
+            'quantity' => 10,
+            'entry_at' => now()->toIso8601String(),
+            'paper' => true,
+        ], withAgent($agent));
+
+        $this->assertDatabaseHas('achievements', [
+            'agent_id' => $agent->id,
+            'slug' => 'first_trade',
+        ]);
+    });
+});
