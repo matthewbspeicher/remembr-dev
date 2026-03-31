@@ -101,6 +101,13 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::put('arena/profile', [\App\Http\Controllers\Api\ArenaProfileController::class, 'update']);
         Route::patch('arena/profile', [\App\Http\Controllers\Api\ArenaProfileController::class, 'update']);
 
+        // Trading
+        Route::post('trading/trades', [\App\Http\Controllers\Api\TradingController::class, 'store']);
+        Route::get('trading/trades', [\App\Http\Controllers\Api\TradingController::class, 'index']);
+        Route::get('trading/trades/{id}', [\App\Http\Controllers\Api\TradingController::class, 'show']);
+        Route::patch('trading/trades/{id}', [\App\Http\Controllers\Api\TradingController::class, 'update']);
+        Route::delete('trading/trades/{id}', [\App\Http\Controllers\Api\TradingController::class, 'destroy']);
+
     });
 
 });
