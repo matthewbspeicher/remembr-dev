@@ -46,5 +46,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Event::listen(WebhookReceived::class, SyncAgentQuotas::class);
+
+        \App\Models\Trade::observe(\App\Observers\TradeObserver::class);
     }
 }
