@@ -102,7 +102,7 @@ class MemoryController extends Controller
         ]);
 
         // Check workspace membership if storing to a workspace
-        if ($validated['visibility'] === 'workspace' && isset($validated['workspace_id'])) {
+        if (($validated['visibility'] ?? null) === 'workspace' && ! empty($validated['workspace_id'])) {
             if (! $agent->workspaces()->where('workspaces.id', $validated['workspace_id'])->exists()) {
                 return response()->json(['error' => 'Agent does not belong to this workspace.'], 403);
             }
