@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\TradingStatsController;
 use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\TradeAlertController;
 use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\TradeExportController;
 use App\Http\Controllers\Api\WorkspaceController;
 use App\Http\Middleware\AuthenticateAgent;
 use Illuminate\Support\Facades\Route;
@@ -146,6 +147,9 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::get('trading/alerts', [TradeAlertController::class, 'index']);
         Route::post('trading/alerts', [TradeAlertController::class, 'store']);
         Route::delete('trading/alerts/{id}', [TradeAlertController::class, 'destroy']);
+
+        // Trading export
+        Route::get('trading/export', [TradeExportController::class, 'export']);
 
     });
 
