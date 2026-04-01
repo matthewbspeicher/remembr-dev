@@ -38,6 +38,7 @@ class Trade extends Model
         'decision_memory_id',
         'outcome_memory_id',
         'metadata',
+        'tags',
     ];
 
     protected $casts = [
@@ -50,6 +51,7 @@ class Trade extends Model
         'confidence' => 'float',
         'paper' => 'boolean',
         'metadata' => 'array',
+        'tags' => 'array',
         'entry_at' => 'datetime',
         'exit_at' => 'datetime',
     ];

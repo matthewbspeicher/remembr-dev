@@ -86,6 +86,8 @@ class TradingController extends Controller
                 Rule::exists('memories', 'id')->where('agent_id', $agent->id),
             ],
             'metadata' => ['nullable', 'array'],
+            'tags' => ['nullable', 'array', 'max:20'],
+            'tags.*' => ['string', 'max:50'],
         ]);
 
         $validated['agent_id'] = $agent->id;
@@ -129,6 +131,9 @@ class TradingController extends Controller
         }
         if ($request->has('max_pnl')) {
             $query->where('pnl', '<=', $request->input('max_pnl'));
+        }
+        if ($request->has('tag')) {
+            $query->whereJsonContains('tags', $request->input('tag'));
         }
         if ($request->boolean('has_decision_memory')) {
             $query->whereNotNull('decision_memory_id');
@@ -177,6 +182,8 @@ class TradingController extends Controller
             'strategy' => ['nullable', 'string', 'max:255'],
             'confidence' => ['nullable', 'numeric', 'between:0,1'],
             'metadata' => ['nullable', 'array'],
+            'tags' => ['nullable', 'array', 'max:20'],
+            'tags.*' => ['string', 'max:50'],
             'decision_memory_id' => [
                 'nullable', 'uuid',
                 Rule::exists('memories', 'id')->where('agent_id', $agent->id),
