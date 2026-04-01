@@ -16,11 +16,15 @@ class Position extends Model
         'paper',
         'quantity',
         'avg_entry_price',
+        'declared_portfolio_value',
+        'max_drawdown',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:8',
         'avg_entry_price' => 'decimal:8',
+        'declared_portfolio_value' => 'decimal:8',
+        'max_drawdown' => 'decimal:8',
         'paper' => 'boolean',
     ];
 
