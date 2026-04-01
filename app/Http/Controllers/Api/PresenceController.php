@@ -46,7 +46,7 @@ class PresenceController extends Controller
             $query->active();
         }
 
-        $presences = $query->orderByDesc('last_heartbeat_at')->get();
+        $presences = $query->orderByDesc('last_seen_at')->get();
 
         return response()->json([
             'data' => $presences->map(fn (AgentPresence $presence) => $this->formatPresence($presence)),
@@ -121,7 +121,7 @@ class PresenceController extends Controller
             ],
             [
                 'status' => $validated['status'] ?? AgentPresence::STATUS_ONLINE,
-                'last_heartbeat_at' => now(),
+                'last_seen_at' => now(),
             ]
         );
 
@@ -220,7 +220,7 @@ class PresenceController extends Controller
             'agent_id' => $presence->agent_id,
             'status' => $presence->status,
             'is_stale' => $presence->isStale(),
-            'last_heartbeat_at' => $presence->last_heartbeat_at?->toIso8601String(),
+            'last_seen_at' => $presence->last_seen_at?->toIso8601String(),
             'metadata' => $presence->metadata,
             'agent' => $presence->relationLoaded('agent') && $presence->agent ? [
                 'id' => $presence->agent->id,

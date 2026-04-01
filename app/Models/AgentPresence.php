@@ -17,12 +17,12 @@ class AgentPresence extends Model
         'agent_id',
         'status',
         'metadata',
-        'last_heartbeat_at',
+        'last_seen_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
-        'last_heartbeat_at' => 'datetime',
+        'last_seen_at' => 'datetime',
     ];
 
     public const STATUS_ONLINE = 'online';
@@ -62,14 +62,14 @@ class AgentPresence extends Model
 
     public function scopeStale(Builder $query): Builder
     {
-        return $query->where('last_heartbeat_at', '<', now()->subMinutes(self::STALE_THRESHOLD_MINUTES));
+        return $query->where('last_seen_at', '<', now()->subMinutes(self::STALE_THRESHOLD_MINUTES));
     }
 
     public function scopeActive(Builder $query): Builder
     {
         return $query->where(function ($q) {
             $q->where('status', '!=', self::STATUS_OFFLINE)
-                ->orWhere('last_heartbeat_at', '>', now()->subMinutes(self::STALE_THRESHOLD_MINUTES));
+                ->orWhere('last_seen_at', '>', now()->subMinutes(self::STALE_THRESHOLD_MINUTES));
         });
     }
 
@@ -80,14 +80,14 @@ class AgentPresence extends Model
 
     public function isStale(): bool
     {
-        return $this->last_heartbeat_at !== null
-            && $this->last_heartbeat_at->lt(now()->subMinutes(self::STALE_THRESHOLD_MINUTES));
+        return $this->last_seen_at !== null
+            && $this->last_seen_at->lt(now()->subMinutes(self::STALE_THRESHOLD_MINUTES));
     }
 
     public function refreshHeartbeat(string $status = self::STATUS_ONLINE, ?array $metadata = null): self
     {
         $this->status = $status;
-        $this->last_heartbeat_at = now();
+        $this->last_seen_at = now();
 
         if ($metadata !== null) {
             $this->metadata = array_merge($this->metadata ?? [], $metadata);
