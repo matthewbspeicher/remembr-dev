@@ -206,7 +206,7 @@ class PresenceController extends Controller
      */
     private function agentBelongsToWorkspace(Agent $agent, Workspace $workspace): bool
     {
-        return $agent->workspaces()->where('workspaces.id', $workspace->id)->exists();
+        return $agent->workspaces()->where('id', $workspace->id)->exists();
     }
 
     /**
