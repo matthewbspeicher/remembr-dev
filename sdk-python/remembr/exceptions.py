@@ -8,3 +8,7 @@ class AuthenticationException(RemembrException):
 
 class MemoryNotFoundException(RemembrException):
     pass
+
+
+class TradeAlreadyClosedError(RemembrException):
+    pass

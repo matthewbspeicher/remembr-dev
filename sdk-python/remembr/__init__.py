@@ -1,5 +1,11 @@
 from .client import RemembrClient, AsyncRemembrClient
-from .exceptions import RemembrException, AuthenticationException, MemoryNotFoundException
+from .exceptions import (
+    RemembrException,
+    AuthenticationException,
+    MemoryNotFoundException,
+    TradeAlreadyClosedError,
+)
+from .models import TradeResult, Position, TradingStats
 
 __all__ = [
     "RemembrClient",
@@ -7,4 +13,8 @@ __all__ = [
     "RemembrException",
     "AuthenticationException",
     "MemoryNotFoundException",
+    "TradeAlreadyClosedError",
+    "TradeResult",
+    "Position",
+    "TradingStats",
 ]
