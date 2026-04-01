@@ -27,16 +27,16 @@ class TradingStatsController extends Controller
                 'loss_count' => 0,
                 'win_rate' => null,
                 'profit_factor' => null,
-                'total_pnl' => 0,
+                'total_pnl' => 0.0,
                 'avg_pnl_percent' => null,
                 'best_trade_pnl' => null,
                 'worst_trade_pnl' => null,
                 'sharpe_ratio' => null,
                 'current_streak' => 0,
-            ]);
+            ], 200, [], JSON_PRESERVE_ZERO_FRACTION);
         }
 
-        return response()->json($stats);
+        return response()->json($this->normalizeStats($stats), 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function byTicker(Request $request): JsonResponse
@@ -59,7 +59,15 @@ class TradingStatsController extends Controller
             ->orderByRaw('SUM(pnl) DESC')
             ->get();
 
-        return response()->json(['data' => $data]);
+        return response()->json(['data' => $data->map(fn ($row) => [
+            'ticker' => $row->ticker,
+            'total_trades' => (int) $row->total_trades,
+            'win_count' => (int) $row->win_count,
+            'win_rate' => $row->win_rate === null ? null : (float) $row->win_rate,
+            'total_pnl' => $row->total_pnl === null ? null : (float) $row->total_pnl,
+            'avg_pnl_percent' => $row->avg_pnl_percent === null ? null : (float) $row->avg_pnl_percent,
+            'profit_factor' => $row->profit_factor === null ? null : (float) $row->profit_factor,
+        ])->values()], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function byStrategy(Request $request): JsonResponse
@@ -83,7 +91,15 @@ class TradingStatsController extends Controller
             ->orderByRaw('SUM(pnl) DESC')
             ->get();
 
-        return response()->json(['data' => $data]);
+        return response()->json(['data' => $data->map(fn ($row) => [
+            'strategy' => $row->strategy,
+            'total_trades' => (int) $row->total_trades,
+            'win_count' => (int) $row->win_count,
+            'win_rate' => $row->win_rate === null ? null : (float) $row->win_rate,
+            'total_pnl' => $row->total_pnl === null ? null : (float) $row->total_pnl,
+            'avg_pnl_percent' => $row->avg_pnl_percent === null ? null : (float) $row->avg_pnl_percent,
+            'profit_factor' => $row->profit_factor === null ? null : (float) $row->profit_factor,
+        ])->values()], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function equityCurve(Request $request): JsonResponse
@@ -112,7 +128,7 @@ class TradingStatsController extends Controller
             ];
         });
 
-        return response()->json(['data' => $data->values()]);
+        return response()->json(['data' => $data->values()], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function correlations(Request $request): JsonResponse
@@ -139,7 +155,7 @@ class TradingStatsController extends Controller
         $tickers = array_keys($series);
 
         if (count($tickers) < 2) {
-            return response()->json(['data' => (object) []]);
+            return response()->json(['data' => []], 200, [], JSON_PRESERVE_ZERO_FRACTION);
         }
 
         // Compute Pearson correlation for each pair
@@ -156,7 +172,7 @@ class TradingStatsController extends Controller
             }
         }
 
-        return response()->json(['data' => $matrix]);
+        return response()->json(['data' => $matrix], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     private function pearson(array $x, array $y): ?float
@@ -187,5 +203,23 @@ class TradingStatsController extends Controller
         $denom = sqrt($denomX * $denomY);
 
         return $denom > 0 ? round($num / $denom, 4) : null;
+    }
+
+    private function normalizeStats(TradingStats $stats): array
+    {
+        return [
+            'paper' => (bool) $stats->paper,
+            'total_trades' => (int) $stats->total_trades,
+            'win_count' => (int) $stats->win_count,
+            'loss_count' => (int) $stats->loss_count,
+            'win_rate' => $stats->win_rate === null ? null : (float) $stats->win_rate,
+            'profit_factor' => $stats->profit_factor === null ? null : (float) $stats->profit_factor,
+            'total_pnl' => $stats->total_pnl === null ? 0.0 : (float) $stats->total_pnl,
+            'avg_pnl_percent' => $stats->avg_pnl_percent === null ? null : (float) $stats->avg_pnl_percent,
+            'best_trade_pnl' => $stats->best_trade_pnl === null ? null : (float) $stats->best_trade_pnl,
+            'worst_trade_pnl' => $stats->worst_trade_pnl === null ? null : (float) $stats->worst_trade_pnl,
+            'sharpe_ratio' => $stats->sharpe_ratio === null ? null : (float) $stats->sharpe_ratio,
+            'current_streak' => (int) $stats->current_streak,
+        ];
     }
 }

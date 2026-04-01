@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Trade;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class TradeExportController extends Controller
 {
-    public function export(Request $request): JsonResponse|StreamedResponse
+    public function export(Request $request): JsonResponse|Response
     {
         $request->validate([
             'format' => 'nullable|string|in:json,csv',
@@ -50,48 +50,66 @@ class TradeExportController extends Controller
         ];
 
         if ($format === 'csv') {
-            return $this->streamCsv($query, $columns);
+            return $this->csvResponse($query, $columns);
         }
 
-        $trades = $query->get($columns)->map(function ($t) {
-            $row = $t->toArray();
-            $row['entry_at'] = $t->entry_at?->toIso8601String();
-            $row['exit_at'] = $t->exit_at?->toIso8601String();
+        $trades = $query->get($columns)->map(fn (Trade $trade) => $this->normalizeTrade($trade));
 
-            return $row;
-        });
-
-        return response()->json(['data' => $trades]);
+        return response()->json(['data' => $trades], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
-    private function streamCsv($query, array $columns): StreamedResponse
+    private function csvResponse($query, array $columns): Response
     {
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="trades-export-'.now()->format('Y-m-d').'.csv"',
         ];
 
-        return response()->stream(function () use ($query, $columns) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, $columns);
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, $columns);
 
-            $query->chunk(500, function ($trades) use ($handle, $columns) {
-                foreach ($trades as $trade) {
-                    $row = [];
-                    foreach ($columns as $col) {
-                        $val = $trade->{$col};
-                        if ($val instanceof \DateTimeInterface) {
-                            $val = $val->toIso8601String();
-                        } elseif (is_array($val)) {
-                            $val = implode(';', $val);
-                        }
-                        $row[] = $val;
+        $query->chunk(500, function ($trades) use ($handle, $columns) {
+            foreach ($trades as $trade) {
+                $row = [];
+                foreach ($columns as $col) {
+                    $val = $trade->{$col};
+                    if ($val instanceof \DateTimeInterface) {
+                        $val = $val->toIso8601String();
+                    } elseif (is_array($val)) {
+                        $val = implode(';', $val);
                     }
-                    fputcsv($handle, $row);
+                    $row[] = $val;
                 }
-            });
+                fputcsv($handle, $row);
+            }
+        });
 
-            fclose($handle);
-        }, 200, $headers);
+        rewind($handle);
+        $csv = stream_get_contents($handle) ?: '';
+        fclose($handle);
+
+        return response($csv, 200, $headers);
+    }
+
+    private function normalizeTrade(Trade $trade): array
+    {
+        return [
+            'id' => $trade->id,
+            'ticker' => $trade->ticker,
+            'direction' => $trade->direction,
+            'entry_price' => $trade->entry_price === null ? null : (float) $trade->entry_price,
+            'exit_price' => $trade->exit_price === null ? null : (float) $trade->exit_price,
+            'quantity' => $trade->quantity === null ? null : (float) $trade->quantity,
+            'fees' => $trade->fees === null ? null : (float) $trade->fees,
+            'pnl' => $trade->pnl === null ? null : (float) $trade->pnl,
+            'pnl_percent' => $trade->pnl_percent === null ? null : (float) $trade->pnl_percent,
+            'strategy' => $trade->strategy,
+            'tags' => $trade->tags,
+            'entry_at' => $trade->entry_at?->toIso8601String(),
+            'exit_at' => $trade->exit_at?->toIso8601String(),
+            'status' => $trade->status,
+            'confidence' => $trade->confidence === null ? null : (float) $trade->confidence,
+            'paper' => (bool) $trade->paper,
+        ];
     }
 }

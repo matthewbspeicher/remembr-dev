@@ -18,7 +18,7 @@ class TradeAlertController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return response()->json(['data' => $alerts]);
+        return response()->json(['data' => $alerts->map(fn (TradeAlert $alert) => $alert->toArray())->values()], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function store(Request $request): JsonResponse
@@ -42,7 +42,7 @@ class TradeAlertController extends Controller
             ...$validated,
         ]);
 
-        return response()->json(['data' => $alert], 201);
+        return response()->json(['data' => $alert->fresh()->toArray()], 201, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function destroy(Request $request, string $id): JsonResponse

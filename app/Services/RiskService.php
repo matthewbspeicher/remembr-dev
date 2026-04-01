@@ -20,10 +20,10 @@ class RiskService
 
         return [
             'ticker' => $position->ticker,
-            'paper' => $position->paper,
-            'quantity' => $position->quantity,
-            'avg_entry_price' => $position->avg_entry_price,
-            'market_price' => $marketPrice ?? $position->avg_entry_price,
+            'paper' => (bool) $position->paper,
+            'quantity' => (float) $position->quantity,
+            'avg_entry_price' => (float) $position->avg_entry_price,
+            'market_price' => (float) ($marketPrice ?? $position->avg_entry_price),
             'unrealized_pnl' => round($unrealizedPnl, 8),
             'exposure' => round($exposure, 8),
             'exposure_pct' => $exposurePct !== null ? round($exposurePct, 2) : null,
@@ -42,7 +42,7 @@ class RiskService
             ->map(fn ($v) => (float) $v);
 
         if ($trades->isEmpty()) {
-            return ['max_drawdown' => 0, 'peak' => 0, 'trough' => 0];
+            return ['max_drawdown' => 0.0, 'peak' => 0.0, 'trough' => 0.0];
         }
 
         $cumulative = 0;

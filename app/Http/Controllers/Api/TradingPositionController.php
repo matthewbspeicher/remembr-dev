@@ -21,7 +21,7 @@ class TradingPositionController extends Controller
 
         $positions = $query->orderBy('ticker')->get();
 
-        return response()->json(['data' => $positions]);
+        return response()->json(['data' => $positions], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function show(Request $request, string $ticker): JsonResponse
@@ -35,6 +35,6 @@ class TradingPositionController extends Controller
             ->where('paper', $paper)
             ->firstOrFail();
 
-        return response()->json($position);
+        return response()->json($position, 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 }

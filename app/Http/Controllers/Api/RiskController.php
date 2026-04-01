@@ -35,7 +35,7 @@ class RiskController extends Controller
             $marketPrices[$p->ticker] ?? null,
         ));
 
-        return response()->json(['data' => $data]);
+        return response()->json(['data' => $data], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function drawdown(Request $request): JsonResponse
@@ -45,6 +45,6 @@ class RiskController extends Controller
 
         $result = $this->riskService->calculateMaxDrawdown($agent, $paper);
 
-        return response()->json(['data' => $result]);
+        return response()->json(['data' => $result], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 }

@@ -68,6 +68,6 @@ class PortfolioController extends Controller
                 'aggregate_stats' => $aggregateStats,
                 'agents' => $agentBreakdown,
             ],
-        ]);
+        ], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 }

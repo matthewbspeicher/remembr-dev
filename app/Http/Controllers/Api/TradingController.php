@@ -96,7 +96,7 @@ class TradingController extends Controller
 
         $trade = Trade::create($validated);
 
-        return response()->json($trade->fresh()->load(['parentTrade', 'children']), 201);
+        return response()->json($trade->fresh()->load(['parentTrade', 'children']), 201, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function index(Request $request): JsonResponse
@@ -149,7 +149,7 @@ class TradingController extends Controller
         $trades = $query->with(['children', 'decisionMemory', 'outcomeMemory'])
             ->cursorPaginate($request->input('limit', 50));
 
-        return response()->json($trades);
+        return response()->json($trades, 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function show(Request $request, string $id): JsonResponse
@@ -160,7 +160,7 @@ class TradingController extends Controller
             ->with(['children', 'decisionMemory', 'outcomeMemory', 'parentTrade'])
             ->findOrFail($id);
 
-        return response()->json($trade);
+        return response()->json($trade, 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function update(Request $request, string $id): JsonResponse
@@ -204,7 +204,7 @@ class TradingController extends Controller
 
         $trade->update($validated);
 
-        return response()->json($trade->fresh());
+        return response()->json($trade->fresh(), 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function destroy(Request $request, string $id): JsonResponse

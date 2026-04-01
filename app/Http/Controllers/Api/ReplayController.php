@@ -32,6 +32,6 @@ class ReplayController extends Controller
             $request->input('exit_offset_pct'),
         );
 
-        return response()->json(['data' => $result]);
+        return response()->json(['data' => $result], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 }

@@ -86,7 +86,7 @@ class EvaluateTradeAlerts implements ShouldQueue
             DispatchWebhook::dispatch($sub, 'alert.triggered', [
                 'alert_id' => $alert->id,
                 'condition' => $alert->condition,
-                'ticker' => $trade->ticker,
+                'ticker' => $trade->ticker ?? null,
                 'trade_id' => $trade->id,
                 'pnl' => $trade->pnl,
                 'direction' => $trade->direction,
