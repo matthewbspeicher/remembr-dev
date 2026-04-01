@@ -52,7 +52,7 @@ expect()->extend('toBeOne', function () {
 function makeOwner(array $overrides = []): User
 {
     return User::factory()->create(array_merge([
-        'api_token' => 'owner_test_token',
+        'api_token' => 'owner_'.Str::random(40),
     ], $overrides));
 }
 

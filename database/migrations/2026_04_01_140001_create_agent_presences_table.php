@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('agent_presences', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->uuid('workspace_id');
             $table->uuid('agent_id');
             $table->enum('status', ['online', 'away', 'offline'])->default('online');
