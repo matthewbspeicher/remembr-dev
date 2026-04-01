@@ -9,10 +9,12 @@ use App\Http\Controllers\Api\CommonsStreamController;
 use App\Http\Controllers\Api\GraphController;
 use App\Http\Controllers\Api\LeaderboardApiController;
 use App\Http\Controllers\Api\MemoryController;
+use App\Http\Controllers\Api\ReplayController;
 use App\Http\Controllers\Api\RiskController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\TradingController;
+use App\Http\Controllers\Api\PortfolioController;
 use App\Http\Controllers\Api\TradingLeaderboardController;
 use App\Http\Controllers\Api\TradingPositionController;
 use App\Http\Controllers\Api\TradingStatsController;
@@ -150,6 +152,12 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
 
         // Trading export
         Route::get('trading/export', [TradeExportController::class, 'export']);
+
+        // Trading portfolio (multi-agent aggregate view)
+        Route::get('trading/portfolio', [PortfolioController::class, 'index']);
+
+        // Trading replay/simulation
+        Route::post('trading/replay', [ReplayController::class, 'replay']);
 
     });
 
