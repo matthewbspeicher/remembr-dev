@@ -6,6 +6,7 @@ use App\Models\Agent;
 use App\Models\Position;
 use App\Models\Trade;
 use App\Models\TradingStats;
+use Illuminate\Support\Facades\DB;
 
 class TradingService
 {
@@ -24,7 +25,13 @@ class TradingService
             $grossPnl = bcmul(bcsub($parent->entry_price, $child->entry_price, 8), $child->quantity, 8);
         }
 
-        $totalFees = bcadd($parent->fees, $child->fees, 8);
+        // Apportion parent fee by share of quantity
+        $feeShare = bcmul(
+            $parent->fees,
+            bcdiv($child->quantity, $parent->quantity, 8),
+            8
+        );
+        $totalFees = bcadd($feeShare, $child->fees, 8);
         $netPnl = bcsub($grossPnl, $totalFees, 8);
 
         $costBasis = bcmul($parent->entry_price, $child->quantity, 8);
@@ -44,42 +51,44 @@ class TradingService
      */
     public function processChildTrade(Trade $child, Trade $parent): void
     {
-        $pnl = $this->computeChildPnl($child, $parent);
+        DB::transaction(function () use ($child, $parent) {
+            $pnl = $this->computeChildPnl($child, $parent);
 
-        $child->updateQuietly([
-            'pnl' => $pnl['pnl'],
-            'pnl_percent' => $pnl['pnl_percent'],
-        ]);
+            $child->updateQuietly([
+                'pnl' => $pnl['pnl'],
+                'pnl_percent' => $pnl['pnl_percent'],
+            ]);
 
-        // Aggregate PnL across all children onto parent
-        $totalChildPnl = $parent->children()->sum('pnl');
-        $totalChildQty = $parent->children()->sum('quantity');
+            // Aggregate PnL across all children onto parent
+            $totalChildPnl = $parent->children()->sum('pnl');
+            $totalChildQty = $parent->children()->sum('quantity');
 
-        $costBasis = bcmul($parent->entry_price, $parent->quantity, 8);
-        $parentPnlPercent = $costBasis > 0
-            ? bcmul(bcdiv((string) $totalChildPnl, $costBasis, 8), '100', 4)
-            : '0.0000';
+            $costBasis = bcmul($parent->entry_price, $parent->quantity, 8);
+            $parentPnlPercent = $costBasis > 0
+                ? bcmul(bcdiv((string) $totalChildPnl, $costBasis, 8), '100', 4)
+                : '0.0000';
 
-        $parentUpdate = [
-            'pnl' => (string) $totalChildPnl,
-            'pnl_percent' => $parentPnlPercent,
-        ];
+            $parentUpdate = [
+                'pnl' => (string) $totalChildPnl,
+                'pnl_percent' => $parentPnlPercent,
+            ];
 
-        // Check if fully closed
-        if (bccomp((string) $totalChildQty, $parent->quantity, 8) >= 0) {
-            // Weighted average exit price from children
-            $weightedExitSum = '0';
-            foreach ($parent->children as $c) {
-                $weightedExitSum = bcadd($weightedExitSum, bcmul($c->entry_price, $c->quantity, 8), 8);
+            // Check if fully closed
+            if (bccomp((string) $totalChildQty, $parent->quantity, 8) >= 0) {
+                // Weighted average exit price from children
+                $weightedExitSum = '0';
+                foreach ($parent->children as $c) {
+                    $weightedExitSum = bcadd($weightedExitSum, bcmul($c->entry_price, $c->quantity, 8), 8);
+                }
+                $weightedExitPrice = bcdiv($weightedExitSum, (string) $totalChildQty, 8);
+
+                $parentUpdate['status'] = 'closed';
+                $parentUpdate['exit_price'] = $weightedExitPrice;
+                $parentUpdate['exit_at'] = $child->entry_at;
             }
-            $weightedExitPrice = bcdiv($weightedExitSum, (string) $totalChildQty, 8);
 
-            $parentUpdate['status'] = 'closed';
-            $parentUpdate['exit_price'] = $weightedExitPrice;
-            $parentUpdate['exit_at'] = $child->entry_at;
-        }
-
-        $parent->updateQuietly($parentUpdate);
+            $parent->updateQuietly($parentUpdate);
+        });
     }
 
     /**

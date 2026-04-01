@@ -220,6 +220,13 @@ class TradingController extends Controller
 
         $trade->delete();
 
+        // Recalculate position after removing the trade to ensure denormalized state is corrected
+        app(TradingService::class)->recalculatePosition(
+            $agent,
+            $trade->ticker,
+            $trade->paper
+        );
+
         return response()->json(['message' => 'Trade deleted.']);
     }
 }

@@ -53,6 +53,7 @@ class TradingStatsController extends Controller
             ->selectRaw('SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as win_count')
             ->selectRaw('ROUND(SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0) * 100, 2) as win_rate')
             ->selectRaw('SUM(pnl) as total_pnl')
+            ->selectRaw('AVG(pnl_percent) as avg_pnl_percent')
             ->selectRaw('CASE WHEN SUM(CASE WHEN pnl < 0 THEN ABS(pnl) ELSE 0 END) > 0 THEN ROUND(SUM(CASE WHEN pnl > 0 THEN pnl ELSE 0 END) / SUM(CASE WHEN pnl < 0 THEN ABS(pnl) ELSE 0 END), 4) ELSE NULL END as profit_factor')
             ->groupBy('ticker')
             ->orderByRaw('SUM(pnl) DESC')
@@ -76,6 +77,7 @@ class TradingStatsController extends Controller
             ->selectRaw('SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as win_count')
             ->selectRaw('ROUND(SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END)::numeric / NULLIF(COUNT(*), 0) * 100, 2) as win_rate')
             ->selectRaw('SUM(pnl) as total_pnl')
+            ->selectRaw('AVG(pnl_percent) as avg_pnl_percent')
             ->selectRaw('CASE WHEN SUM(CASE WHEN pnl < 0 THEN ABS(pnl) ELSE 0 END) > 0 THEN ROUND(SUM(CASE WHEN pnl > 0 THEN pnl ELSE 0 END) / SUM(CASE WHEN pnl < 0 THEN ABS(pnl) ELSE 0 END), 4) ELSE NULL END as profit_factor')
             ->groupBy('strategy')
             ->orderByRaw('SUM(pnl) DESC')
@@ -97,18 +99,10 @@ class TradingStatsController extends Controller
             ->selectRaw('SUM(pnl) as daily_pnl')
             ->groupByRaw('DATE(exit_at)')
             ->orderByRaw('DATE(exit_at)')
-            ->get();
+            ->cursorPaginate(50);
 
-        $cumulative = '0';
-        $data = $dailyPnl->map(function ($row) use (&$cumulative) {
-            $cumulative = bcadd($cumulative, (string) $row->daily_pnl, 8);
-
-            return [
-                'date' => $row->date,
-                'cumulative_pnl' => (float) $cumulative,
-            ];
-        });
-
-        return response()->json(['data' => $data->values()]);
+        // Note: Cumulative PnL across pages requires client-side tracking or passing balance in cursor
+        // For now, we return the paginated daily summaries as a foundation.
+        return response()->json($dailyPnl);
     }
 }

@@ -109,9 +109,9 @@ class Agent extends Model
         return $this->hasMany(Position::class);
     }
 
-    public function tradingStats(): HasOne
+    public function tradingStats(): HasMany
     {
-        return $this->hasOne(TradingStats::class);
+        return $this->hasMany(TradingStats::class);
     }
 
     public function touchLastSeen(): void

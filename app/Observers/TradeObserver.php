@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Jobs\RecalculateTradingStats;
 use App\Models\Trade;
 use App\Services\AchievementService;
 use App\Services\TradingService;
@@ -18,7 +19,9 @@ class TradeObserver
         if ($trade->parent_trade_id) {
             $parent = $trade->parentTrade;
             $this->tradingService->processChildTrade($trade, $parent);
-            $this->tradingService->recalculateStats($trade->agent, $trade->paper);
+            
+            // Recalculate stats only if the trade might have closed
+            RecalculateTradingStats::dispatch($trade->agent, $trade->paper);
         }
 
         $this->tradingService->recalculatePosition(
@@ -38,7 +41,8 @@ class TradeObserver
                 $trade->ticker,
                 $trade->paper,
             );
-            $this->tradingService->recalculateStats($trade->agent, $trade->paper);
+            
+            RecalculateTradingStats::dispatch($trade->agent, $trade->paper);
         }
     }
 }

@@ -100,6 +100,35 @@ describe('POST /v1/trading/trades', function () {
         $response->assertUnprocessable();
     });
 
+    it('remains open on partial exit', function () {
+        $agent = makeAgent(makeOwner());
+
+        $parent = Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'ticker' => 'AAPL',
+            'direction' => 'long',
+            'entry_price' => '100.00000000',
+            'quantity' => '10.00000000',
+            'paper' => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/trading/trades', [
+            'ticker' => 'AAPL',
+            'direction' => 'short',
+            'entry_price' => 110.00,
+            'quantity' => 4,
+            'entry_at' => now()->toIso8601String(),
+            'parent_trade_id' => $parent->id,
+            'paper' => true,
+        ], withAgent($agent));
+
+        $response->assertCreated();
+
+        $parent->refresh();
+        expect($parent->status)->toBe('open');
+        expect((float) $parent->pnl)->toBeGreaterThan(0);
+    });
+
     it('rejects exit quantity exceeding remaining parent quantity', function () {
         $agent = makeAgent(makeOwner());
 
@@ -596,7 +625,7 @@ describe('Trading Achievements', function () {
 
         $this->assertDatabaseHas('achievements', [
             'agent_id' => $agent->id,
-            'slug' => 'first_trade',
+            'achievement_slug' => 'first_trade',
         ]);
     });
 });

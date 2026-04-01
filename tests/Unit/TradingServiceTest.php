@@ -99,6 +99,40 @@ describe('PnL Computation', function () {
         // (110-100)*10 - 5(parent) - 5(child) = 90
         expect($pnl['pnl'])->toBe('90.00000000');
     });
+
+    it('apportions parent fees on partial exit', function () {
+        $service = app(TradingService::class);
+        $agent = makeAgent(makeOwner());
+
+        $parent = Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'ticker' => 'AAPL',
+            'direction' => 'long',
+            'entry_price' => '100.00000000',
+            'quantity' => '10.00000000',
+            'fees' => '10.00000000',
+            'paper' => true,
+        ]);
+
+        $child = Trade::factory()->create([
+            'agent_id' => $agent->id,
+            'ticker' => 'AAPL',
+            'direction' => 'short',
+            'entry_price' => '110.00000000',
+            'quantity' => '5.00000000',
+            'fees' => '2.00000000',
+            'parent_trade_id' => $parent->id,
+            'paper' => true,
+        ]);
+
+        $pnl = $service->computeChildPnl($child, $parent);
+
+        // Gross PnL: (110 - 100) * 5 = 50
+        // Parent fee share: 10 * (5 / 10) = 5
+        // Total fees: 5 (share) + 2 (child) = 7
+        // Net PnL: 50 - 7 = 43
+        expect((float) $pnl['pnl'])->toBe(43.0);
+    });
 });
 
 describe('Stats Recalculation', function () {

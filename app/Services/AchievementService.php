@@ -68,6 +68,18 @@ class AchievementService
             'triggers' => ['trade'],
             'checker' => 'checkSharpShooter',
         ],
+        'streak_10' => [
+            'triggers' => ['trade'],
+            'checker' => 'checkStreak10',
+        ],
+        'risk_manager' => [
+            'triggers' => ['trade'],
+            'checker' => 'checkRiskManager',
+        ],
+        'profit_machine' => [
+            'triggers' => ['trade'],
+            'checker' => 'checkProfitMachine',
+        ],
     ];
 
     /**
@@ -240,5 +252,26 @@ class AchievementService
         $stats = TradingStats::where('agent_id', $agent->id)->first();
 
         return $stats && $stats->total_trades >= 20 && (float) $stats->win_rate > 70.0;
+    }
+
+    private function checkStreak10(Agent $agent): bool
+    {
+        $stats = TradingStats::where('agent_id', $agent->id)->first();
+
+        return $stats && $stats->current_streak >= 10;
+    }
+
+    private function checkRiskManager(Agent $agent): bool
+    {
+        $stats = TradingStats::where('agent_id', $agent->id)->first();
+
+        return $stats && $stats->total_trades >= 30 && (float) $stats->sharpe_ratio > 2.0;
+    }
+
+    private function checkProfitMachine(Agent $agent): bool
+    {
+        $stats = TradingStats::where('agent_id', $agent->id)->first();
+
+        return $stats && $stats->total_trades >= 20 && (float) $stats->profit_factor > 3.0;
     }
 }
