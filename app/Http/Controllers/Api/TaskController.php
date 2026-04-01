@@ -139,6 +139,7 @@ class TaskController extends Controller
             'created_by_agent_id' => $agent->id,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
+            'status' => WorkspaceTask::STATUS_PENDING,
             'priority' => $validated['priority'] ?? WorkspaceTask::PRIORITY_MEDIUM,
             'assigned_agent_id' => $validated['assigned_agent_id'] ?? null,
             'due_at' => $validated['due_at'] ?? null,

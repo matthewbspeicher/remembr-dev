@@ -51,6 +51,9 @@ describe('Presence', function () {
     it('shows agent presence', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
+        // Create presence via heartbeat first
+        $this->postJson("/api/v1/workspaces/{$workspace->id}/presence/heartbeat", [], withAgent($agent));
+
         $response = $this->getJson("/api/v1/workspaces/{$workspace->id}/presence/{$agent->id}", withAgent($agent));
 
         $response->assertOk();
@@ -68,6 +71,9 @@ describe('Presence', function () {
 
     it('marks agent offline', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
+
+        // Create presence via heartbeat first
+        $this->postJson("/api/v1/workspaces/{$workspace->id}/presence/heartbeat", [], withAgent($agent));
 
         $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/presence/offline", [], withAgent($agent));
 

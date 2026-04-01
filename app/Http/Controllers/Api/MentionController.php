@@ -164,6 +164,7 @@ class MentionController extends Controller
             'workspace_id' => $id,
             'agent_id' => $agent->id,
             'target_agent_id' => $validated['target_agent_id'],
+            'status' => CollaborationMention::STATUS_PENDING,
             'message' => $validated['message'],
             'memory_id' => $validated['memory_id'] ?? null,
             'task_id' => $validated['task_id'] ?? null,
