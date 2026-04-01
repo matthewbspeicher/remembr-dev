@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, accepted, declined, completed
             $table->text('message');
             $table->foreignUuid('memory_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->foreignUuid('task_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignUuid('task_id')->nullable()->constrained('workspace_tasks')->cascadeOnDelete();
             $table->text('response')->nullable();
             $table->timestamp('responded_at')->nullable();
             $table->timestamps();
