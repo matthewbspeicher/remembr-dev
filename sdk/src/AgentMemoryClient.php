@@ -232,4 +232,174 @@ class AgentMemoryClient
     {
         return $this->http->get("workspaces/{$workspaceId}/presence/{$agentId}")->json();
     }
+
+    // -------------------------------------------------------------------------
+    // Event Subscriptions
+    // -------------------------------------------------------------------------
+
+    /**
+     * List subscriptions for this agent in a workspace.
+     */
+    public function listSubscriptions(string $workspaceId): array
+    {
+        return $this->http->get("workspaces/{$workspaceId}/subscriptions")->json('data');
+    }
+
+    /**
+     * Create a new event subscription.
+     *
+     * @param  array{event_types: string[], callback_url?: string}  $data
+     */
+    public function subscribe(array $data, string $workspaceId): array
+    {
+        return $this->http->post("workspaces/{$workspaceId}/subscriptions", $data)->json();
+    }
+
+    /**
+     * Update a subscription.
+     */
+    public function updateSubscription(string $workspaceId, string $subscriptionId, array $data): array
+    {
+        return $this->http->patch("workspaces/{$workspaceId}/subscriptions/{$subscriptionId}", $data)->json();
+    }
+
+    /**
+     * Delete a subscription.
+     */
+    public function unsubscribe(string $workspaceId, string $subscriptionId): void
+    {
+        $this->http->delete("workspaces/{$workspaceId}/subscriptions/{$subscriptionId}");
+    }
+
+    /**
+     * Poll for workspace events.
+     */
+    public function pollEvents(string $workspaceId, ?string $cursor = null, int $limit = 20): array
+    {
+        $params = ['limit' => $limit];
+        if ($cursor) {
+            $params['cursor'] = $cursor;
+        }
+
+        return $this->http->get("workspaces/{$workspaceId}/events", $params)->json();
+    }
+
+    // -------------------------------------------------------------------------
+    // @Mentions
+    // -------------------------------------------------------------------------
+
+    /**
+     * List mentions for the authenticated agent in a workspace.
+     */
+    public function listMentions(string $workspaceId): array
+    {
+        return $this->http->get("workspaces/{$workspaceId}/mentions")->json('data');
+    }
+
+    /**
+     * List mentions received by the authenticated agent.
+     */
+    public function listReceivedMentions(string $workspaceId, ?string $status = null): array
+    {
+        $params = [];
+        if ($status) {
+            $params['status'] = $status;
+        }
+
+        return $this->http->get("workspaces/{$workspaceId}/mentions/received", $params)->json('data');
+    }
+
+    /**
+     * Get a specific mention.
+     */
+    public function getMention(string $workspaceId, string $mentionId): array
+    {
+        return $this->http->get("workspaces/{$workspaceId}/mentions/{$mentionId}")->json();
+    }
+
+    /**
+     * Create a @mention.
+     *
+     * @param  array{target_agent_id: string, message: string, memory_id?: string, task_id?: string}  $data
+     */
+    public function mentionAgent(array $data, string $workspaceId): array
+    {
+        return $this->http->post("workspaces/{$workspaceId}/mentions", $data)->json();
+    }
+
+    /**
+     * Respond to a mention.
+     *
+     * @param  array{response: 'accepted'|'declined'|'completed', response_text?: string}  $data
+     */
+    public function respondToMention(string $workspaceId, string $mentionId, array $data): array
+    {
+        return $this->http->post("workspaces/{$workspaceId}/mentions/{$mentionId}/respond", $data)->json();
+    }
+
+    // -------------------------------------------------------------------------
+    // Shared Tasks
+    // -------------------------------------------------------------------------
+
+    /**
+     * List tasks in a workspace.
+     */
+    public function listTasks(string $workspaceId, array $filters = []): array
+    {
+        return $this->http->get("workspaces/{$workspaceId}/tasks", $filters)->json('data');
+    }
+
+    /**
+     * Get a specific task.
+     */
+    public function getTask(string $workspaceId, string $taskId): array
+    {
+        return $this->http->get("workspaces/{$workspaceId}/tasks/{$taskId}")->json();
+    }
+
+    /**
+     * Create a task.
+     *
+     * @param  array{title: string, description?: string, priority?: string, due_at?: string, assigned_agent_id?: string}  $data
+     */
+    public function createTask(array $data, string $workspaceId): array
+    {
+        return $this->http->post("workspaces/{$workspaceId}/tasks", $data)->json();
+    }
+
+    /**
+     * Update a task.
+     */
+    public function updateTask(string $workspaceId, string $taskId, array $data): array
+    {
+        return $this->http->patch("workspaces/{$workspaceId}/tasks/{$taskId}", $data)->json();
+    }
+
+    /**
+     * Assign a task to an agent.
+     */
+    public function assignTask(string $workspaceId, string $taskId, string $agentId): array
+    {
+        return $this->http->post("workspaces/{$workspaceId}/tasks/{$taskId}/assign", [
+            'agent_id' => $agentId,
+        ])->json();
+    }
+
+    /**
+     * Update task status.
+     */
+    public function updateTaskStatus(string $workspaceId, string $taskId, string $status): array
+    {
+        return $this->http->post("workspaces/{$workspaceId}/tasks/{$taskId}/status", [
+            'status' => $status,
+        ])->json();
+    }
+
+    /**
+     * Delete a task.
+     */
+    public function deleteTask(string $workspaceId, string $taskId): void
+    {
+        $this->http->delete("workspaces/{$workspaceId}/tasks/{$taskId}");
+    }
 }

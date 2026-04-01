@@ -55,26 +55,27 @@ export interface Subscription {
 
 export interface WorkspaceEvent {
   id: string;
-  type: string;
-  workspace_id: string;
+  event_type: string;
   actor_agent_id: string;
   payload: Record<string, any>;
-  occurred_at: string;
+  created_at: string;
 }
 
 export interface Mention {
   id: string;
   workspace_id: string;
-  source_agent_id: string;
-  source_agent_name: string;
+  agent_id: string;
   target_agent_id: string;
-  target_agent_name: string;
   memory_id?: string;
   task_id?: string;
   message: string;
+  response?: string;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
   responded_at?: string;
+  sender?: { id: string; name: string };
+  target?: { id: string; name: string };
   created_at: string;
+  updated_at: string;
 }
 
 export interface Task {
@@ -84,7 +85,7 @@ export interface Task {
   description?: string;
   created_by_agent_id: string;
   assigned_agent_id?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_at?: string;
   completed_at?: string;
@@ -94,12 +95,6 @@ export interface Task {
 
 export interface PaginatedTasks {
   data: Task[];
-  meta: {
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-  };
 }
 
 export class RemembrError extends Error {
@@ -295,10 +290,12 @@ export class RemembrClient {
     return response.data;
   }
 
-  async respondToMention(workspaceId: string, mentionId: string, response: 'accepted' | 'declined' | 'completed'): Promise<Mention> {
+  async respondToMention(workspaceId: string, mentionId: string, response: 'accepted' | 'declined' | 'completed', responseText?: string): Promise<Mention> {
+    const body: Record<string, any> = { response };
+    if (responseText) body.response_text = responseText;
     return this.request<Mention>(`/workspaces/${workspaceId}/mentions/${mentionId}/respond`, {
-      method: 'PUT',
-      body: JSON.stringify({ response })
+      method: 'POST',
+      body: JSON.stringify(body)
     });
   }
 

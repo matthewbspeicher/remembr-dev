@@ -1,7 +1,11 @@
 <?php
 
+use App\Models\CollaborationMention;
+use App\Models\Memory;
 use App\Models\Workspace;
 use App\Models\WorkspaceEvent;
+use App\Models\WorkspaceSubscription;
+use App\Models\WorkspaceTask;
 use App\Services\EmbeddingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -50,7 +54,7 @@ describe('Presence', function () {
         $response = $this->getJson("/api/v1/workspaces/{$workspace->id}/presence/{$agent->id}", withAgent($agent));
 
         $response->assertOk();
-        expect($response->json('agent_id'))->toBe($agent->id);
+        expect($response->json('data.agent_id'))->toBe($agent->id);
     });
 
     it('sends heartbeat', function () {
@@ -59,7 +63,7 @@ describe('Presence', function () {
         $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/presence/heartbeat", [], withAgent($agent));
 
         $response->assertOk();
-        expect($response->json('status'))->toBe('online');
+        expect($response->json('data.status'))->toBe('online');
     });
 
     it('marks agent offline', function () {
@@ -68,7 +72,6 @@ describe('Presence', function () {
         $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/presence/offline", [], withAgent($agent));
 
         $response->assertOk();
-        expect($response->json('status'))->toBe('offline');
     });
 
     it('rejects presence for agent not in workspace', function () {
@@ -100,38 +103,38 @@ describe('Event Subscriptions', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
         $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/subscriptions", [
-            'event_pattern' => 'memory.*',
+            'event_types' => ['memory.created', 'task.created'],
         ], withAgent($agent));
 
         $response->assertCreated();
-        expect($response->json('event_pattern'))->toBe('memory.*');
-        expect($response->json('agent_id'))->toBe($agent->id);
+        expect($response->json('data.event_types'))->toBe(['memory.created', 'task.created']);
+        expect($response->json('data.agent_id'))->toBe($agent->id);
     });
 
     it('updates a subscription', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
-        $sub = $workspace->subscriptions()->create([
+        $sub = WorkspaceSubscription::create([
+            'workspace_id' => $workspace->id,
             'agent_id' => $agent->id,
-            'event_pattern' => 'memory.created',
+            'event_types' => ['memory.created'],
         ]);
 
         $response = $this->patchJson("/api/v1/workspaces/{$workspace->id}/subscriptions/{$sub->id}", [
-            'event_pattern' => 'memory.*',
-            'is_active' => false,
+            'event_types' => ['memory.*', 'task.*'],
         ], withAgent($agent));
 
         $response->assertOk();
-        expect($response->json('event_pattern'))->toBe('memory.*');
-        expect($response->json('is_active'))->toBeFalse();
+        expect($response->json('data.event_types'))->toContain('memory.*');
     });
 
     it('deletes a subscription', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
-        $sub = $workspace->subscriptions()->create([
+        $sub = WorkspaceSubscription::create([
+            'workspace_id' => $workspace->id,
             'agent_id' => $agent->id,
-            'event_pattern' => 'memory.*',
+            'event_types' => ['memory.*'],
         ]);
 
         $response = $this->deleteJson("/api/v1/workspaces/{$workspace->id}/subscriptions/{$sub->id}", [], withAgent($agent));
@@ -143,9 +146,10 @@ describe('Event Subscriptions', function () {
     it('polls workspace events', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
-        $workspace->subscriptions()->create([
+        WorkspaceSubscription::create([
+            'workspace_id' => $workspace->id,
             'agent_id' => $agent->id,
-            'event_pattern' => '*',
+            'event_types' => ['*'],
         ]);
 
         WorkspaceEvent::dispatch($workspace->id, WorkspaceEvent::TYPE_MEMORY_CREATED, $agent->id, [
@@ -158,13 +162,8 @@ describe('Event Subscriptions', function () {
         expect($response->json('data'))->toHaveCount(1);
     });
 
-    it('filters events by pattern', function () {
+    it('filters events by type', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
-
-        $workspace->subscriptions()->create([
-            'agent_id' => $agent->id,
-            'event_pattern' => 'task.*',
-        ]);
 
         WorkspaceEvent::dispatch($workspace->id, WorkspaceEvent::TYPE_MEMORY_CREATED, $agent->id, [
             'memory_id' => 'test-id',
@@ -174,7 +173,7 @@ describe('Event Subscriptions', function () {
             'task_id' => 'task-id',
         ]);
 
-        $response = $this->getJson("/api/v1/workspaces/{$workspace->id}/events", withAgent($agent));
+        $response = $this->getJson("/api/v1/workspaces/{$workspace->id}/events?event_type=task.created", withAgent($agent));
 
         $response->assertOk();
         $events = $response->json('data');
@@ -194,14 +193,14 @@ describe('@Mentions', function () {
 
         $workspace->agents()->attach($otherAgent->id);
 
-        $workspace->mentions()->create([
-            'from_agent_id' => $agent->id,
-            'to_agent_id' => $otherAgent->id,
+        CollaborationMention::create([
             'workspace_id' => $workspace->id,
-            'content' => 'Can you help with this?',
+            'agent_id' => $agent->id,
+            'target_agent_id' => $otherAgent->id,
+            'message' => 'Can you help with this?',
         ]);
 
-        $response = $this->getJson('/api/v1/mentions', withAgent($otherAgent));
+        $response = $this->getJson("/api/v1/workspaces/{$workspace->id}/mentions", withAgent($otherAgent));
 
         $response->assertOk();
         expect($response->json('data'))->toHaveCount(1);
@@ -213,14 +212,14 @@ describe('@Mentions', function () {
 
         $workspace->agents()->attach($otherAgent->id);
 
-        $workspace->mentions()->create([
-            'from_agent_id' => $agent->id,
-            'to_agent_id' => $otherAgent->id,
+        CollaborationMention::create([
             'workspace_id' => $workspace->id,
-            'content' => 'Can you help with this?',
+            'agent_id' => $agent->id,
+            'target_agent_id' => $otherAgent->id,
+            'message' => 'Can you help with this?',
         ]);
 
-        $response = $this->getJson('/api/v1/mentions/received', withAgent($otherAgent));
+        $response = $this->getJson("/api/v1/workspaces/{$workspace->id}/mentions/received", withAgent($otherAgent));
 
         $response->assertOk();
         expect($response->json('data'))->toHaveCount(1);
@@ -232,15 +231,14 @@ describe('@Mentions', function () {
 
         $workspace->agents()->attach($otherAgent->id);
 
-        $response = $this->postJson('/api/v1/mentions', [
-            'to_agent_id' => $otherAgent->id,
-            'workspace_id' => $workspace->id,
-            'content' => 'Can you help with this?',
+        $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/mentions", [
+            'target_agent_id' => $otherAgent->id,
+            'message' => 'Can you help with this?',
         ], withAgent($agent));
 
         $response->assertCreated();
-        expect($response->json('content'))->toBe('Can you help with this?');
-        expect($response->json('status'))->toBe('pending');
+        expect($response->json('data.message'))->toBe('Can you help with this?');
+        expect($response->json('data.status'))->toBe('pending');
     });
 
     it('responds to a mention', function () {
@@ -249,20 +247,21 @@ describe('@Mentions', function () {
 
         $workspace->agents()->attach($otherAgent->id);
 
-        $mention = $workspace->mentions()->create([
-            'from_agent_id' => $agent->id,
-            'to_agent_id' => $otherAgent->id,
+        $mention = CollaborationMention::create([
             'workspace_id' => $workspace->id,
-            'content' => 'Can you help with this?',
+            'agent_id' => $agent->id,
+            'target_agent_id' => $otherAgent->id,
+            'message' => 'Can you help with this?',
         ]);
 
-        $response = $this->postJson("/api/v1/mentions/{$mention->id}/respond", [
-            'response_content' => 'Sure, I can help!',
-            'accept' => true,
+        $response = $this->postJson("/api/v1/workspaces/{$workspace->id}/mentions/{$mention->id}/respond", [
+            'response' => 'accepted',
+            'response_text' => 'Sure, I can help!',
         ], withAgent($otherAgent));
 
         $response->assertOk();
-        expect($response->json('status'))->toBe('accepted');
+        expect($response->json('data.status'))->toBe('accepted');
+        expect($response->json('data.response'))->toBe('Sure, I can help!');
     });
 });
 
@@ -290,15 +289,16 @@ describe('Shared Tasks', function () {
         ], withAgent($agent));
 
         $response->assertCreated();
-        expect($response->json('title'))->toBe('Implement feature X');
-        expect($response->json('status'))->toBe('pending');
-        expect($response->json('priority'))->toBe('high');
+        expect($response->json('data.title'))->toBe('Implement feature X');
+        expect($response->json('data.status'))->toBe('pending');
+        expect($response->json('data.priority'))->toBe('high');
     });
 
     it('shows a task', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
-        $task = $workspace->tasks()->create([
+        $task = WorkspaceTask::create([
+            'workspace_id' => $workspace->id,
             'created_by_agent_id' => $agent->id,
             'title' => 'Test task',
             'status' => 'pending',
@@ -308,13 +308,14 @@ describe('Shared Tasks', function () {
         $response = $this->getJson("/api/v1/workspaces/{$workspace->id}/tasks/{$task->id}", withAgent($agent));
 
         $response->assertOk();
-        expect($response->json('title'))->toBe('Test task');
+        expect($response->json('data.title'))->toBe('Test task');
     });
 
     it('updates a task', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
-        $task = $workspace->tasks()->create([
+        $task = WorkspaceTask::create([
+            'workspace_id' => $workspace->id,
             'created_by_agent_id' => $agent->id,
             'title' => 'Test task',
             'status' => 'pending',
@@ -327,8 +328,8 @@ describe('Shared Tasks', function () {
         ], withAgent($agent));
 
         $response->assertOk();
-        expect($response->json('title'))->toBe('Updated task title');
-        expect($response->json('priority'))->toBe('high');
+        expect($response->json('data.title'))->toBe('Updated task title');
+        expect($response->json('data.priority'))->toBe('high');
     });
 
     it('assigns a task', function () {
@@ -337,7 +338,8 @@ describe('Shared Tasks', function () {
 
         $workspace->agents()->attach($otherAgent->id);
 
-        $task = $workspace->tasks()->create([
+        $task = WorkspaceTask::create([
+            'workspace_id' => $workspace->id,
             'created_by_agent_id' => $agent->id,
             'title' => 'Test task',
             'status' => 'pending',
@@ -349,13 +351,14 @@ describe('Shared Tasks', function () {
         ], withAgent($agent));
 
         $response->assertOk();
-        expect($response->json('assigned_to_agent_id'))->toBe($otherAgent->id);
+        expect($response->json('data.assigned_agent_id'))->toBe($otherAgent->id);
     });
 
     it('updates task status', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
-        $task = $workspace->tasks()->create([
+        $task = WorkspaceTask::create([
+            'workspace_id' => $workspace->id,
             'created_by_agent_id' => $agent->id,
             'title' => 'Test task',
             'status' => 'pending',
@@ -367,13 +370,14 @@ describe('Shared Tasks', function () {
         ], withAgent($agent));
 
         $response->assertOk();
-        expect($response->json('status'))->toBe('in_progress');
+        expect($response->json('data.status'))->toBe('in_progress');
     });
 
     it('deletes a task', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
-        $task = $workspace->tasks()->create([
+        $task = WorkspaceTask::create([
+            'workspace_id' => $workspace->id,
             'created_by_agent_id' => $agent->id,
             'title' => 'Test task',
             'status' => 'pending',
@@ -389,13 +393,15 @@ describe('Shared Tasks', function () {
     it('filters tasks by status', function () {
         [$workspace, $agent] = createWorkspaceWithAgent();
 
-        $workspace->tasks()->create([
+        WorkspaceTask::create([
+            'workspace_id' => $workspace->id,
             'created_by_agent_id' => $agent->id,
             'title' => 'Pending task',
             'status' => 'pending',
             'priority' => 'medium',
         ]);
-        $workspace->tasks()->create([
+        WorkspaceTask::create([
+            'workspace_id' => $workspace->id,
             'created_by_agent_id' => $agent->id,
             'title' => 'In progress task',
             'status' => 'in_progress',

@@ -60,6 +60,21 @@ class Workspace extends Model
         return $this->hasMany(Memory::class);
     }
 
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(WorkspaceSubscription::class);
+    }
+
+    public function mentions(): HasMany
+    {
+        return $this->hasMany(CollaborationMention::class);
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(WorkspaceTask::class);
+    }
+
     public static function generateToken(): string
     {
         return 'wks_'.Str::random(40);

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CommonsStreamController;
 use App\Http\Controllers\Api\GraphController;
 use App\Http\Controllers\Api\LeaderboardApiController;
 use App\Http\Controllers\Api\MemoryController;
+use App\Http\Controllers\Api\MentionController;
 use App\Http\Controllers\Api\PortfolioController;
 use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\ReplayController;
@@ -16,6 +17,8 @@ use App\Http\Controllers\Api\RiskController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\StatsController;
+use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\TradeAlertController;
 use App\Http\Controllers\Api\TradeExportController;
 use App\Http\Controllers\Api\TradingController;
@@ -122,11 +125,11 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::get('/workspaces/{id}/events', [SubscriptionController::class, 'events']);
 
         // @Mentions
-        Route::get('/mentions', [MentionController::class, 'index']);
-        Route::get('/mentions/received', [MentionController::class, 'received']);
-        Route::get('/mentions/{id}', [MentionController::class, 'show']);
-        Route::post('/mentions', [MentionController::class, 'store']);
-        Route::post('/mentions/{id}/respond', [MentionController::class, 'respond']);
+        Route::get('/workspaces/{id}/mentions', [MentionController::class, 'index']);
+        Route::get('/workspaces/{id}/mentions/received', [MentionController::class, 'received']);
+        Route::get('/workspaces/{id}/mentions/{mentionId}', [MentionController::class, 'show']);
+        Route::post('/workspaces/{id}/mentions', [MentionController::class, 'store']);
+        Route::post('/workspaces/{id}/mentions/{mentionId}/respond', [MentionController::class, 'respond']);
 
         // Shared Tasks
         Route::get('/workspaces/{id}/tasks', [TaskController::class, 'index']);

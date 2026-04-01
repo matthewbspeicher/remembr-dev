@@ -139,10 +139,24 @@ class PresenceController extends Controller
      * Set agent as offline.
      * POST /v1/workspaces/{workspaceId}/presence/offline
      */
-    public function offline(string $workspaceId): JsonResponse
+    public function offline(Request $request, string $workspaceId): JsonResponse
     {
+        $workspace = Workspace::find($workspaceId);
+        if (! $workspace) {
+            return response()->json(['error' => 'Workspace not found.'], 404);
+        }
+
+        $agent = $this->resolveAgent($request);
+        if ($agent instanceof JsonResponse) {
+            return $agent;
+        }
+
+        if (! $this->agentBelongsToWorkspace($agent, $workspace)) {
+            return response()->json(['error' => 'Agent does not belong to this workspace.'], 403);
+        }
+
         $presence = AgentPresence::where('workspace_id', $workspaceId)
-            ->where('agent_id', authAgent()->id)
+            ->where('agent_id', $agent->id)
             ->first();
 
         if (! $presence) {
