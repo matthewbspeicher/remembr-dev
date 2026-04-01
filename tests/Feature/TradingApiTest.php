@@ -336,7 +336,7 @@ describe('DELETE /v1/trading/trades/{id}', function () {
         $response = $this->deleteJson("/api/v1/trading/trades/{$trade->id}", [], withAgent($agent));
 
         $response->assertOk();
-        expect($trade->fresh())->toBeNull();
+        expect(Trade::find($trade->id))->toBeNull();
         expect(Trade::withTrashed()->find($trade->id))->not->toBeNull();
     });
 

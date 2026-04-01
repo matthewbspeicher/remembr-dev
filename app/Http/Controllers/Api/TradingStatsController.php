@@ -99,10 +99,19 @@ class TradingStatsController extends Controller
             ->selectRaw('SUM(pnl) as daily_pnl')
             ->groupByRaw('DATE(exit_at)')
             ->orderByRaw('DATE(exit_at)')
-            ->cursorPaginate(50);
+            ->get();
 
-        // Note: Cumulative PnL across pages requires client-side tracking or passing balance in cursor
-        // For now, we return the paginated daily summaries as a foundation.
-        return response()->json($dailyPnl);
+        $cumulative = '0';
+        $data = $dailyPnl->map(function ($row) use (&$cumulative) {
+            $cumulative = bcadd($cumulative, (string) $row->daily_pnl, 8);
+
+            return [
+                'date' => $row->date,
+                'daily_pnl' => (float) $row->daily_pnl,
+                'cumulative_pnl' => (float) $cumulative,
+            ];
+        });
+
+        return response()->json(['data' => $data->values()]);
     }
 }
