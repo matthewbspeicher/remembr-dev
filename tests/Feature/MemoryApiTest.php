@@ -81,7 +81,7 @@ describe('POST /v1/agents/register', function () {
         $response = $this->postJson('/api/v1/agents/register', [
             'name' => 'TestBot',
             'description' => 'A test agent',
-            'owner_token' => 'owner_test_token',
+            'owner_token' => $owner->api_token,
         ]);
 
         $response->assertCreated()

@@ -82,13 +82,7 @@ class MemoryController extends Controller
             'type' => ['sometimes', 'string', Rule::in(Memory::TYPES)],
             'category' => ['nullable', 'string', 'max:100'],
             'visibility' => ['nullable', 'in:private,shared,public,workspace'],
-            'workspace_id' => ['nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id',
-                function (string $attribute, mixed $value, Closure $fail) use ($agent) {
-                    if ($value && ! $agent->workspaces()->where('workspaces.id', $value)->exists()) {
-                        $fail('Agent does not belong to this workspace.');
-                    }
-                },
-            ],
+            'workspace_id' => ['nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id'],
             'metadata' => ['nullable', 'array'],
             'importance' => ['nullable', 'integer', 'min:1', 'max:10'],
             'confidence' => ['nullable', 'numeric', 'min:0', 'max:1'],
@@ -106,6 +100,13 @@ class MemoryController extends Controller
             ],
             'relations.*.type' => ['nullable', 'string', 'max:50'],
         ]);
+
+        // Check workspace membership if storing to a workspace
+        if ($validated['visibility'] === 'workspace' && isset($validated['workspace_id'])) {
+            if (! $agent->workspaces()->where('workspaces.id', $validated['workspace_id'])->exists()) {
+                return response()->json(['error' => 'Agent does not belong to this workspace.'], 403);
+            }
+        }
 
         $memory = $this->memories->store($agent, $validated);
 
@@ -205,13 +206,7 @@ class MemoryController extends Controller
             'type' => ['sometimes', 'string', Rule::in(Memory::TYPES)],
             'category' => ['sometimes', 'nullable', 'string', 'max:100'],
             'visibility' => ['sometimes', 'in:private,shared,public,workspace'],
-            'workspace_id' => ['sometimes', 'nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id',
-                function (string $attribute, mixed $value, Closure $fail) use ($agent) {
-                    if ($value && ! $agent->workspaces()->where('workspaces.id', $value)->exists()) {
-                        $fail('Agent does not belong to this workspace.');
-                    }
-                },
-            ],
+            'workspace_id' => ['sometimes', 'nullable', 'required_if:visibility,workspace', 'uuid', 'exists:workspaces,id'],
             'metadata' => ['sometimes', 'array'],
             'importance' => ['sometimes', 'integer', 'min:1', 'max:10'],
             'confidence' => ['sometimes', 'numeric', 'min:0', 'max:1'],
@@ -229,6 +224,13 @@ class MemoryController extends Controller
             ],
             'relations.*.type' => ['nullable', 'string', 'max:50'],
         ]);
+
+        // Check workspace membership if changing to a workspace
+        if (($validated['visibility'] ?? null) === 'workspace' && isset($validated['workspace_id'])) {
+            if (! $agent->workspaces()->where('workspaces.id', $validated['workspace_id'])->exists()) {
+                return response()->json(['error' => 'Agent does not belong to this workspace.'], 403);
+            }
+        }
 
         $memory = $this->memories->update($memory, $validated);
 
