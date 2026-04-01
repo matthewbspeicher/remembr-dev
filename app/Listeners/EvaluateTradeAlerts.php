@@ -41,7 +41,8 @@ class EvaluateTradeAlerts implements ShouldQueue
 
     private function evaluate(string $condition, $trade): void
     {
-        $alerts = TradeAlert::where('condition', $condition)
+        $alerts = TradeAlert::where('agent_id', $trade->agent_id)
+            ->where('condition', $condition)
             ->where('is_active', true)
             ->where(function ($q) use ($trade) {
                 $q->whereNull('ticker')->orWhere('ticker', $trade->ticker);
@@ -55,7 +56,8 @@ class EvaluateTradeAlerts implements ShouldQueue
 
     private function evaluatePnl(string $condition, float $pnl, $trade): void
     {
-        $query = TradeAlert::where('condition', $condition)
+        $query = TradeAlert::where('agent_id', $trade->agent_id)
+            ->where('condition', $condition)
             ->where('is_active', true)
             ->where(function ($q) use ($trade) {
                 $q->whereNull('ticker')->orWhere('ticker', $trade->ticker);

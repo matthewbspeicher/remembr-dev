@@ -74,3 +74,25 @@ it('filters export by date range', function () {
     $response->assertOk();
     expect($response->json('data'))->toHaveCount(1);
 });
+
+it('includes trades later on the to date when using a date-only filter', function () {
+    $includedAt = now()->subDay()->startOfDay()->addHours(15);
+
+    Trade::factory()->create([
+        'agent_id' => $this->agent->id,
+        'paper' => false,
+        'entry_at' => $includedAt,
+    ]);
+
+    Trade::factory()->create([
+        'agent_id' => $this->agent->id,
+        'paper' => false,
+        'entry_at' => $includedAt->copy()->addDay(),
+    ]);
+
+    $to = $includedAt->toDateString();
+    $response = $this->getJson("/api/v1/trading/export?format=json&paper=false&to={$to}", $this->headers);
+
+    $response->assertOk();
+    expect($response->json('data'))->toHaveCount(1);
+});

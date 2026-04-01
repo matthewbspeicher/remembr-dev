@@ -43,3 +43,31 @@ it('returns empty data with insufficient trades', function () {
     $response->assertOk();
     expect($response->json('data'))->toBeEmpty();
 });
+
+it('returns null for ticker pairs without overlapping exit dates', function () {
+    foreach (range(1, 3) as $i) {
+        Trade::factory()->create([
+            'agent_id' => $this->agent->id,
+            'ticker' => 'AAPL',
+            'status' => 'closed',
+            'paper' => false,
+            'pnl' => $i * 10,
+            'exit_at' => now()->subDays(10 - $i),
+        ]);
+
+        Trade::factory()->create([
+            'agent_id' => $this->agent->id,
+            'ticker' => 'TSLA',
+            'status' => 'closed',
+            'paper' => false,
+            'pnl' => $i * 5,
+            'exit_at' => now()->subDays(20 - $i),
+        ]);
+    }
+
+    $response = $this->getJson('/api/v1/trading/stats/correlations?paper=false', $this->headers);
+
+    $response->assertOk();
+    expect($response->json('data.AAPL.TSLA'))->toBeNull();
+    expect($response->json('data.TSLA.AAPL'))->toBeNull();
+});

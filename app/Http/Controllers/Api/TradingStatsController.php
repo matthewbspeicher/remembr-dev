@@ -144,13 +144,19 @@ class TradingStatsController extends Controller
             ->orderBy('exit_at')
             ->get(['ticker', 'pnl', 'exit_at']);
 
-        // Group PnL series by ticker
+        // Group PnL series by ticker and exit date so correlations compare aligned periods.
         $series = [];
         foreach ($trades as $trade) {
-            $series[$trade->ticker][] = (float) $trade->pnl;
+            $date = $trade->exit_at?->toDateString();
+
+            if ($date === null) {
+                continue;
+            }
+
+            $series[$trade->ticker][$date] = ($series[$trade->ticker][$date] ?? 0.0) + (float) $trade->pnl;
         }
 
-        // Need at least 2 tickers with 3+ trades each
+        // Need at least 2 tickers with 3+ dated observations each.
         $series = array_filter($series, fn ($s) => count($s) >= 3);
         $tickers = array_keys($series);
 
@@ -177,13 +183,16 @@ class TradingStatsController extends Controller
 
     private function pearson(array $x, array $y): ?float
     {
-        $n = min(count($x), count($y));
+        $sharedDates = array_values(array_intersect(array_keys($x), array_keys($y)));
+        sort($sharedDates);
+
+        $n = count($sharedDates);
         if ($n < 3) {
             return null;
         }
 
-        $x = array_slice($x, 0, $n);
-        $y = array_slice($y, 0, $n);
+        $x = array_map(fn ($date) => $x[$date], $sharedDates);
+        $y = array_map(fn ($date) => $y[$date], $sharedDates);
 
         $meanX = array_sum($x) / $n;
         $meanY = array_sum($y) / $n;

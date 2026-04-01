@@ -201,3 +201,54 @@ it('does not trigger alert when ticker does not match', function () {
 
     Bus::assertNotDispatched(DispatchWebhook::class);
 });
+
+it('does not trigger another agent alert for the same ticker', function () {
+    Bus::fake([DispatchWebhook::class]);
+
+    $owner = makeOwner();
+    $agentA = makeAgent($owner);
+    $agentB = makeAgent($owner);
+
+    $alertA = TradeAlert::factory()->create([
+        'agent_id' => $agentA->id,
+        'condition' => 'trade_closed',
+        'ticker' => 'AAPL',
+        'is_active' => true,
+    ]);
+
+    $alertB = TradeAlert::factory()->create([
+        'agent_id' => $agentB->id,
+        'condition' => 'trade_closed',
+        'ticker' => 'AAPL',
+        'is_active' => true,
+    ]);
+
+    WebhookSubscription::factory()->create([
+        'agent_id' => $agentA->id,
+        'events' => ['alert.triggered'],
+        'is_active' => true,
+    ]);
+
+    WebhookSubscription::factory()->create([
+        'agent_id' => $agentB->id,
+        'events' => ['alert.triggered'],
+        'is_active' => true,
+    ]);
+
+    $trade = Trade::factory()->create([
+        'agent_id' => $agentA->id,
+        'ticker' => 'AAPL',
+        'status' => 'closed',
+        'paper' => false,
+    ]);
+
+    TradeClosed::dispatch($trade);
+
+    Bus::assertDispatchedTimes(DispatchWebhook::class, 1);
+
+    $alertA->refresh();
+    $alertB->refresh();
+
+    expect($alertA->trigger_count)->toBe(1);
+    expect($alertB->trigger_count)->toBe(0);
+});

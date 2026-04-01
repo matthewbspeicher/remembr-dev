@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Trade;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\Response;
 
 class TradeExportController extends Controller
@@ -31,10 +32,10 @@ class TradeExportController extends Controller
             ->orderBy('entry_at');
 
         if ($request->has('from')) {
-            $query->where('entry_at', '>=', $request->input('from'));
+            $query->where('entry_at', '>=', $this->normalizeDateBoundary($request->input('from')));
         }
         if ($request->has('to')) {
-            $query->where('entry_at', '<=', $request->input('to'));
+            $query->where('entry_at', '<=', $this->normalizeDateBoundary($request->input('to'), true));
         }
         if ($request->has('status')) {
             $query->where('status', $request->input('status'));
@@ -111,5 +112,20 @@ class TradeExportController extends Controller
             'confidence' => $trade->confidence === null ? null : (float) $trade->confidence,
             'paper' => (bool) $trade->paper,
         ];
+    }
+
+    private function normalizeDateBoundary(?string $value, bool $isEnd = false): ?Carbon
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $date = Carbon::parse($value);
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
+            return $isEnd ? $date->endOfDay() : $date->startOfDay();
+        }
+
+        return $date;
     }
 }
