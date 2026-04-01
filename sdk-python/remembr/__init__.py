@@ -6,6 +6,7 @@ from .exceptions import (
     TradeAlreadyClosedError,
 )
 from .models import TradeResult, Position, TradingStats
+from .trading import TradingJournal
 
 __all__ = [
     "RemembrClient",
@@ -17,4 +18,5 @@ __all__ = [
     "TradeResult",
     "Position",
     "TradingStats",
+    "TradingJournal",
 ]

@@ -1,13 +1,21 @@
 import httpx
 from typing import Optional, Dict, Any, List
 
-from .exceptions import RemembrException, AuthenticationException, MemoryNotFoundException
+from .exceptions import RemembrException, AuthenticationException, MemoryNotFoundException, TradeAlreadyClosedError
 
 def _handle_error(response: httpx.Response):
     if response.status_code == 401:
         raise AuthenticationException("Unauthorized: Invalid agent token")
     elif response.status_code == 404:
         raise MemoryNotFoundException("Memory not found")
+    elif response.status_code == 422:
+        try:
+            data = response.json()
+            if data.get("error") == "trade_already_closed":
+                raise TradeAlreadyClosedError(data.get("message", "Trade already closed"))
+        except Exception:
+            pass
+        raise RemembrException(f"API Error ({response.status_code}): {response.text}")
     else:
         try:
             msg = response.json().get("message", response.text)
@@ -25,6 +33,24 @@ class RemembrClient:
             base_url=self.base_url,
             headers={"Authorization": f"Bearer {self.agent_token}", "Accept": "application/json"}
         )
+
+    def _request(self, method: str, path: str, **kwargs) -> Dict[str, Any]:
+        resp = self.client.request(method, path, **kwargs)
+        if resp.is_error:
+            _handle_error(resp)
+        return resp.json()
+
+    def post(self, path: str, json: Optional[Dict] = None, **kwargs) -> Dict[str, Any]:
+        """Perform a generic POST request."""
+        return self._request("POST", path, json=json, **kwargs)
+
+    def patch(self, path: str, json: Optional[Dict] = None, **kwargs) -> Dict[str, Any]:
+        """Perform a generic PATCH request."""
+        return self._request("PATCH", path, json=json, **kwargs)
+
+    def get_path(self, path: str, **kwargs) -> Dict[str, Any]:
+        """Perform a generic GET request (renamed to avoid conflict with get memory)."""
+        return self._request("GET", path, **kwargs)
 
     @classmethod
     def register(cls, owner_token: str, name: str, description: Optional[str] = None, base_url: str = "https://remembr.dev/api/v1") -> Dict[str, Any]:
@@ -105,6 +131,24 @@ class AsyncRemembrClient:
             base_url=self.base_url,
             headers={"Authorization": f"Bearer {self.agent_token}", "Accept": "application/json"}
         )
+
+    async def _request(self, method: str, path: str, **kwargs) -> Dict[str, Any]:
+        resp = await self.client.request(method, path, **kwargs)
+        if resp.is_error:
+            _handle_error(resp)
+        return resp.json()
+
+    async def post(self, path: str, json: Optional[Dict] = None, **kwargs) -> Dict[str, Any]:
+        """Perform a generic POST request."""
+        return await self._request("POST", path, json=json, **kwargs)
+
+    async def patch(self, path: str, json: Optional[Dict] = None, **kwargs) -> Dict[str, Any]:
+        """Perform a generic PATCH request."""
+        return await self._request("PATCH", path, json=json, **kwargs)
+
+    async def get_path(self, path: str, **kwargs) -> Dict[str, Any]:
+        """Perform a generic GET request."""
+        return await self._request("GET", path, **kwargs)
 
     @classmethod
     async def register(cls, owner_token: str, name: str, description: Optional[str] = None, base_url: str = "https://remembr.dev/api/v1") -> Dict[str, Any]:
