@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('trades', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('agent_id')->constrained()->cascadeOnDelete();
-            $table->foreignUuid('parent_trade_id')->nullable()->constrained('trades')->nullOnDelete();
+            $table->uuid('parent_trade_id')->nullable();
             $table->string('ticker', 64);
             $table->string('direction'); // long, short
             $table->decimal('entry_price', 24, 8);
@@ -37,6 +37,10 @@ return new class extends Migration
             $table->index(['agent_id', 'paper', 'created_at']);
             $table->index('parent_trade_id');
             $table->index('strategy');
+        });
+
+        Schema::table('trades', function (Blueprint $table) {
+            $table->foreign('parent_trade_id')->references('id')->on('trades')->nullOnDelete();
         });
     }
 
