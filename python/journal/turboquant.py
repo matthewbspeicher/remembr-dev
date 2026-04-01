@@ -35,8 +35,20 @@ class TurboQuantIndexer:
                 results = []
                 break
                 
+            memory_ids = []
+            texts = []
+            metadatas = []
+            
             for entry in results:
-                self._add_entry(entry)
+                memory_ids.append(entry.get("id") or entry.get("_id"))
+                texts.append(entry.get("value", ""))
+                metadatas.append({
+                    "realized_pnl": entry.get("metadata", {}).get("realized_pnl"),
+                    "status": entry.get("metadata", {}).get("status"),
+                    "direction": entry.get("metadata", {}).get("decision", {}).get("direction")
+                })
+            
+            self.index.add_batch(memory_ids=memory_ids, texts=texts, metadatas=metadatas)
             
             # Simple pagination logic, assuming empty list when done
             if len(results) < 50: # assuming 50 is default page size
@@ -68,6 +80,32 @@ class TurboQuantIndexer:
         self._add_entry(entry)
         # Optionally persist after every N trades or periodically
         self.index.persist(self.persist_path)
+
+    async def handle_update_trade(self, event: Dict[str, Any]):
+        """
+        Handles updates to trade journal entries (e.g., adding PnL or exit reasoning).
+        """
+        entry = event.get("data", {})
+        memory_id = entry.get("id") or entry.get("_id")
+        text = entry.get("value", "")
+        
+        metadata = {
+            "realized_pnl": entry.get("metadata", {}).get("realized_pnl"),
+            "status": entry.get("metadata", {}).get("status"),
+            "direction": entry.get("metadata", {}).get("decision", {}).get("direction")
+        }
+        
+        self.index.update(memory_id=memory_id, text=text, metadata=metadata)
+        self.index.persist(self.persist_path)
+
+    async def handle_delete_trade(self, event: Dict[str, Any]):
+        """
+        Removes a trade journal entry from the local index.
+        """
+        memory_id = event.get("data", {}).get("id") or event.get("data", {}).get("_id")
+        if memory_id:
+            self.index.delete(memory_id)
+            self.index.persist(self.persist_path)
 
     def search_trades(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """

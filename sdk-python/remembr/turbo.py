@@ -47,7 +47,46 @@ class TurboQuantIndex:
             metadata = {}
         metadata['_memory_id'] = memory_id
         self.metadata_cache[internal_id] = metadata
+
+    def add_batch(self, memory_ids: List[str], texts: List[str], metadatas: Optional[List[Dict[str, Any]]] = None):
+        """
+        Embed a list of texts and add them to the HNSW index efficiently.
+        """
+        if not texts:
+            return
+
+        # Parallelize tokenization and matrix operations via batch encoding
+        vectors = self.model.encode(texts)
         
+        internal_ids = list(range(self._current_id, self._current_id + len(texts)))
+        self._current_id += len(texts)
+        
+        self.index.add_items(vectors, internal_ids)
+        
+        for i, (memory_id, internal_id) in enumerate(zip(memory_ids, internal_ids)):
+            self._id_to_internal[memory_id] = internal_id
+            
+            metadata = metadatas[i] if metadatas else {}
+            metadata['_memory_id'] = memory_id
+            self.metadata_cache[internal_id] = metadata
+
+    def delete(self, memory_id: str):
+        """
+        Mark an item as deleted in the HNSW index and remove from local caches.
+        """
+        if memory_id in self._id_to_internal:
+            internal_id = self._id_to_internal[memory_id]
+            self.index.mark_deleted(internal_id)
+            del self.metadata_cache[internal_id]
+            del self._id_to_internal[memory_id]
+
+    def update(self, memory_id: str, text: str, metadata: Optional[Dict[str, Any]] = None):
+        """
+        Update an existing memory by deleting its old vector and adding the new one.
+        """
+        self.delete(memory_id)
+        self.add(memory_id, text, metadata)
+
     def search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
         """
         Search the index for the most similar items to the query.
