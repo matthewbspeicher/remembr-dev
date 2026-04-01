@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Events\PositionChanged;
+use App\Events\TradeClosed;
+use App\Events\TradeOpened;
 use App\Listeners\SyncAgentQuotas;
+use App\Listeners\TriggerWebhooks;
 use App\Models\Trade;
 use App\Observers\TradeObserver;
 use App\Services\EmbeddingService;
@@ -48,6 +52,10 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Event::listen(WebhookReceived::class, SyncAgentQuotas::class);
+
+        Event::listen(TradeOpened::class, [TriggerWebhooks::class, 'handleTradeOpened']);
+        Event::listen(TradeClosed::class, [TriggerWebhooks::class, 'handleTradeClosed']);
+        Event::listen(PositionChanged::class, [TriggerWebhooks::class, 'handlePositionChanged']);
 
         Trade::observe(TradeObserver::class);
     }

@@ -31,7 +31,7 @@ class WebhookController extends Controller
         $validated = $request->validate([
             'url' => ['required', 'url', 'starts_with:https://'],
             'events' => ['required', 'array', 'min:1'],
-            'events.*' => ['string', 'in:memory.shared,memory.semantic_match'],
+            'events.*' => ['string', 'in:memory.shared,memory.semantic_match,trade.opened,trade.closed,position.changed'],
             'semantic_query' => ['nullable', 'string', 'max:1000'],
         ]);
 
