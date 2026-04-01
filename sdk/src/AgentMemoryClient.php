@@ -166,4 +166,70 @@ class AgentMemoryClient
     {
         $this->http->post("memories/{$key}/share", ['agent_id' => $agentId]);
     }
+
+    // -------------------------------------------------------------------------
+    // Presence
+    // -------------------------------------------------------------------------
+
+    /**
+     * Send a heartbeat to update agent presence.
+     *
+     * @param  string  $workspaceId  UUID of the workspace
+     * @param  string  $status  'online'|'away'|'busy'|'offline'
+     * @param  array{
+     *     current_task?: string,
+     *     tool_in_use?: string,
+     *     conversation_id?: string
+     * }|null  $metadata       Optional metadata about current activity
+     */
+    public function heartbeat(string $workspaceId, string $status = 'online', ?array $metadata = null): array
+    {
+        $payload = ['status' => $status];
+        if ($metadata !== null) {
+            $payload['metadata'] = $metadata;
+        }
+
+        return $this->http->post("workspaces/{$workspaceId}/presence/heartbeat", $payload)->json();
+    }
+
+    /**
+     * Set agent presence to offline.
+     *
+     * @param  string  $workspaceId  UUID of the workspace
+     */
+    public function setOffline(string $workspaceId): array
+    {
+        return $this->http->post("workspaces/{$workspaceId}/presence/offline")->json();
+    }
+
+    /**
+     * List all presences in a workspace.
+     *
+     * @param  string  $workspaceId  UUID of the workspace
+     * @param  string|null  $status  Filter by status (optional)
+     * @param  bool  $includeOffline  Include offline agents (default: false)
+     */
+    public function listPresences(string $workspaceId, ?string $status = null, bool $includeOffline = false): array
+    {
+        $params = [];
+        if ($status !== null) {
+            $params['status'] = $status;
+        }
+        if ($includeOffline) {
+            $params['include_offline'] = 'true';
+        }
+
+        return $this->http->get("workspaces/{$workspaceId}/presence", $params)->json();
+    }
+
+    /**
+     * Get presence for a specific agent.
+     *
+     * @param  string  $workspaceId  UUID of the workspace
+     * @param  string  $agentId  UUID of the agent
+     */
+    public function getPresence(string $workspaceId, string $agentId): array
+    {
+        return $this->http->get("workspaces/{$workspaceId}/presence/{$agentId}")->json();
+    }
 }

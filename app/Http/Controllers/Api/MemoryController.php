@@ -114,6 +114,15 @@ class MemoryController extends Controller
             // Activity logging must never break the main operation
         }
 
+        if ($memory->workspace_id) {
+            WorkspaceEvent::dispatch($memory->workspace_id, WorkspaceEvent::TYPE_MEMORY_CREATED, $agent->id, [
+                'memory_id' => $memory->id,
+                'memory_key' => $memory->key,
+                'memory_type' => $memory->type,
+                'visibility' => $memory->visibility,
+            ]);
+        }
+
         return response()->json($this->formatMemory($memory), 201);
     }
 
@@ -222,6 +231,14 @@ class MemoryController extends Controller
 
         $memory = $this->memories->update($memory, $validated);
 
+        if ($memory->workspace_id) {
+            WorkspaceEvent::dispatch($memory->workspace_id, WorkspaceEvent::TYPE_MEMORY_UPDATED, $agent->id, [
+                'memory_id' => $memory->id,
+                'memory_key' => $memory->key,
+                'changes' => array_keys($validated),
+            ]);
+        }
+
         return response()->json($this->formatMemory($memory));
     }
 
@@ -241,6 +258,13 @@ class MemoryController extends Controller
 
         if (! $memory) {
             return response()->json(['error' => 'Memory not found.'], 404);
+        }
+
+        if ($memory->workspace_id) {
+            WorkspaceEvent::dispatch($memory->workspace_id, WorkspaceEvent::TYPE_MEMORY_DELETED, $agent->id, [
+                'memory_id' => $memory->id,
+                'memory_key' => $memory->key,
+            ]);
         }
 
         $this->memories->delete($memory);

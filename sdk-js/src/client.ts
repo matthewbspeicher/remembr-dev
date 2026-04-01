@@ -30,6 +30,78 @@ export interface PaginatedMemories {
   };
 }
 
+export interface Presence {
+  id: string;
+  workspace_id: string;
+  agent_id: string;
+  status: 'online' | 'away' | 'busy' | 'offline';
+  is_stale: boolean;
+  last_heartbeat_at?: string;
+  metadata?: Record<string, any>;
+  agent?: { id: string; name: string; description?: string };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Subscription {
+  id: string;
+  workspace_id: string;
+  agent_id: string;
+  event_types: string[];
+  callback_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkspaceEvent {
+  id: string;
+  type: string;
+  workspace_id: string;
+  actor_agent_id: string;
+  payload: Record<string, any>;
+  occurred_at: string;
+}
+
+export interface Mention {
+  id: string;
+  workspace_id: string;
+  source_agent_id: string;
+  source_agent_name: string;
+  target_agent_id: string;
+  target_agent_name: string;
+  memory_id?: string;
+  task_id?: string;
+  message: string;
+  status: 'pending' | 'accepted' | 'declined' | 'completed';
+  responded_at?: string;
+  created_at: string;
+}
+
+export interface Task {
+  id: string;
+  workspace_id: string;
+  title: string;
+  description?: string;
+  created_by_agent_id: string;
+  assigned_agent_id?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  due_at?: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaginatedTasks {
+  data: Task[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
 export class RemembrError extends Error {
   constructor(public status: number, message: string) {
     super(`API Error (${status}): ${message}`);
@@ -66,7 +138,6 @@ export class RemembrClient {
       throw new RemembrError(response.status, message);
     }
 
-    // Some endpoints like DELETE might not return JSON or might return empty
     try {
       return await response.json();
     } catch (e) {
@@ -137,6 +208,155 @@ export class RemembrClient {
   async share(key: string): Promise<Memory> {
     return this.request<Memory>(`/memories/${encodeURIComponent(key)}/share`, {
       method: 'POST'
+    });
+  }
+
+  // --- Presence ---
+
+  async heartbeat(workspaceId: string, status?: string, metadata?: Record<string, any>): Promise<Presence> {
+    return this.request<Presence>(`/workspaces/${workspaceId}/presence/heartbeat`, {
+      method: 'POST',
+      body: JSON.stringify({ status, metadata })
+    });
+  }
+
+  async setOffline(workspaceId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/workspaces/${workspaceId}/presence/offline`, {
+      method: 'POST'
+    });
+  }
+
+  async listPresences(workspaceId: string, options: { status?: string; include_offline?: boolean } = {}): Promise<Presence[]> {
+    const status = options.status ? `&status=${encodeURIComponent(options.status)}` : '';
+    const offline = options.include_offline ? `&include_offline=1` : '';
+    const response = await this.request<{ data: Presence[] }>(`/workspaces/${workspaceId}/presence?${status}${offline}`);
+    return response.data;
+  }
+
+  async getPresence(workspaceId: string, agentId: string): Promise<Presence> {
+    return this.request<Presence>(`/workspaces/${workspaceId}/presence/${agentId}`);
+  }
+
+  // --- Event Subscriptions ---
+
+  async subscribe(workspaceId: string, eventTypes: string[], callbackUrl?: string): Promise<Subscription> {
+    return this.request<Subscription>(`/workspaces/${workspaceId}/subscriptions`, {
+      method: 'POST',
+      body: JSON.stringify({ event_types: eventTypes, callback_url: callbackUrl })
+    });
+  }
+
+  async listSubscriptions(workspaceId: string): Promise<Subscription[]> {
+    const response = await this.request<{ data: Subscription[] }>(`/workspaces/${workspaceId}/subscriptions`);
+    return response.data;
+  }
+
+  async updateSubscription(workspaceId: string, subscriptionId: string, eventTypes?: string[], callbackUrl?: string): Promise<Subscription> {
+    const body: Record<string, any> = {};
+    if (eventTypes) body.event_types = eventTypes;
+    if (callbackUrl !== undefined) body.callback_url = callbackUrl;
+    return this.request<Subscription>(`/workspaces/${workspaceId}/subscriptions/${subscriptionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    });
+  }
+
+  async unsubscribe(workspaceId: string, subscriptionId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/workspaces/${workspaceId}/subscriptions/${subscriptionId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async pollEvents(workspaceId: string, cursor?: string, limit?: number): Promise<{ events: WorkspaceEvent[]; cursor?: string }> {
+    const cursorParam = cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';
+    const limitParam = limit ? `&limit=${limit}` : '';
+    return this.request(`/workspaces/${workspaceId}/events?${cursorParam}${limitParam}`);
+  }
+
+  // --- Mentions ---
+
+  async mentionAgent(workspaceId: string, targetAgentId: string, message: string, memoryId?: string, taskId?: string): Promise<Mention> {
+    const body: Record<string, any> = { target_agent_id: targetAgentId, message };
+    if (memoryId) body.memory_id = memoryId;
+    if (taskId) body.task_id = taskId;
+    return this.request<Mention>(`/workspaces/${workspaceId}/mentions`, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  }
+
+  async getMentions(workspaceId: string): Promise<Mention[]> {
+    const response = await this.request<{ data: Mention[] }>(`/workspaces/${workspaceId}/mentions`);
+    return response.data;
+  }
+
+  async getReceivedMentions(workspaceId: string): Promise<Mention[]> {
+    const response = await this.request<{ data: Mention[] }>(`/workspaces/${workspaceId}/mentions/received`);
+    return response.data;
+  }
+
+  async respondToMention(workspaceId: string, mentionId: string, response: 'accepted' | 'declined' | 'completed'): Promise<Mention> {
+    return this.request<Mention>(`/workspaces/${workspaceId}/mentions/${mentionId}/respond`, {
+      method: 'PUT',
+      body: JSON.stringify({ response })
+    });
+  }
+
+  async getMention(workspaceId: string, mentionId: string): Promise<Mention> {
+    return this.request<Mention>(`/workspaces/${workspaceId}/mentions/${mentionId}`);
+  }
+
+  // --- Tasks ---
+
+  async createTask(workspaceId: string, title: string, description?: string, priority?: string, dueAt?: string): Promise<Task> {
+    const body: Record<string, any> = { title };
+    if (description) body.description = description;
+    if (priority) body.priority = priority;
+    if (dueAt) body.due_at = dueAt;
+    return this.request<Task>(`/workspaces/${workspaceId}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+  }
+
+  async listTasks(workspaceId: string, filters?: { status?: string; assigned_agent_id?: string; created_by_agent_id?: string; priority?: string; limit?: number }): Promise<PaginatedTasks> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.assigned_agent_id) params.set('assigned_agent_id', filters.assigned_agent_id);
+    if (filters?.created_by_agent_id) params.set('created_by_agent_id', filters.created_by_agent_id);
+    if (filters?.priority) params.set('priority', filters.priority);
+    if (filters?.limit) params.set('limit', String(filters.limit));
+    return this.request<PaginatedTasks>(`/workspaces/${workspaceId}/tasks?${params.toString()}`);
+  }
+
+  async getTask(workspaceId: string, taskId: string): Promise<Task> {
+    return this.request<Task>(`/workspaces/${workspaceId}/tasks/${taskId}`);
+  }
+
+  async updateTask(workspaceId: string, taskId: string, data: { title?: string; description?: string; priority?: string; due_at?: string }): Promise<Task> {
+    return this.request<Task>(`/workspaces/${workspaceId}/tasks/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async assignTask(workspaceId: string, taskId: string, agentId: string): Promise<Task> {
+    return this.request<Task>(`/workspaces/${workspaceId}/tasks/${taskId}/assign`, {
+      method: 'PUT',
+      body: JSON.stringify({ agent_id: agentId })
+    });
+  }
+
+  async updateTaskStatus(workspaceId: string, taskId: string, status: string): Promise<Task> {
+    return this.request<Task>(`/workspaces/${workspaceId}/tasks/${taskId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+  }
+
+  async deleteTask(workspaceId: string, taskId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/workspaces/${workspaceId}/tasks/${taskId}`, {
+      method: 'DELETE'
     });
   }
 }

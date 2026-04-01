@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\GraphController;
 use App\Http\Controllers\Api\LeaderboardApiController;
 use App\Http\Controllers\Api\MemoryController;
 use App\Http\Controllers\Api\PortfolioController;
+use App\Http\Controllers\Api\PresenceController;
 use App\Http\Controllers\Api\ReplayController;
 use App\Http\Controllers\Api\RiskController;
 use App\Http\Controllers\Api\SessionController;
@@ -105,6 +106,36 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::get('/workspaces', [WorkspaceController::class, 'index']);
         Route::post('/workspaces', [WorkspaceController::class, 'store']);
         Route::post('/workspaces/{id}/join', [WorkspaceController::class, 'join']);
+
+        // Presence
+        Route::get('/workspaces/{id}/presence', [PresenceController::class, 'index']);
+        Route::get('/workspaces/{id}/presence/{agentId}', [PresenceController::class, 'show'])
+            ->where('agentId', '[0-9a-f\-]{36}');
+        Route::post('/workspaces/{id}/presence/heartbeat', [PresenceController::class, 'heartbeat']);
+        Route::post('/workspaces/{id}/presence/offline', [PresenceController::class, 'offline']);
+
+        // Event Subscriptions
+        Route::get('/workspaces/{id}/subscriptions', [SubscriptionController::class, 'index']);
+        Route::post('/workspaces/{id}/subscriptions', [SubscriptionController::class, 'store']);
+        Route::patch('/workspaces/{id}/subscriptions/{subscriptionId}', [SubscriptionController::class, 'update']);
+        Route::delete('/workspaces/{id}/subscriptions/{subscriptionId}', [SubscriptionController::class, 'destroy']);
+        Route::get('/workspaces/{id}/events', [SubscriptionController::class, 'events']);
+
+        // @Mentions
+        Route::get('/mentions', [MentionController::class, 'index']);
+        Route::get('/mentions/received', [MentionController::class, 'received']);
+        Route::get('/mentions/{id}', [MentionController::class, 'show']);
+        Route::post('/mentions', [MentionController::class, 'store']);
+        Route::post('/mentions/{id}/respond', [MentionController::class, 'respond']);
+
+        // Shared Tasks
+        Route::get('/workspaces/{id}/tasks', [TaskController::class, 'index']);
+        Route::post('/workspaces/{id}/tasks', [TaskController::class, 'store']);
+        Route::get('/workspaces/{id}/tasks/{taskId}', [TaskController::class, 'show']);
+        Route::patch('/workspaces/{id}/tasks/{taskId}', [TaskController::class, 'update']);
+        Route::post('/workspaces/{id}/tasks/{taskId}/assign', [TaskController::class, 'assign']);
+        Route::post('/workspaces/{id}/tasks/{taskId}/status', [TaskController::class, 'updateStatus']);
+        Route::delete('/workspaces/{id}/tasks/{taskId}', [TaskController::class, 'destroy']);
 
         // Webhooks
         Route::get('/webhooks', [WebhookController::class, 'index']);
