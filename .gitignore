@@ -31,7 +31,7 @@ Thumbs.db
 /.worktrees/
 
 # Python cache
-hivemind-escape-agent/__pycache__/
+**/__pycache__/
 
 **/caddy
 frankenphp
