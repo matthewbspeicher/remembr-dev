@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('workspace_id')->constrained()->cascadeOnDelete();
             $table->foreignUuid('agent_id')->constrained()->cascadeOnDelete();
-            $table->json('event_types'); // e.g. ["memory.created", "mention.received"]
+            $table->jsonb('event_types'); // e.g. ["memory.created", "mention.received"]
             $table->string('callback_url')->nullable(); // optional webhook URL
             $table->timestamp('last_polled_at')->nullable();
             $table->timestamps();
