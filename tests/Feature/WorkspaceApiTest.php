@@ -166,6 +166,10 @@ describe('Workspaces API', function () {
     });
 
     it('allows an agent to search and retrieve memories from their workspaces', function () {
+        $this->mock(EmbeddingService::class, function ($mock) {
+            $mock->shouldReceive('embed')->andReturn(array_fill(0, 1536, 0.1));
+        });
+
         $user = User::factory()->create();
 
         $author = Agent::factory()->create(['owner_id' => $user->id]);
