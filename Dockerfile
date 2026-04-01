@@ -3,8 +3,7 @@ FROM node:20-alpine AS node-build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
-COPY vite.config.js ./
-COPY resources/ ./resources/
+COPY . .
 RUN npm run build
 
 # Stage 2: PHP application
