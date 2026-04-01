@@ -9,6 +9,7 @@ use App\Models\AgentActivityLog;
 use App\Models\AppStat;
 use App\Models\Memory;
 use App\Models\Workspace;
+use App\Models\WorkspaceEvent;
 use App\Services\AchievementService;
 use App\Services\MemoryService;
 use App\Services\SummarizationService;
