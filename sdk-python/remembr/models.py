@@ -55,3 +55,66 @@ class BulkImportResult:
     succeeded: int
     failed: int
     errors: List[BulkImportError]
+
+
+@dataclass
+class RiskMetrics:
+    ticker: str
+    paper: bool
+    quantity: str
+    avg_entry_price: str
+    market_price: str
+    unrealized_pnl: float
+    exposure: float
+    exposure_pct: Optional[float] = None
+
+
+@dataclass
+class DrawdownResult:
+    max_drawdown: float
+    peak: float
+    trough: float
+
+
+@dataclass
+class ReplayResult:
+    total_trades: int
+    wins: int
+    losses: int
+    win_rate: float
+    total_pnl: float
+    trades: list
+
+
+@dataclass
+class SignalEntry:
+    trade_id: str
+    agent_id: str
+    agent_name: Optional[str]
+    ticker: str
+    direction: str
+    entry_price: str
+    exit_price: Optional[str]
+    quantity: str
+    pnl: Optional[str]
+    status: str
+    strategy: Optional[str]
+    tags: Optional[list]
+    entry_at: Optional[str]
+    exit_at: Optional[str]
+    created_at: str
+
+
+@dataclass
+class PortfolioPosition:
+    ticker: str
+    total_quantity: float
+    avg_entry_price: float
+    agent_count: int
+
+
+@dataclass
+class PortfolioSummary:
+    positions: list  # List[PortfolioPosition]
+    aggregate_stats: dict
+    agents: list

@@ -203,6 +203,76 @@ class TradingJournal:
             paper=item.get("paper", params["paper"])
         )
 
+    def get_signals(self, ticker: str = None, limit: int = 50) -> list:
+        """Fetch copy-trading signals from broadcasting agents."""
+        params = {"limit": limit}
+        if ticker:
+            params["ticker"] = ticker
+        resp = self.client.get_path("/trading/signals", params=params)
+        return resp.get("data", [])
+
+    def get_risk_metrics(self, market_prices: dict = None, paper: bool = None) -> list:
+        """Get risk metrics for open positions with optional market prices."""
+        params = {"paper": "true" if (paper if paper is not None else self.paper) else "false"}
+        if market_prices:
+            for ticker, price in market_prices.items():
+                params[f"market_prices[{ticker}]"] = str(price)
+        resp = self.client.get_path("/trading/risk", params=params)
+        return resp.get("data", [])
+
+    def get_drawdown(self, paper: bool = None) -> dict:
+        """Get max drawdown statistics."""
+        p = paper if paper is not None else self.paper
+        params = {"paper": "true" if p else "false"}
+        resp = self.client.get_path("/trading/risk/drawdown", params=params)
+        return resp.get("data", {})
+
+    def replay_trades(self, exit_overrides: dict = None, exit_offset_pct: float = None, paper: bool = None) -> dict:
+        """Replay historical trades with alternative exit prices."""
+        p = paper if paper is not None else self.paper
+        body = {"paper": p}
+        if exit_overrides:
+            body["exit_overrides"] = exit_overrides
+        if exit_offset_pct is not None:
+            body["exit_offset_pct"] = exit_offset_pct
+        resp = self.client.post("/trading/replay", json=body)
+        return resp.get("data", {})
+
+    def export_trades(self, format: str = "json", paper: bool = None, **filters) -> any:
+        """Export trades in JSON or CSV format."""
+        p = paper if paper is not None else self.paper
+        params = {"format": format, "paper": "true" if p else "false", **filters}
+        resp = self.client.get_path("/trading/export", params=params)
+        if format == "csv":
+            return resp  # Raw CSV string
+        return resp.get("data", [])
+
+    def get_portfolio(self, paper: bool = None) -> dict:
+        """Get multi-agent portfolio aggregation."""
+        p = paper if paper is not None else self.paper
+        params = {"paper": "true" if p else "false"}
+        resp = self.client.get_path("/trading/portfolio", params=params)
+        return resp.get("data", {})
+
+    def create_alert(self, condition: str, ticker: str = None, threshold: float = None) -> dict:
+        """Create a trade alert."""
+        body = {"condition": condition}
+        if ticker:
+            body["ticker"] = ticker
+        if threshold is not None:
+            body["threshold"] = str(threshold)
+        resp = self.client.post("/trading/alerts", json=body)
+        return resp.get("data", {})
+
+    def list_alerts(self) -> list:
+        """List all trade alerts."""
+        resp = self.client.get_path("/trading/alerts")
+        return resp.get("data", [])
+
+    def delete_alert(self, alert_id: str) -> None:
+        """Delete a trade alert."""
+        self.client._request("DELETE", f"/trading/alerts/{alert_id}")
+
     def _map_to_trade_result(self, data: Dict[str, Any]) -> TradeResult:
         """Maps API response dictionary to TradeResult dataclass."""
         item = data.get("data") if "data" in data else data

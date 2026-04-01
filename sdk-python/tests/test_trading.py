@@ -7,7 +7,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from remembr.trading import TradingJournal
-from remembr.turbo import TurboContextLoader
+from remembr.turbo import TurboQuantIndex
 from remembr.models import TradeResult, BulkImportResult
 from remembr.client import RemembrClient
 
@@ -143,10 +143,10 @@ class TestTradingJournal(unittest.TestCase):
         self.assertIsInstance(result, BulkImportResult)
         self.assertEqual(result.total, 2)
 
-class TestTurboContextLoader(unittest.TestCase):
+class TestTurboQuantIndex(unittest.TestCase):
     def setUp(self):
         self.mock_client = MagicMock(spec=RemembrClient)
-        self.loader = TurboContextLoader(self.mock_client)
+        self.loader = TurboQuantIndex(self.mock_client)
 
     def test_load_context_success(self):
         # Mock turboquant module
