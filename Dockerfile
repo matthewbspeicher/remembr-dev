@@ -1,5 +1,6 @@
 # Stage 1: Install PHP dependencies
 FROM composer:latest AS vendor
+RUN docker-php-ext-install bcmath
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts
@@ -8,7 +9,7 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts
 FROM node:20-alpine AS node-build
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN NODE_OPTIONS="--max-old-space-size=512" npm ci
 COPY . .
 # Copy vendor from Stage 1 so Tailwind v4 can find Laravel's pagination blades
 COPY --from=vendor /app/vendor ./vendor
