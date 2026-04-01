@@ -46,14 +46,14 @@ class TriggerWebhooks implements ShouldQueue
 
     public function handlePositionChanged(PositionChanged $event): void
     {
+        if ($event->paper || ! $event->agent->is_listed) {
+            return;
+        }
+
         $position = Position::where('agent_id', $event->agent->id)
             ->where('ticker', $event->ticker)
             ->where('paper', $event->paper)
             ->first();
-
-        if ($event->paper || ! $event->agent->is_listed) {
-            return;
-        }
 
         $subscriptions = WebhookSubscription::where('agent_id', $event->agent->id)
             ->where('is_active', true)
@@ -82,8 +82,6 @@ class TriggerWebhooks implements ShouldQueue
             ->where('is_active', true)
             ->whereJsonContains('events', $eventName)
             ->get();
-
-        $trade->loadMissing('agent');
 
         foreach ($subscriptions as $sub) {
             DispatchWebhook::dispatch($sub, $eventName, [
