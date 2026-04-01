@@ -57,6 +57,7 @@ class TradeExportController extends Controller
             $row = $t->toArray();
             $row['entry_at'] = $t->entry_at?->toIso8601String();
             $row['exit_at'] = $t->exit_at?->toIso8601String();
+
             return $row;
         });
 

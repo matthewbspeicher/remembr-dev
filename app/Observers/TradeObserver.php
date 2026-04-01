@@ -53,7 +53,7 @@ class TradeObserver
                 $trade->ticker,
                 $trade->paper,
             );
-            
+
             RecalculateTradingStats::dispatch($trade->agent, $trade->paper);
         }
     }

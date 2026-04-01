@@ -149,6 +149,7 @@ class TradingStatsController extends Controller
             foreach ($tickers as $b) {
                 if ($a === $b) {
                     $matrix[$a][$b] = 1.0;
+
                     continue;
                 }
                 $matrix[$a][$b] = $this->pearson($series[$a], $series[$b]);

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TradeAlert extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     public const CONDITIONS = [
         'pnl_above',
