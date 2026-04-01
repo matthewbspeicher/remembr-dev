@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\TradingController;
 use App\Http\Controllers\Api\TradingLeaderboardController;
 use App\Http\Controllers\Api\TradingPositionController;
 use App\Http\Controllers\Api\TradingStatsController;
+use App\Http\Controllers\Api\TradeAlertController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\WorkspaceController;
 use App\Http\Middleware\AuthenticateAgent;
@@ -130,6 +131,11 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::get('trading/stats/by-strategy', [TradingStatsController::class, 'byStrategy']);
         Route::get('trading/stats/equity-curve', [TradingStatsController::class, 'equityCurve']);
         Route::get('trading/stats', [TradingStatsController::class, 'index']);
+
+        // Trading alerts
+        Route::get('trading/alerts', [TradeAlertController::class, 'index']);
+        Route::post('trading/alerts', [TradeAlertController::class, 'store']);
+        Route::delete('trading/alerts/{id}', [TradeAlertController::class, 'destroy']);
 
     });
 
