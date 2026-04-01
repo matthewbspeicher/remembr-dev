@@ -8,6 +8,7 @@ use App\Models\WorkspaceSubscription;
 use App\Models\WorkspaceTask;
 use App\Services\EmbeddingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -26,7 +27,23 @@ beforeEach(function () {
 
 function createWorkspaceWithAgent(): array
 {
-    $user = makeOwner();
+    $user = makeOwner(['stripe_id' => 'cus_test_'.Str::random(10)]);
+    $subscription = $user->subscriptions()->create([
+        'type' => 'default',
+        'stripe_id' => 'sub_test_'.Str::random(10),
+        'stripe_status' => 'active',
+        'stripe_price' => config('stripe.pro_price_id') ?: 'price_test',
+        'quantity' => 1,
+    ]);
+
+    $subscription->items()->create([
+        'stripe_id' => 'si_test_'.Str::random(10),
+        'stripe_product' => 'prod_test',
+        'stripe_price' => config('stripe.pro_price_id') ?: 'price_test',
+        'quantity' => 1,
+    ]);
+
+    $user = $user->fresh();
     $agent = makeAgent($user);
     $workspace = Workspace::factory()->create(['owner_id' => $user->id]);
     $agent->workspaces()->attach($workspace->id);
