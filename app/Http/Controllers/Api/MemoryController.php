@@ -103,7 +103,7 @@ class MemoryController extends Controller
 
         // Check workspace membership if storing to a workspace
         if (($validated['visibility'] ?? null) === 'workspace' && ! empty($validated['workspace_id'])) {
-            if (! $agent->workspaces()->where('id', $validated['workspace_id'])->exists()) {
+            if (! $agent->workspaces()->whereKey($validated['workspace_id'])->exists()) {
                 return response()->json(['error' => 'Agent does not belong to this workspace.'], 403);
             }
         }
@@ -227,7 +227,7 @@ class MemoryController extends Controller
 
         // Check workspace membership if changing to a workspace
         if (($validated['visibility'] ?? null) === 'workspace' && isset($validated['workspace_id'])) {
-            if (! $agent->workspaces()->where('id', $validated['workspace_id'])->exists()) {
+            if (! $agent->workspaces()->whereKey($validated['workspace_id'])->exists()) {
                 return response()->json(['error' => 'Agent does not belong to this workspace.'], 403);
             }
         }
