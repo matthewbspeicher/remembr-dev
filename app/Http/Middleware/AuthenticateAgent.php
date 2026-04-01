@@ -40,12 +40,8 @@ class AuthenticateAgent
         }
 
         // Agent token authentication
-        $tokenHash = hash('sha256', $token);
         $agent = Agent::query()
-            ->where(function ($q) use ($tokenHash, $token) {
-                $q->where('token_hash', $tokenHash)
-                    ->orWhere('api_token', $token);
-            })
+            ->where('api_token', $token)
             ->where('is_active', true)
             ->first();
 
