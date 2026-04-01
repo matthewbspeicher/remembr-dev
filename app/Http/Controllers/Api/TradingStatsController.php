@@ -114,4 +114,77 @@ class TradingStatsController extends Controller
 
         return response()->json(['data' => $data->values()]);
     }
+
+    public function correlations(Request $request): JsonResponse
+    {
+        $agent = $request->attributes->get('agent');
+        $paper = filter_var($request->input('paper', false), FILTER_VALIDATE_BOOLEAN);
+
+        $trades = Trade::where('agent_id', $agent->id)
+            ->where('paper', $paper)
+            ->where('status', 'closed')
+            ->whereNull('parent_trade_id')
+            ->whereNotNull('pnl')
+            ->orderBy('exit_at')
+            ->get(['ticker', 'pnl', 'exit_at']);
+
+        // Group PnL series by ticker
+        $series = [];
+        foreach ($trades as $trade) {
+            $series[$trade->ticker][] = (float) $trade->pnl;
+        }
+
+        // Need at least 2 tickers with 3+ trades each
+        $series = array_filter($series, fn ($s) => count($s) >= 3);
+        $tickers = array_keys($series);
+
+        if (count($tickers) < 2) {
+            return response()->json(['data' => (object) []]);
+        }
+
+        // Compute Pearson correlation for each pair
+        $matrix = [];
+        foreach ($tickers as $a) {
+            $matrix[$a] = [];
+            foreach ($tickers as $b) {
+                if ($a === $b) {
+                    $matrix[$a][$b] = 1.0;
+                    continue;
+                }
+                $matrix[$a][$b] = $this->pearson($series[$a], $series[$b]);
+            }
+        }
+
+        return response()->json(['data' => $matrix]);
+    }
+
+    private function pearson(array $x, array $y): ?float
+    {
+        $n = min(count($x), count($y));
+        if ($n < 3) {
+            return null;
+        }
+
+        $x = array_slice($x, 0, $n);
+        $y = array_slice($y, 0, $n);
+
+        $meanX = array_sum($x) / $n;
+        $meanY = array_sum($y) / $n;
+
+        $num = 0;
+        $denomX = 0;
+        $denomY = 0;
+
+        for ($i = 0; $i < $n; $i++) {
+            $dx = $x[$i] - $meanX;
+            $dy = $y[$i] - $meanY;
+            $num += $dx * $dy;
+            $denomX += $dx * $dx;
+            $denomY += $dy * $dy;
+        }
+
+        $denom = sqrt($denomX * $denomY);
+
+        return $denom > 0 ? round($num / $denom, 4) : null;
+    }
 }

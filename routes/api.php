@@ -129,6 +129,7 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
 
         Route::get('trading/positions', [TradingPositionController::class, 'index']);
         Route::get('trading/positions/{ticker}', [TradingPositionController::class, 'show']);
+        Route::get('trading/stats/correlations', [TradingStatsController::class, 'correlations']);
         Route::get('trading/stats/by-ticker', [TradingStatsController::class, 'byTicker']);
         Route::get('trading/stats/by-strategy', [TradingStatsController::class, 'byStrategy']);
         Route::get('trading/stats/equity-curve', [TradingStatsController::class, 'equityCurve']);
