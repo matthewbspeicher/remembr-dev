@@ -1,7 +1,7 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Union
 from datetime import datetime
 from .client import RemembrClient
-from .models import TradeResult
+from .models import TradeResult, Position, TradingStats, BulkImportResult, BulkImportError
 
 class TradingJournal:
     """Orchestrates two-phase commit trades (Memory then Trade)."""
@@ -135,6 +135,74 @@ class TradingJournal:
             quantity=float(quantity)
         )
 
+    def bulk_import_trades(self, trades: Union[List[Dict[str, Any]], Any]) -> BulkImportResult:
+        """
+        Import a batch of trades, optionally with ref linking.
+        
+        Args:
+            trades: List of trade dictionaries or pandas DataFrame
+            
+        Returns:
+            BulkImportResult: Success and failure stats
+        """
+        if hasattr(trades, "to_dict"):
+            # Assume it's a pandas DataFrame
+            trades_list = trades.to_dict("records")
+        else:
+            trades_list = trades
+
+        payload = {
+            "trades": trades_list,
+            "paper": self.paper
+        }
+        
+        resp = self.client.post("/trading/trades/bulk", json=payload)
+        return self._map_to_bulk_result(resp)
+
+    def get_open_positions(self, ticker: Optional[str] = None, paper: Optional[bool] = None) -> List[Position]:
+        """
+        Fetch current open positions.
+        """
+        params = {"paper": paper if paper is not None else self.paper}
+        if ticker:
+            params["ticker"] = ticker
+            
+        resp = self.client.get_path("/trading/positions", params=params)
+        items = resp.get("data") if "data" in resp else resp
+        
+        return [
+            Position(
+                ticker=item.get("ticker"),
+                quantity=float(item.get("quantity")),
+                avg_entry_price=float(item.get("avg_entry_price")),
+                paper=item.get("paper", params["paper"])
+            )
+            for item in items
+        ]
+
+    def get_portfolio_summary(self, paper: Optional[bool] = None) -> TradingStats:
+        """
+        Fetch portfolio performance metrics.
+        """
+        params = {"paper": paper if paper is not None else self.paper}
+        resp = self.client.get_path("/trading/stats", params=params)
+        item = resp.get("data") if "data" in resp else resp
+        
+        return TradingStats(
+            total_trades=int(item.get("total_trades", 0)),
+            win_count=int(item.get("win_count", 0)),
+            loss_count=int(item.get("loss_count", 0)),
+            win_rate=float(item.get("win_rate")) if item.get("win_rate") is not None else None,
+            profit_factor=float(item.get("profit_factor")) if item.get("profit_factor") is not None else None,
+            total_pnl=float(item.get("total_pnl", 0.0)),
+            avg_pnl_percent=float(item.get("avg_pnl_percent")) if item.get("avg_pnl_percent") is not None else None,
+            best_trade_pnl=float(item.get("best_trade_pnl")) if item.get("best_trade_pnl") is not None else None,
+            worst_trade_pnl=float(item.get("worst_trade_pnl")) if item.get("worst_trade_pnl") is not None else None,
+            sharpe_ratio=float(item.get("sharpe_ratio")) if item.get("sharpe_ratio") is not None else None,
+            current_streak=int(item.get("current_streak", 0)),
+            paper=item.get("paper", params["paper"])
+        )
+
     def _map_to_trade_result(self, data: Dict[str, Any]) -> TradeResult:
         """Maps API response dictionary to TradeResult dataclass."""
         item = data.get("data") if "data" in data else data
@@ -159,4 +227,23 @@ class TradingJournal:
             parent_status=item.get("parent_status"),
             pnl=float(item.get("pnl")) if item.get("pnl") is not None else None,
             created_at=created_at
+        )
+
+    def _map_to_bulk_result(self, data: Dict[str, Any]) -> BulkImportResult:
+        """Maps API response for bulk import to BulkImportResult dataclass."""
+        item = data.get("data") if "data" in data else data
+        errors = [
+            BulkImportError(
+                index=e.get("index"),
+                ref=e.get("ref"),
+                reason=e.get("reason")
+            )
+            for e in item.get("errors", [])
+        ]
+        
+        return BulkImportResult(
+            total=item.get("total", 0),
+            succeeded=item.get("succeeded", 0),
+            failed=item.get("failed", 0),
+            errors=errors
         )

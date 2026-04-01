@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 
 @dataclass
@@ -40,3 +40,18 @@ class TradingStats:
     sharpe_ratio: Optional[float]
     current_streak: int
     paper: bool
+
+
+@dataclass
+class BulkImportError:
+    index: int
+    ref: Optional[str]
+    reason: str
+
+
+@dataclass
+class BulkImportResult:
+    total: int
+    succeeded: int
+    failed: int
+    errors: List[BulkImportError]
