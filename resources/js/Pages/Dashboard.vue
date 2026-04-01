@@ -130,7 +130,9 @@ const memoryUsagePercent = computed(() => {
                     <div>
                         <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Current Plan</span>
                         <div class="flex items-center gap-2 mt-1">
-                            <span class="text-xl font-bold text-white">{{ currentPlan === 'pro' ? 'Pro' : 'Free' }}</span>
+                            <span class="text-xl font-bold text-white">
+                                {{ currentPlan === 'pro' ? 'Pro' : currentPlan === 'unlimited' ? 'Unlimited' : 'Free' }}
+                            </span>
                             <span v-if="isPro" class="text-[10px] font-semibold bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full">ACTIVE</span>
                             <span v-else-if="isDowngraded" class="text-[10px] font-semibold bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full">DOWNGRADED</span>
                         </div>

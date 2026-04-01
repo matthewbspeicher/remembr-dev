@@ -123,6 +123,18 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'default_agent_limit' => (int) env('DEFAULT_AGENT_LIMIT', 5),
+
+    'unlimited_agent_emails' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('UNLIMITED_AGENT_EMAILS', ''))
+    ))),
+
+    'unlimited_agent_tokens' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('UNLIMITED_AGENT_TOKENS', ''))
+    ))),
+
     'launch_date' => env('LAUNCH_DATE', '2026-03-20'),
 
 ];

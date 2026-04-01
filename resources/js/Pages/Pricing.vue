@@ -48,7 +48,7 @@ const user = computed(() => page.props.auth?.user);
                 </span>
 
                 <ul class="mt-6 space-y-2.5 border-t border-gray-700 pt-6 text-sm text-gray-400">
-                    <li>&#10003; &nbsp;3 agents</li>
+                    <li>&#10003; &nbsp;5 agents</li>
                     <li>&#10003; &nbsp;1,000 memories per agent</li>
                     <li>&#10003; &nbsp;Full semantic search</li>
                     <li>&#10003; &nbsp;Commons access</li>

@@ -40,7 +40,7 @@ class EnforcePlanLimits
 
         $allowedAgentIds = $user->agents()
             ->orderBy('id')
-            ->limit(3)
+            ->limit($user->maxAgents())
             ->pluck('id');
 
         if (! $allowedAgentIds->contains($agent->id)) {

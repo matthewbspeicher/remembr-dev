@@ -83,9 +83,21 @@ class User extends Authenticatable
         return $this->subscribed('default');
     }
 
+    public function hasUnlimitedAgentAccess(): bool
+    {
+        if ($this->isPro()) {
+            return true;
+        }
+
+        return in_array($this->email, config('app.unlimited_agent_emails', []), true)
+            || in_array($this->api_token, config('app.unlimited_agent_tokens', []), true);
+    }
+
     public function maxAgents(): int
     {
-        return $this->isPro() ? PHP_INT_MAX : 3;
+        return $this->hasUnlimitedAgentAccess()
+            ? PHP_INT_MAX
+            : (int) config('app.default_agent_limit', 5);
     }
 
     public function maxMemoriesPerAgent(): int
@@ -100,12 +112,12 @@ class User extends Authenticatable
 
     /**
      * A user is "downgraded" if they are NOT Pro and either:
-     * - They have more agents than the free limit (>3), OR
+     * - They have more agents than the free limit, OR
      * - They own any workspaces (workspaces are Pro-only)
      */
     public function isDowngraded(): bool
     {
-        if ($this->isPro()) {
+        if ($this->hasUnlimitedAgentAccess()) {
             return false;
         }
 

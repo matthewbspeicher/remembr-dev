@@ -55,13 +55,21 @@ describe('plan helpers', function () {
         expect($user->isPro())->toBeTrue();
     });
 
-    it('returns 3 max agents for free user', function () {
+    it('returns 5 max agents for free user', function () {
         $user = makeOwner();
-        expect($user->maxAgents())->toBe(3);
+        expect($user->maxAgents())->toBe(5);
     });
 
     it('returns PHP_INT_MAX max agents for pro user', function () {
         $user = makeProUser();
+        expect($user->maxAgents())->toBe(PHP_INT_MAX);
+    });
+
+    it('returns unlimited max agents for allowlisted email', function () {
+        config(['app.unlimited_agent_emails' => ['vip@example.com']]);
+
+        $user = makeOwner(['email' => 'vip@example.com']);
+
         expect($user->maxAgents())->toBe(PHP_INT_MAX);
     });
 
@@ -85,9 +93,9 @@ describe('plan helpers', function () {
         expect($user->canCreateWorkspace())->toBeTrue();
     });
 
-    it('returns true for isDowngraded when not pro but has more than 3 agents', function () {
+    it('returns true for isDowngraded when free user has more than the default agent limit', function () {
         $user = makeOwner();
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < 6; $i++) {
             makeAgent($user, ['api_token' => 'amc_'.Str::random(40)]);
         }
         expect($user->isDowngraded())->toBeTrue();
@@ -101,9 +109,20 @@ describe('plan helpers', function () {
 
     it('returns false for isDowngraded for pro user with many agents', function () {
         $user = makeProUser();
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 6; $i++) {
             makeAgent($user, ['api_token' => 'amc_'.Str::random(40)]);
         }
+        expect($user->isDowngraded())->toBeFalse();
+    });
+
+    it('returns false for isDowngraded for allowlisted email with many agents', function () {
+        config(['app.unlimited_agent_emails' => ['vip@example.com']]);
+
+        $user = makeOwner(['email' => 'vip@example.com']);
+        for ($i = 0; $i < 6; $i++) {
+            makeAgent($user, ['api_token' => 'amc_'.Str::random(40)]);
+        }
+
         expect($user->isDowngraded())->toBeFalse();
     });
 
@@ -119,33 +138,8 @@ describe('plan helpers', function () {
 // ---------------------------------------------------------------------------
 
 describe('agent creation cap', function () {
-    it('allows free user to register 3 agents via API', function () {
+    it('allows free user to register 5 agents via API', function () {
         $owner = makeOwner();
-        for ($i = 0; $i < 3; $i++) {
-            $response = $this->postJson('/api/v1/agents/register', [
-                'name' => "Agent $i",
-                'owner_token' => $owner->api_token,
-            ]);
-            $response->assertStatus(201);
-        }
-    });
-
-    it('blocks free user from registering 4th agent via API', function () {
-        $owner = makeOwner();
-        for ($i = 0; $i < 3; $i++) {
-            makeAgent($owner, ['api_token' => 'amc_'.Str::random(40)]);
-        }
-
-        $response = $this->postJson('/api/v1/agents/register', [
-            'name' => 'Agent 4',
-            'owner_token' => $owner->api_token,
-        ]);
-        $response->assertStatus(403);
-        $response->assertJsonFragment(['error' => 'Agent limit reached. Upgrade to Pro for unlimited agents.']);
-    });
-
-    it('allows pro user to register unlimited agents via API', function () {
-        $owner = makeProUser();
         for ($i = 0; $i < 5; $i++) {
             $response = $this->postJson('/api/v1/agents/register', [
                 'name' => "Agent $i",
@@ -155,14 +149,54 @@ describe('agent creation cap', function () {
         }
     });
 
-    it('blocks free user from registering 4th agent via dashboard', function () {
+    it('blocks free user from registering 6th agent via API', function () {
         $owner = makeOwner();
-        for ($i = 0; $i < 3; $i++) {
+        for ($i = 0; $i < 5; $i++) {
+            makeAgent($owner, ['api_token' => 'amc_'.Str::random(40)]);
+        }
+
+        $response = $this->postJson('/api/v1/agents/register', [
+            'name' => 'Agent 6',
+            'owner_token' => $owner->api_token,
+        ]);
+        $response->assertStatus(403);
+        $response->assertJsonFragment(['error' => 'Agent limit reached. Upgrade to Pro for unlimited agents.']);
+    });
+
+    it('allows allowlisted free user to register unlimited agents via API', function () {
+        config(['app.unlimited_agent_emails' => ['vip@example.com']]);
+
+        $owner = makeOwner(['email' => 'vip@example.com']);
+
+        for ($i = 0; $i < 6; $i++) {
+            $response = $this->postJson('/api/v1/agents/register', [
+                'name' => "Agent $i",
+                'owner_token' => $owner->api_token,
+            ]);
+
+            $response->assertStatus(201);
+        }
+    });
+
+    it('allows pro user to register unlimited agents via API', function () {
+        $owner = makeProUser();
+        for ($i = 0; $i < 6; $i++) {
+            $response = $this->postJson('/api/v1/agents/register', [
+                'name' => "Agent $i",
+                'owner_token' => $owner->api_token,
+            ]);
+            $response->assertStatus(201);
+        }
+    });
+
+    it('blocks free user from registering 6th agent via dashboard', function () {
+        $owner = makeOwner();
+        for ($i = 0; $i < 5; $i++) {
             makeAgent($owner, ['api_token' => 'amc_'.Str::random(40)]);
         }
 
         $response = $this->actingAs($owner)->post('/dashboard/agents', [
-            'name' => 'Agent 4',
+            'name' => 'Agent 6',
         ]);
         $response->assertSessionHasErrors('name');
     });
@@ -210,37 +244,37 @@ describe('soft lock on downgrade', function () {
         app()->instance(EmbeddingService::class, $mock);
     });
 
-    it('blocks write on 4th agent when downgraded', function () {
+    it('blocks write on 6th agent when downgraded', function () {
         $owner = makeOwner();
         $agents = [];
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < 6; $i++) {
             $agents[] = makeAgent($owner);
         }
 
-        // 4th agent (by created_at) should be read-only
+        // 6th agent (by created_at) should be read-only
         $response = $this->postJson('/api/v1/memories', [
             'value' => 'test memory',
-        ], withAgent($agents[3]));
+        ], withAgent($agents[5]));
 
         $response->assertStatus(403);
         $response->assertJsonFragment(['error' => 'This agent is in read-only mode. Upgrade to Pro to restore write access.']);
     });
 
-    it('allows read on 4th agent when downgraded', function () {
+    it('allows read on 6th agent when downgraded', function () {
         $owner = makeOwner();
         $agents = [];
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < 6; $i++) {
             $agents[] = makeAgent($owner);
         }
 
-        $response = $this->getJson('/api/v1/memories', withAgent($agents[3]));
+        $response = $this->getJson('/api/v1/memories', withAgent($agents[5]));
         $response->assertOk();
     });
 
-    it('allows write on first 3 agents when downgraded', function () {
+    it('allows write on first 5 agents when downgraded', function () {
         $owner = makeOwner();
         $agents = [];
-        for ($i = 0; $i < 4; $i++) {
+        for ($i = 0; $i < 6; $i++) {
             $agents[] = makeAgent($owner);
         }
 
@@ -421,6 +455,21 @@ describe('dashboard billing props', function () {
             ->component('Dashboard')
             ->where('isPro', true)
             ->where('currentPlan', 'pro')
+            ->where('maxAgents', 'unlimited')
+        );
+    });
+
+    it('passes unlimited billing props to dashboard for allowlisted user', function () {
+        config(['app.unlimited_agent_emails' => ['vip@example.com']]);
+
+        $user = makeOwner(['email' => 'vip@example.com']);
+
+        $response = $this->actingAs($user)->get('/dashboard');
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Dashboard')
+            ->where('isPro', false)
+            ->where('currentPlan', 'unlimited')
             ->where('maxAgents', 'unlimited')
         );
     });

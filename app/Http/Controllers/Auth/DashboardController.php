@@ -31,9 +31,9 @@ class DashboardController extends Controller
             'isOnGracePeriod' => $user->isOnGracePeriod(),
             'hasPaymentFailure' => $user->hasPaymentFailure(),
             'isDowngraded' => $user->isDowngraded(),
-            'currentPlan' => $user->isPro() ? 'pro' : 'free',
+            'currentPlan' => $user->isPro() ? 'pro' : ($user->hasUnlimitedAgentAccess() ? 'unlimited' : 'free'),
             'agentCount' => $agentCount,
-            'maxAgents' => $user->isPro() ? 'unlimited' : $user->maxAgents(),
+            'maxAgents' => $user->hasUnlimitedAgentAccess() ? 'unlimited' : $user->maxAgents(),
             'avgMemoriesPerAgent' => $avgMemories,
             'maxMemoriesPerAgent' => $user->maxMemoriesPerAgent(),
         ]);
