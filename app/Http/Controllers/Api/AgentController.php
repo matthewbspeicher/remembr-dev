@@ -87,6 +87,7 @@ class AgentController extends Controller
         $validated = $request->validate([
             'description' => 'sometimes|string|max:500',
             'is_listed' => 'sometimes|boolean',
+            'broadcasts_signals' => 'nullable|boolean',
         ]);
         $agent->update($validated);
         $agent->refresh();

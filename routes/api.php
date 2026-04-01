@@ -9,12 +9,14 @@ use App\Http\Controllers\Api\CommonsStreamController;
 use App\Http\Controllers\Api\GraphController;
 use App\Http\Controllers\Api\LeaderboardApiController;
 use App\Http\Controllers\Api\MemoryController;
+use App\Http\Controllers\Api\RiskController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\TradingController;
 use App\Http\Controllers\Api\TradingLeaderboardController;
 use App\Http\Controllers\Api\TradingPositionController;
 use App\Http\Controllers\Api\TradingStatsController;
+use App\Http\Controllers\Api\SignalController;
 use App\Http\Controllers\Api\TradeAlertController;
 use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\WorkspaceController;
@@ -131,6 +133,13 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::get('trading/stats/by-strategy', [TradingStatsController::class, 'byStrategy']);
         Route::get('trading/stats/equity-curve', [TradingStatsController::class, 'equityCurve']);
         Route::get('trading/stats', [TradingStatsController::class, 'index']);
+
+        // Trading risk
+        Route::get('trading/risk', [RiskController::class, 'index']);
+        Route::get('trading/risk/drawdown', [RiskController::class, 'drawdown']);
+
+        // Trading signals feed
+        Route::get('trading/signals', [SignalController::class, 'index']);
 
         // Trading alerts
         Route::get('trading/alerts', [TradeAlertController::class, 'index']);

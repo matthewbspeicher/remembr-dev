@@ -23,6 +23,7 @@ class Agent extends Model
         'token_hash',
         'is_active',
         'is_listed',
+        'broadcasts_signals',
         'max_memories',
         'last_seen_at',
     ];
@@ -35,6 +36,7 @@ class Agent extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_listed' => 'boolean',
+        'broadcasts_signals' => 'boolean',
         'last_seen_at' => 'datetime',
     ];
 
