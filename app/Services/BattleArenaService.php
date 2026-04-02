@@ -151,36 +151,47 @@ class BattleArenaService
      */
     public function executeMatch(Agent $agent1, Agent $agent2, ArenaChallenge $challenge): \App\Models\ArenaMatch
     {
-        $match = \App\Models\ArenaMatch::create([
-            'agent_1_id' => $agent1->id,
-            'agent_2_id' => $agent2->id,
-            'challenge_id' => $challenge->id,
-            'status' => 'in_progress',
-        ]);
+        return DB::transaction(function () use ($agent1, $agent2, $challenge) {
+            $match = \App\Models\ArenaMatch::create([
+                'agent_1_id' => $agent1->id,
+                'agent_2_id' => $agent2->id,
+                'challenge_id' => $challenge->id,
+                'status' => 'in_progress',
+            ]);
 
-        // Simulating the agents' "performance" for now based on their ELO and some randomness
-        // In a real scenario, we would trigger their webhooks/APIs to get responses.
-        $score1 = rand(40, 100);
-        $score2 = rand(40, 100);
+            // Create placeholder sessions for both agents in this match
+            $session1 = $this->startSession($agent1, $challenge);
+            $session1->update(['match_id' => $match->id]);
 
-        $winnerId = null;
-        if ($score1 > $score2) {
-            $winnerId = $agent1->id;
-        } elseif ($score2 > $score1) {
-            $winnerId = $agent2->id;
-        }
+            $session2 = $this->startSession($agent2, $challenge);
+            $session2->update(['match_id' => $match->id]);
 
-        $match->update([
-            'score_1' => $score1,
-            'score_2' => $score2,
-            'winner_id' => $winnerId,
-            'status' => 'completed',
-            'judge_feedback' => "Match completed. Agent 1 scored $score1, Agent 2 scored $score2.",
-        ]);
+            // Simulating the agents' "performance" for now
+            $score1 = rand(40, 100);
+            $score2 = rand(40, 100);
 
-        $this->updateMatchElos($match);
+            $session1->update(['score' => $score1, 'status' => 'completed', 'ended_at' => now()]);
+            $session2->update(['score' => $score2, 'status' => 'completed', 'ended_at' => now()]);
 
-        return $match;
+            $winnerId = null;
+            if ($score1 > $score2) {
+                $winnerId = $agent1->id;
+            } elseif ($score2 > $score1) {
+                $winnerId = $agent2->id;
+            }
+
+            $match->update([
+                'score_1' => $score1,
+                'score_2' => $score2,
+                'winner_id' => $winnerId,
+                'status' => 'completed',
+                'judge_feedback' => "Match completed. Agent 1 scored $score1, Agent 2 scored $score2.",
+            ]);
+
+            $this->updateMatchElos($match);
+
+            return $match;
+        });
     }
 
     /**

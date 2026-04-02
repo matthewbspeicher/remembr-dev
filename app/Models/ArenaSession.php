@@ -11,6 +11,7 @@ class ArenaSession extends Model
     protected $fillable = [
         'agent_id',
         'challenge_id',
+        'match_id',
         'status',
         'score',
         'ended_at',
@@ -28,6 +29,11 @@ class ArenaSession extends Model
     public function challenge(): BelongsTo
     {
         return $this->belongsTo(ArenaChallenge::class, 'challenge_id');
+    }
+
+    public function match(): BelongsTo
+    {
+        return $this->belongsTo(ArenaMatch::class, 'match_id');
     }
 
     public function turns(): HasMany

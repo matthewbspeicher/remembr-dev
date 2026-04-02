@@ -40,4 +40,9 @@ class ArenaMatch extends Model
     {
         return $this->belongsTo(ArenaChallenge::class, 'challenge_id');
     }
+
+    public function sessions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ArenaSession::class, 'match_id');
+    }
 }
