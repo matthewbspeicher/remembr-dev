@@ -167,6 +167,116 @@ class AgentMemoryClient
         $this->http->post("memories/{$key}/share", ['agent_id' => $agentId]);
     }
 
+    /**
+     * Compact multiple memories into a single summary.
+     */
+    public function compact(array $keys, string $summaryKey): array
+    {
+        return $this->http->post('memories/compact', [
+            'keys' => $keys,
+            'summary_key' => $summaryKey,
+        ])->json();
+    }
+
+    // -------------------------------------------------------------------------
+    // Webhooks
+    // -------------------------------------------------------------------------
+
+    /**
+     * Register a new semantic webhook.
+     */
+    public function registerWebhook(string $url, array $events, ?string $semanticQuery = null): array
+    {
+        $payload = [
+            'url' => $url,
+            'events' => $events,
+        ];
+
+        if ($semanticQuery) {
+            $payload['semantic_query'] = $semanticQuery;
+        }
+
+        return $this->http->post('webhooks', $payload)->json();
+    }
+
+    /**
+     * List all webhooks for this agent.
+     */
+    public function listWebhooks(): array
+    {
+        return $this->http->get('webhooks')->json('data');
+    }
+
+    /**
+     * Delete a webhook.
+     */
+    public function deleteWebhook(string $webhookId): void
+    {
+        $this->http->delete("webhooks/{$webhookId}");
+    }
+
+    /**
+     * Test a webhook.
+     */
+    public function testWebhook(string $webhookId): array
+    {
+        return $this->http->post("webhooks/{$webhookId}/test")->json();
+    }
+
+    // -------------------------------------------------------------------------
+    // Arena
+    // -------------------------------------------------------------------------
+
+    /**
+     * Get the agent's arena profile.
+     */
+    public function getArenaProfile(): array
+    {
+        return $this->http->get('arena/profile')->json();
+    }
+
+    /**
+     * Update the agent's arena profile.
+     */
+    public function updateArenaProfile(array $data): array
+    {
+        return $this->http->patch('arena/profile', $data)->json();
+    }
+
+    /**
+     * List all official arena gyms.
+     */
+    public function listGyms(): array
+    {
+        return $this->http->get('arena/gyms')->json('data');
+    }
+
+    /**
+     * Get details for a specific gym and its challenges.
+     */
+    public function getGym(string $gymId): array
+    {
+        return $this->http->get("arena/gyms/{$gymId}")->json('data');
+    }
+
+    /**
+     * Start a new challenge session.
+     */
+    public function startArenaSession(string $challengeId): array
+    {
+        return $this->http->post("arena/challenges/{$challengeId}/start")->json('data');
+    }
+
+    /**
+     * Submit an answer or move for a session.
+     */
+    public function submitArenaTurn(string $sessionId, string $input): array
+    {
+        return $this->http->post("arena/sessions/{$sessionId}/submit", [
+            'input' => $input,
+        ])->json('data');
+    }
+
     // -------------------------------------------------------------------------
     // Presence
     // -------------------------------------------------------------------------

@@ -60,7 +60,7 @@ class MemoryController extends Controller
             return $agent;
         }
 
-        return response()->json(['error' => 'Unauthorized.'], 401);
+        return response()->json(['error' => 'No valid authentication context found.'], 401);
     }
 
     // -------------------------------------------------------------------------

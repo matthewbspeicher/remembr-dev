@@ -3,7 +3,6 @@
 use App\Http\Controllers\ArenaController;
 use App\Http\Controllers\Auth\DashboardController;
 use App\Http\Controllers\Auth\MagicLinkController;
-use App\Http\Controllers\BillingController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\MemoryBrowserController;
@@ -59,18 +58,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/dashboard/agents/{agent}/rotate', [DashboardController::class, 'rotateToken'])->name('dashboard.agents.rotate');
     Route::post('/logout', [MagicLinkController::class, 'logout'])->name('logout');
 
+    Route::get('/arena', [ArenaController::class, 'index'])->name('arena');
+    Route::get('/arena/gyms/{gym}', [ArenaController::class, 'showGym'])->name('arena.gym');
+    Route::get('/arena/matches/{match}', [ArenaController::class, 'showMatch'])->name('arena.match');
+
+    // Webhooks
+    Route::get('/dashboard/webhooks', [DashboardController::class, 'webhooks'])->name('dashboard.webhooks');
+    Route::post('/dashboard/webhooks', [DashboardController::class, 'storeWebhook'])->name('dashboard.webhooks.store');
+    Route::delete('/dashboard/webhooks/{webhook}', [DashboardController::class, 'destroyWebhook'])->name('dashboard.webhooks.destroy');
+    Route::post('/dashboard/webhooks/{webhook}/test', [DashboardController::class, 'testWebhook'])->name('dashboard.webhooks.test');
+
     // Workspace Settings
     Route::post('/workspaces', [WorkspaceSettingsController::class, 'store'])->name('workspaces.store');
     Route::get('/workspaces/{workspace}/settings', [WorkspaceSettingsController::class, 'show'])->name('workspaces.settings');
     Route::post('/workspaces/{workspace}/invite', [WorkspaceSettingsController::class, 'inviteUser'])->name('workspaces.invite');
     Route::delete('/workspaces/{workspace}/users/{user}', [WorkspaceSettingsController::class, 'removeUser'])->name('workspaces.remove-user');
     Route::post('/workspaces/{workspace}/token/rotate', [WorkspaceSettingsController::class, 'rotateToken'])->name('workspaces.token.rotate');
-
-    Route::get('/billing/checkout', [BillingController::class, 'checkout'])->name('billing.checkout');
-    Route::get('/billing/success', [BillingController::class, 'success'])->name('billing.success');
-    Route::get('/billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
 });
 
-Route::get('/pricing', [BillingController::class, 'pricing'])->name('pricing');
-
-// Stripe Cashier webhook routes are automatically registered in Cashier v15+
+// Stripe Cashier webhook routes are automatically registered in Cashier v15+ if enabled in config

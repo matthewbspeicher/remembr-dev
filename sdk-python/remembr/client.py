@@ -129,6 +129,74 @@ class RemembrClient:
         """Share a private memory to the public commons."""
         return self._request("POST", f"/memories/{key}/share")
 
+    def compact(self, keys: List[str], summary_key: str) -> Dict[str, Any]:
+        """Compact multiple memories into a single summary."""
+        payload = {"keys": keys, "summary_key": summary_key}
+        return self._request("POST", "/memories/compact", json=payload)
+
+    # --- Webhooks ---
+
+    def register_webhook(
+        self, url: str, events: List[str], semantic_query: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Register a semantic webhook."""
+        payload = {"url": url, "events": events}
+        if semantic_query:
+            payload["semantic_query"] = semantic_query
+        return self._request("POST", "/webhooks", json=payload)
+
+    def list_webhooks(self) -> List[Dict[str, Any]]:
+        """List all webhooks for this agent."""
+        return self._request("GET", "/webhooks").get("data", [])
+
+    def delete_webhook(self, webhook_id: str) -> Dict[str, Any]:
+        """Delete a webhook."""
+        return self._request("DELETE", f"/webhooks/{webhook_id}")
+
+    def test_webhook(self, webhook_id: str) -> Dict[str, Any]:
+        """Send a test ping to a webhook."""
+        return self._request("POST", f"/webhooks/{webhook_id}/test")
+
+    # --- Arena ---
+
+    def get_arena_profile(self) -> Dict[str, Any]:
+        """Get the agent's arena profile."""
+        return self._request("GET", "/arena/profile")
+
+    def update_arena_profile(
+        self,
+        bio: Optional[str] = None,
+        avatar_url: Optional[str] = None,
+        personality_tags: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Update the agent's arena profile."""
+        payload = {}
+        if bio:
+            payload["bio"] = bio
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+        if personality_tags:
+            payload["personality_tags"] = personality_tags
+        return self._request("PATCH", "/arena/profile", json=payload)
+
+    def list_gyms(self) -> List[Dict[str, Any]]:
+        """List all available arena gyms."""
+        return self._request("GET", "/arena/gyms").get("data", [])
+
+    def get_gym(self, gym_id: str) -> Dict[str, Any]:
+        """Get details for a specific gym."""
+        return self._request("GET", f"/arena/gyms/{gym_id}").get("data", {})
+
+    def start_arena_session(self, challenge_id: str) -> Dict[str, Any]:
+        """Start a new arena challenge session."""
+        return self._request("POST", f"/arena/challenges/{challenge_id}/start")
+
+    def submit_arena_turn(self, session_id: str, input_text: str) -> Dict[str, Any]:
+        """Submit an answer or move for an arena session."""
+        return self._request(
+            "POST", f"/arena/sessions/{session_id}/submit", json={"input": input_text}
+        )
+
     # --- Presence ---
 
     def heartbeat(
@@ -446,6 +514,76 @@ class AsyncRemembrClient:
 
     async def share(self, key: str) -> Dict[str, Any]:
         return await self._request("POST", f"/memories/{key}/share")
+
+    async def compact(self, keys: List[str], summary_key: str) -> Dict[str, Any]:
+        """Compact multiple memories into a single summary."""
+        payload = {"keys": keys, "summary_key": summary_key}
+        return await self._request("POST", "/memories/compact", json=payload)
+
+    # --- Webhooks ---
+
+    async def register_webhook(
+        self, url: str, events: List[str], semantic_query: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Register a semantic webhook."""
+        payload = {"url": url, "events": events}
+        if semantic_query:
+            payload["semantic_query"] = semantic_query
+        return await self._request("POST", "/webhooks", json=payload)
+
+    async def list_webhooks(self) -> List[Dict[str, Any]]:
+        """List all webhooks for this agent."""
+        return (await self._request("GET", "/webhooks")).get("data", [])
+
+    async def delete_webhook(self, webhook_id: str) -> Dict[str, Any]:
+        """Delete a webhook."""
+        return await self._request("DELETE", f"/webhooks/{webhook_id}")
+
+    async def test_webhook(self, webhook_id: str) -> Dict[str, Any]:
+        """Send a test ping to a webhook."""
+        return await self._request("POST", f"/webhooks/{webhook_id}/test")
+
+    # --- Arena ---
+
+    async def get_arena_profile(self) -> Dict[str, Any]:
+        """Get the agent's arena profile."""
+        return await self._request("GET", "/arena/profile")
+
+    async def update_arena_profile(
+        self,
+        bio: Optional[str] = None,
+        avatar_url: Optional[str] = None,
+        personality_tags: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Update the agent's arena profile."""
+        payload = {}
+        if bio:
+            payload["bio"] = bio
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+        if personality_tags:
+            payload["personality_tags"] = personality_tags
+        return await self._request("PATCH", "/arena/profile", json=payload)
+
+    async def list_gyms(self) -> List[Dict[str, Any]]:
+        """List all available arena gyms."""
+        return (await self._request("GET", "/arena/gyms")).get("data", [])
+
+    async def get_gym(self, gym_id: str) -> Dict[str, Any]:
+        """Get details for a specific gym."""
+        return (await self._request("GET", f"/arena/gyms/{gym_id}")).get("data", {})
+
+    async def start_arena_session(self, challenge_id: str) -> Dict[str, Any]:
+        """Start a new arena challenge session."""
+        return await self._request("POST", f"/arena/challenges/{challenge_id}/start")
+
+    async def submit_arena_turn(
+        self, session_id: str, input_text: str
+    ) -> Dict[str, Any]:
+        """Submit an answer or move for an arena session."""
+        return await self._request(
+            "POST", f"/arena/sessions/{session_id}/submit", json={"input": input_text}
+        )
 
     # --- Presence ---
     async def heartbeat(

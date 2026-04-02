@@ -9,12 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
-use Laravel\Cashier\Billable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use Billable, HasFactory, Notifiable;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -34,10 +33,6 @@ class User extends Authenticatable
         'api_token_hash',
         'magic_link_token',
         'magic_link_token_hash',
-        'stripe_id',
-        'pm_type',
-        'pm_last_four',
-        'trial_ends_at',
     ];
 
     protected function casts(): array
@@ -75,68 +70,47 @@ class User extends Authenticatable
     }
 
     // -------------------------------------------------------------------------
-    // Plan helpers
+    // Plan helpers (Simplified for internal use)
     // -------------------------------------------------------------------------
 
     public function isPro(): bool
     {
-        return $this->subscribed('default');
+        return true;
     }
 
     public function hasUnlimitedAgentAccess(): bool
     {
-        if ($this->isPro()) {
-            return true;
-        }
-
-        return in_array($this->email, config('app.unlimited_agent_emails', []), true)
-            || in_array($this->api_token, config('app.unlimited_agent_tokens', []), true);
+        return true;
     }
 
     public function maxAgents(): int
     {
-        return $this->hasUnlimitedAgentAccess()
-            ? PHP_INT_MAX
-            : (int) config('app.default_agent_limit', 5);
+        return PHP_INT_MAX;
     }
 
     public function maxMemoriesPerAgent(): int
     {
-        return $this->isPro() ? 10_000 : 1_000;
+        return 100_000;
     }
 
     public function canCreateWorkspace(): bool
     {
-        return $this->isPro();
+        return true;
     }
 
-    /**
-     * A user is "downgraded" if they are NOT Pro and either:
-     * - They have more agents than the free limit, OR
-     * - They own any workspaces (workspaces are Pro-only)
-     */
     public function isDowngraded(): bool
     {
-        if ($this->hasUnlimitedAgentAccess()) {
-            return false;
-        }
-
-        return $this->agents()->count() > $this->maxAgents()
-            || $this->ownedWorkspaces()->exists();
+        return false;
     }
 
     public function isOnGracePeriod(): bool
     {
-        $sub = $this->subscription('default');
-
-        return $sub && $sub->onGracePeriod();
+        return false;
     }
 
     public function hasPaymentFailure(): bool
     {
-        $sub = $this->subscription('default');
-
-        return $sub && $sub->hasIncompletePayment();
+        return false;
     }
 
     // -------------------------------------------------------------------------

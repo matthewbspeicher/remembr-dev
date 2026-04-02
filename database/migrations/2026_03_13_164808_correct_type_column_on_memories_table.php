@@ -9,9 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Use raw SQL to avoid full column rewrite (Supabase maintenance_work_mem limit)
-        DB::statement("ALTER TABLE memories ALTER COLUMN type SET DEFAULT 'note'");
-        DB::statement('ALTER TABLE memories ALTER COLUMN type SET NOT NULL');
+        if (DB::getDriverName() === 'pgsql') {
+            // Use raw SQL to avoid full column rewrite (Supabase maintenance_work_mem limit)
+            DB::statement("ALTER TABLE memories ALTER COLUMN type SET DEFAULT 'note'");
+            DB::statement('ALTER TABLE memories ALTER COLUMN type SET NOT NULL');
+        }
 
         Schema::table('memories', function (Blueprint $table) {
             $table->index('type');

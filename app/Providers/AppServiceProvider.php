@@ -2,16 +2,18 @@
 
 namespace App\Providers;
 
-use App\Listeners\SyncAgentQuotas;
+use App\Events\MemoryCreated;
+use App\Listeners\ProcessSemanticWebhooks;
+use App\Models\Agent;
 use App\Models\Trade;
 use App\Observers\TradeObserver;
 use App\Services\EmbeddingService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Cashier\Events\WebhookReceived;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +30,23 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(
+            MemoryCreated::class,
+            ProcessSemanticWebhooks::class,
+        );
+
+        Auth::viaRequest('agent-token', function (Request $request) {
+            $token = $request->bearerToken();
+
+            if (! $token || ! str_starts_with($token, 'amc_')) {
+                return null;
+            }
+
+            return Agent::where('api_token', $token)
+                ->where('is_active', true)
+                ->first();
+        });
+
         RateLimiter::for('api', function (Request $request) {
             if (app()->environment('testing')) {
                 return Limit::none();
@@ -40,14 +59,15 @@ class AppServiceProvider extends ServiceProvider
             if (app()->environment('testing')) {
                 return Limit::none();
             }
-            if ($agent = $request->attributes->get('agent')) {
-                return Limit::perMinute(300)->by($agent->id);
+
+            $user = $request->user('agent');
+
+            if ($user instanceof Agent) {
+                return Limit::perMinute(300)->by($user->id);
             }
 
             return Limit::perMinute(300)->by($request->ip());
         });
-
-        Event::listen(WebhookReceived::class, SyncAgentQuotas::class);
 
         Trade::observe(TradeObserver::class);
     }

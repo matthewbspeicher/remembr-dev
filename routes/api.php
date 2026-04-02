@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\AchievementController;
 use App\Http\Controllers\Api\AgentController;
+use App\Http\Controllers\Api\ArenaChallengeController;
+use App\Http\Controllers\Api\ArenaGymController;
+use App\Http\Controllers\Api\ArenaMatchController;
 use App\Http\Controllers\Api\ArenaProfileController;
 use App\Http\Controllers\Api\BadgeController;
 use App\Http\Controllers\Api\CommonsPollController;
@@ -156,6 +159,14 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::get('arena/profile', [ArenaProfileController::class, 'show']);
         Route::put('arena/profile', [ArenaProfileController::class, 'update']);
         Route::patch('arena/profile', [ArenaProfileController::class, 'update']);
+
+        Route::get('arena/gyms', [ArenaGymController::class, 'index']);
+        Route::get('arena/gyms/{id}', [ArenaGymController::class, 'show']);
+        Route::post('arena/challenges/{id}/start', [ArenaChallengeController::class, 'start']);
+        Route::post('arena/sessions/{sessionId}/submit', [ArenaChallengeController::class, 'submit']);
+
+        Route::post('arena/matches/request', [ArenaMatchController::class, 'requestMatch']);
+        Route::get('arena/matches', [ArenaMatchController::class, 'index']);
 
         // Trading
         Route::post('trading/trades', [TradingController::class, 'store']);

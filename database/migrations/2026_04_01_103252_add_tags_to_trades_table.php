@@ -10,10 +10,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('trades', function (Blueprint $table) {
-            $table->jsonb('tags')->nullable()->after('metadata');
+            $table->json('tags')->nullable()->after('metadata');
         });
 
-        DB::statement('CREATE INDEX trades_tags_gin ON trades USING GIN (tags jsonb_path_ops)');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('CREATE INDEX trades_tags_gin ON trades USING GIN (tags jsonb_path_ops)');
+        }
     }
 
     public function down(): void

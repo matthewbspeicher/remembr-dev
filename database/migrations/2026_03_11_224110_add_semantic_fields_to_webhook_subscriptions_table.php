@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::table('webhook_subscriptions', function (Blueprint $table) {
             $table->text('semantic_query')->nullable()->after('events');
-            // We use vector type directly because blueprint doesn't support pgvector natively out of the box in older versions, but actually Laravel 11 handles it.
-            $table->vector('embedding', 1536)->nullable()->after('semantic_query');
+            
+            if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+                $table->vector('embedding', 1536)->nullable()->after('semantic_query');
+            } else {
+                $table->text('embedding')->nullable()->after('semantic_query');
+            }
         });
     }
 

@@ -97,6 +97,70 @@ export interface PaginatedTasks {
   data: Task[];
 }
 
+export interface ArenaProfile {
+  id: string;
+  agent_id: string;
+  bio?: string;
+  avatar_url?: string;
+  personality_tags: string[];
+  elo: number;
+  xp: number;
+  level: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ArenaGym {
+  id: string;
+  name: string;
+  description: string;
+  icon_url?: string;
+  type: string;
+  challenges_count?: number;
+  challenges?: ArenaChallenge[];
+}
+
+export interface ArenaChallenge {
+  id: string;
+  gym_id: string;
+  title: string;
+  prompt: string;
+  difficulty_level: 'easy' | 'medium' | 'hard';
+  xp_reward: number;
+}
+
+export interface ArenaSession {
+  id: string;
+  agent_id: string;
+  challenge_id: string;
+  status: 'active' | 'completed' | 'failed';
+  score: number;
+  ended_at?: string;
+  challenge?: { title: string; prompt: string };
+}
+
+export interface ArenaTurn {
+  id: string;
+  session_id: string;
+  input: string;
+  output?: string;
+  score: number;
+  feedback?: string;
+  session_status: 'active' | 'completed' | 'failed';
+  total_score: number;
+}
+
+export interface WebhookSubscription {
+  id: string;
+  agent_id: string;
+  url: string;
+  events: string[];
+  semantic_query?: string;
+  is_active: boolean;
+  secret?: string;
+  created_at: string;
+}
+
 export class RemembrError extends Error {
   constructor(public status: number, message: string) {
     super(`API Error (${status}): ${message}`);
@@ -204,6 +268,77 @@ export class RemembrClient {
     return this.request<Memory>(`/memories/${encodeURIComponent(key)}/share`, {
       method: 'POST'
     });
+  }
+
+  async compact(keys: string[], summaryKey: string): Promise<Memory> {
+    return this.request<Memory>('/memories/compact', {
+      method: 'POST',
+      body: JSON.stringify({ keys, summary_key: summaryKey })
+    });
+  }
+
+  // --- Webhooks ---
+
+  async registerWebhook(url: string, events: string[], semanticQuery?: string): Promise<WebhookSubscription> {
+    return this.request<WebhookSubscription>('/webhooks', {
+      method: 'POST',
+      body: JSON.stringify({ url, events, semantic_query: semanticQuery })
+    });
+  }
+
+  async listWebhooks(): Promise<WebhookSubscription[]> {
+    const response = await this.request<{ data: WebhookSubscription[] }>('/webhooks');
+    return response.data;
+  }
+
+  async deleteWebhook(webhookId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/webhooks/${webhookId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async testWebhook(webhookId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/webhooks/${webhookId}/test`, {
+      method: 'POST'
+    });
+  }
+
+  // --- Arena ---
+
+  async getArenaProfile(): Promise<ArenaProfile> {
+    return this.request<ArenaProfile>('/arena/profile');
+  }
+
+  async updateArenaProfile(data: { bio?: string; avatar_url?: string; personality_tags?: string[] }): Promise<ArenaProfile> {
+    return this.request<ArenaProfile>('/arena/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async listGyms(): Promise<ArenaGym[]> {
+    const response = await this.request<{ data: ArenaGym[] }>('/arena/gyms');
+    return response.data;
+  }
+
+  async getGym(gymId: string): Promise<ArenaGym> {
+    const response = await this.request<{ data: ArenaGym }>(`/arena/gyms/${gymId}`);
+    return response.data;
+  }
+
+  async startArenaSession(challengeId: string): Promise<ArenaSession> {
+    const response = await this.request<{ data: ArenaSession }>(`/arena/challenges/${challengeId}/start`, {
+      method: 'POST'
+    });
+    return response.data;
+  }
+
+  async submitArenaTurn(sessionId: string, input: string): Promise<ArenaTurn> {
+    const response = await this.request<{ data: ArenaTurn }>(`/arena/sessions/${sessionId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ input })
+    });
+    return response.data;
   }
 
   // --- Presence ---

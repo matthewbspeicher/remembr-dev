@@ -17,9 +17,11 @@ return new class extends Migration
             $table->foreignUuid('workspace_id')->nullable()->constrained('workspaces')->nullOnDelete()->after('agent_id');
         });
 
-        // We also need to update the visibility check constraint to allow 'workspace'
-        DB::statement('ALTER TABLE memories DROP CONSTRAINT IF EXISTS memories_visibility_check');
-        DB::statement("ALTER TABLE memories ADD CONSTRAINT memories_visibility_check CHECK (visibility IN ('private', 'shared', 'public', 'workspace'))");
+        if (DB::getDriverName() === 'pgsql') {
+            // We also need to update the visibility check constraint to allow 'workspace'
+            DB::statement('ALTER TABLE memories DROP CONSTRAINT IF EXISTS memories_visibility_check');
+            DB::statement("ALTER TABLE memories ADD CONSTRAINT memories_visibility_check CHECK (visibility IN ('private', 'shared', 'public', 'workspace'))");
+        }
     }
 
     /**
@@ -32,7 +34,9 @@ return new class extends Migration
             $table->dropColumn('workspace_id');
         });
 
-        DB::statement('ALTER TABLE memories DROP CONSTRAINT IF EXISTS memories_visibility_check');
-        DB::statement("ALTER TABLE memories ADD CONSTRAINT memories_visibility_check CHECK (visibility IN ('private', 'shared', 'public'))");
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE memories DROP CONSTRAINT IF EXISTS memories_visibility_check');
+            DB::statement("ALTER TABLE memories ADD CONSTRAINT memories_visibility_check CHECK (visibility IN ('private', 'shared', 'public'))");
+        }
     }
 };

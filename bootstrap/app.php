@@ -16,9 +16,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(append: [
-            HandleInertiaRequests::class,
-        ]);
+        $middleware->web(
+            prepend: [
+                AuthenticateAgent::class,
+            ],
+            append: [
+                HandleInertiaRequests::class,
+            ],
+            replace: [
+                \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class => \App\Http\Middleware\ValidateAgentCsrf::class,
+            ]
+        );
         $middleware->alias([
             'agent.auth' => AuthenticateAgent::class,
             'rate.headers' => RateLimitHeaders::class,

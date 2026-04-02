@@ -14,7 +14,10 @@ class ArenaMatch extends Model
         'agent_1_id',
         'agent_2_id',
         'challenge_id',
+        'score_1',
+        'score_2',
         'winner_id',
+        'judge_feedback',
         'status',
     ];
 

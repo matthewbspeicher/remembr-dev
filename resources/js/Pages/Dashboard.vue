@@ -7,15 +7,8 @@ const props = defineProps({
     apiToken: String,
     agents: Array,
     workspaces: Array,
-    isPro: Boolean,
-    isOnGracePeriod: Boolean,
-    hasPaymentFailure: Boolean,
-    isDowngraded: Boolean,
-    currentPlan: String,
     agentCount: Number,
-    maxAgents: [Number, String],
     avgMemoriesPerAgent: Number,
-    maxMemoriesPerAgent: Number,
 });
 
 const page = usePage();
@@ -92,12 +85,11 @@ function createWorkspace() {
 }
 
 const agentUsagePercent = computed(() => {
-    if (props.maxAgents === 'unlimited') return 5;
-    return Math.min(100, (props.agentCount / props.maxAgents) * 100);
+    return 0;
 });
 
 const memoryUsagePercent = computed(() => {
-    return Math.min(100, (props.avgMemoriesPerAgent / props.maxMemoriesPerAgent) * 100);
+    return 0;
 });
 </script>
 
@@ -110,66 +102,6 @@ const memoryUsagePercent = computed(() => {
         </div>
 
         <!-- Billing Banners -->
-        <div v-if="hasPaymentFailure" class="mb-6 rounded-lg border border-red-800/50 bg-red-900/20 px-4 py-3 flex items-center gap-2">
-            <span class="text-red-400">&#9888;</span>
-            <span class="text-sm text-red-200">Payment failed. <a href="/billing/portal" class="text-red-400 underline">Update payment method</a> to keep Pro access.</span>
-        </div>
-
-        <div v-if="isOnGracePeriod" class="mb-6 rounded-lg border border-amber-800/50 bg-amber-900/20 px-4 py-3 text-sm text-amber-200">
-            Your Pro subscription has been cancelled and will end at the end of the current billing period. <a href="/billing/portal" class="text-amber-400 underline">Resubscribe</a>
-        </div>
-
-        <div v-if="isDowngraded" class="mb-6 rounded-lg border border-amber-800/50 bg-amber-900/20 px-4 py-3 text-sm text-amber-200">
-            Your account has features beyond the free plan. Some agents and workspace memories are read-only. <Link href="/billing/checkout" class="text-amber-400 underline">Upgrade to Pro</Link> to restore full access.
-        </div>
-
-        <!-- Billing Section -->
-        <section class="mb-10">
-            <div class="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <div>
-                        <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-500">Current Plan</span>
-                        <div class="flex items-center gap-2 mt-1">
-                            <span class="text-xl font-bold text-white">
-                                {{ currentPlan === 'pro' ? 'Pro' : currentPlan === 'unlimited' ? 'Unlimited' : 'Free' }}
-                            </span>
-                            <span v-if="isPro" class="text-[10px] font-semibold bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full">ACTIVE</span>
-                            <span v-else-if="isDowngraded" class="text-[10px] font-semibold bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full">DOWNGRADED</span>
-                        </div>
-                    </div>
-                    <div>
-                        <a v-if="isPro" href="/billing/portal" class="text-xs text-gray-400 border border-gray-600 px-3 py-1.5 rounded-md hover:bg-gray-700 transition">
-                            Manage Subscription
-                        </a>
-                        <Link v-else href="/billing/checkout" class="text-xs font-semibold bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-500 transition">
-                            Upgrade to Pro
-                        </Link>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-6">
-                    <div>
-                        <div class="flex justify-between mb-1.5">
-                            <span class="text-xs text-gray-400">Agents</span>
-                            <span class="text-xs font-semibold text-gray-200">{{ agentCount }} / {{ maxAgents }}</span>
-                        </div>
-                        <div class="bg-gray-700 rounded h-1.5 overflow-hidden">
-                            <div class="bg-indigo-500 h-full rounded" :style="{ width: agentUsagePercent + '%' }"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between mb-1.5">
-                            <span class="text-xs text-gray-400">Avg memories/agent</span>
-                            <span class="text-xs font-semibold text-gray-200">{{ avgMemoriesPerAgent.toLocaleString() }} / {{ maxMemoriesPerAgent.toLocaleString() }}</span>
-                        </div>
-                        <div class="bg-gray-700 rounded h-1.5 overflow-hidden">
-                            <div class="bg-indigo-500 h-full rounded" :style="{ width: memoryUsagePercent + '%' }"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <!-- Owner API Token -->
         <section class="mb-10">
             <h2 class="text-lg font-semibold mb-3 text-gray-200">Your Owner API Token</h2>

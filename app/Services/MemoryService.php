@@ -38,7 +38,7 @@ class MemoryService
         $embedding = $this->embeddings->embed($data['value']);
 
         // Generate summary for longer memories
-        $summary = $data['summary'] ?? $this->summarizer->generateSummary($data['value']);
+        $summary = $data['summary'] ?? null;
 
         $memory = DB::transaction(function () use ($agent, $data, $metadata, $embedding, $summary) {
             // Lock the agent row to serialize concurrent quota checks
@@ -82,6 +82,11 @@ class MemoryService
 
             return $memory;
         });
+
+        // Async summarization if not provided and long enough
+        if (! $memory->summary && mb_strlen($memory->value) >= 80) {
+            \App\Jobs\SummarizeMemory::dispatch($memory);
+        }
 
         if ($memory->visibility === 'public') {
             MemoryCreated::dispatch($memory->load('agent'));
