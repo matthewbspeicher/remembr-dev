@@ -22,9 +22,6 @@ return Application::configure(basePath: dirname(__DIR__))
             ],
             append: [
                 HandleInertiaRequests::class,
-            ],
-            replace: [
-                \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class => \App\Http\Middleware\ValidateAgentCsrf::class,
             ]
         );
         $middleware->alias([
