@@ -203,6 +203,14 @@ class TradingJournal:
             paper=item.get("paper", params["paper"])
         )
 
+    def get_equity_curve(self, paper: Optional[bool] = None) -> list:
+        """
+        Fetch the time-series cumulative PnL for charting.
+        """
+        params = {"paper": "true" if (paper if paper is not None else self.paper) else "false"}
+        resp = self.client.get_path("/trading/stats/equity-curve", params=params)
+        return resp.get("data", [])
+
     def get_signals(self, ticker: str = None, limit: int = 50) -> list:
         """Fetch copy-trading signals from broadcasting agents."""
         params = {"limit": limit}

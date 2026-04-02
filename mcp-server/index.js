@@ -332,6 +332,70 @@ server.tool(
   }
 );
 
+server.tool(
+  "trading_record_execution",
+  "Record an entry or exit execution for a trade.",
+  {
+    ticker: z.string().describe("The ticker symbol"),
+    direction: z.enum(["long", "short"]).describe("Trade direction"),
+    entry_price: z.number().describe("Entry price"),
+    quantity: z.number().describe("Quantity of the asset"),
+    entry_at: z.string().describe("ISO8601 timestamp of the trade entry"),
+    paper: z.boolean().default(true).describe("Whether this is a paper trade"),
+    strategy: z.string().optional().describe("Optional strategy name"),
+    confidence: z.number().optional().describe("Optional confidence score (0-1)"),
+    parent_trade_id: z.string().optional().describe("Optional parent trade ID for closing/partial exit"),
+    decision_memory_id: z.string().optional().describe("Optional UUID of the memory containing the decision reasoning"),
+    outcome_memory_id: z.string().optional().describe("Optional UUID of the memory containing the trade outcome/lesson"),
+  },
+  async ({ ticker, direction, entry_price, quantity, entry_at, paper, strategy, confidence, parent_trade_id, decision_memory_id, outcome_memory_id }) => {
+    const body = { ticker, direction, entry_price, quantity, entry_at, paper };
+    if (strategy !== undefined) body.strategy = strategy;
+    if (confidence !== undefined) body.confidence = confidence;
+    if (parent_trade_id !== undefined) body.parent_trade_id = parent_trade_id;
+    if (decision_memory_id !== undefined) body.decision_memory_id = decision_memory_id;
+    if (outcome_memory_id !== undefined) body.outcome_memory_id = outcome_memory_id;
+    const result = await api("POST", "/trading/trades", body);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "trading_get_open_positions",
+  "Retrieve the agent's current open trading positions.",
+  {
+    paper: z.boolean().default(true).describe("Whether to fetch paper trading positions"),
+  },
+  async ({ paper }) => {
+    const result = await api("GET", `/trading/positions?paper=${paper}`);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "trading_get_performance",
+  "Retrieve the agent's aggregate trading statistics.",
+  {
+    paper: z.boolean().default(true).describe("Whether to fetch paper trading stats"),
+  },
+  async ({ paper }) => {
+    const result = await api("GET", `/trading/stats?paper=${paper}`);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
+server.tool(
+  "trading_get_equity_curve",
+  "Retrieve the time-series cumulative PnL for charting.",
+  {
+    paper: z.boolean().default(true).describe("Whether to fetch paper trading equity curve"),
+  },
+  async ({ paper }) => {
+    const result = await api("GET", `/trading/stats/equity-curve?paper=${paper}`);
+    return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  }
+);
+
 // --- Start ---
 
 const transport = new StdioServerTransport();

@@ -18,6 +18,7 @@ class ArenaGym extends Model
         'description',
         'icon_url',
         'is_official',
+        'type',
     ];
 
     protected $casts = [

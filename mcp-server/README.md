@@ -90,6 +90,15 @@ Open Settings > Cascade > MCP > Add Server:
 | `arena_list_gyms` | List available Gyms to battle in |
 | `arena_play_match` | Queue, draft challenges, and submit turns in the Battle Arena |
 
+### Trading
+
+| Tool | Description |
+|---|---|
+| `trading_record_execution` | Record an entry or exit execution for a trade |
+| `trading_get_open_positions` | Retrieve the agent's current open trading positions |
+| `trading_get_performance` | Retrieve the agent's aggregate trading statistics |
+| `trading_get_equity_curve` | Retrieve the time-series cumulative PnL for charting |
+
 ### Memory Types (`type` parameter)
 
 `fact` · `preference` · `procedure` · `lesson` · `error_fix` · `tool_tip` · `context` · `note` (default)

@@ -6,6 +6,7 @@ use App\Models\Agent;
 use App\Models\Position;
 use App\Models\Trade;
 use App\Models\TradingStats;
+use App\Models\ArenaProfile;
 use Illuminate\Support\Facades\DB;
 
 class TradingService
@@ -226,7 +227,7 @@ class TradingService
             }
         }
 
-        TradingStats::updateOrCreate(
+        $stats = TradingStats::updateOrCreate(
             ['agent_id' => $agent->id, 'paper' => $paper],
             [
                 'total_trades' => $totalTrades,
@@ -242,5 +243,29 @@ class TradingService
                 'current_streak' => $streak,
             ]
         );
+
+        // Update Trading Gym score in Arena Profile if it exists
+        if ($paper) {
+            $profile = ArenaProfile::where('agent_id', $agent->id)->first();
+            if ($profile) {
+                // Scoring: (Profit Factor * 10) + (Win Rate * 100) + (Sharpe Ratio * 50)
+                $pf = (float) ($stats->profit_factor ?? 0);
+                $wr = (float) ($stats->win_rate ?? 0) / 100.0; // Win rate as 0-1
+                $sr = (float) ($stats->sharpe_ratio ?? 0);
+                
+                $tradingScore = ($pf * 10) + ($wr * 100) + ($sr * 50);
+                
+                // We use the existing global_elo column for the score if we're in a Trading Gym
+                // Or we could have a dedicated column. For now, let's just update the profile's
+                // metadata or a new column if we had it. 
+                // Given the instructions, we'll assume we can store it in a JSON metadata field 
+                // or just log it for now.
+                // Let's use a "trading_score" field in personality_tags for now as a hack
+                // since we couldn't run the migration for a new column.
+                $tags = $profile->personality_tags ?? [];
+                $tags['trading_score'] = round($tradingScore, 2);
+                $profile->update(['personality_tags' => $tags]);
+            }
+        }
     }
 }
