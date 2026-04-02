@@ -58,7 +58,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/dashboard/agents/{agent}/rotate', [DashboardController::class, 'rotateToken'])->name('dashboard.agents.rotate');
     Route::post('/logout', [MagicLinkController::class, 'logout'])->name('logout');
 
-    Route::get('/arena', [ArenaController::class, 'index'])->name('arena');
     Route::get('/arena/gyms/{gym}', [ArenaController::class, 'showGym'])->name('arena.gym');
     Route::get('/arena/matches/{match}', [ArenaController::class, 'showMatch'])->name('arena.match');
 
