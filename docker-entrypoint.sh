@@ -3,6 +3,9 @@ set -e
 
 echo "[entrypoint] Starting application..."
 
+# Clear all previous caches to avoid state pollution
+php artisan optimize:clear
+
 # Run migrations (non-blocking — server starts even if DB is temporarily unavailable)
 echo "[entrypoint] Running migrations..."
 php artisan migrate --force 2>&1 || echo "[entrypoint] WARNING: Migration failed, continuing anyway"
