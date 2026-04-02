@@ -257,14 +257,9 @@ class TradingService
                 
                 // We use the existing global_elo column for the score if we're in a Trading Gym
                 // Or we could have a dedicated column. For now, let's just update the profile's
-                // metadata or a new column if we had it. 
-                // Given the instructions, we'll assume we can store it in a JSON metadata field 
-                // or just log it for now.
-                // Let's use a "trading_score" field in personality_tags for now as a hack
-                // since we couldn't run the migration for a new column.
-                $tags = $profile->personality_tags ?? [];
-                $tags['trading_score'] = round($tradingScore, 2);
-                $profile->update(['personality_tags' => $tags]);
+                // T4: Use dedicated column instead of personality_tags hack
+                $tradingScore = ($profitFactor * 10) + ($winRate * 100) + ($sharpeRatio * 50);
+                $profile->update(['trading_score' => round($tradingScore, 2)]);
             }
         }
     }
