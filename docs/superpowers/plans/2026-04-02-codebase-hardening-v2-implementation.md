@@ -110,6 +110,19 @@ app/Trading/
 - All trading files (namespace change)
 - `tests/Feature/Trading/` (8 test files moved)
 
+### Phase 6 — Amazon Bedrock Integration
+**New Files:**
+- `app/Services/BedrockService.php`
+- `tests/Unit/Services/BedrockServiceTest.php`
+
+**Modified Files:**
+- `composer.json` (AWS SDK dependency)
+- `config/services.php` (Bedrock config)
+- `app/Services/EmbeddingService.php` (Bedrock fallback)
+- `app/Services/SummarizationService.php` (Bedrock support)
+- `app/Providers/AppServiceProvider.php` (register BedrockService)
+- `.env.example` (Bedrock credentials)
+
 ---
 
 ## Phase 1: Security Criticals
@@ -1360,6 +1373,7 @@ Each remaining item in the spec follows the same TDD pattern established here:
 - ⚠️ Phase 3: Template provided for C1+C2, remaining items follow same pattern
 - ⚠️ Phase 4: Not included (11 simplifications - follow spec directly)
 - ⚠️ Phase 5: Not included (module restructuring - separate effort)
+- ✅ Phase 6: Amazon Bedrock integration complete with tests and fallback
 
 **Placeholder Scan:**
 - ✅ No "TBD", "TODO implement later", or "add validation" without code
@@ -1377,6 +1391,329 @@ Each remaining item in the spec follows the same TDD pattern established here:
 - ✅ Each task has rollback guidance
 - ✅ Tests verify changes before commit
 - ✅ Breaking changes documented
+
+---
+
+---
+
+## Phase 6: Amazon Bedrock Integration
+
+### Task 6.1: Add Amazon Bedrock as Optional LLM Source
+
+**Files:**
+- Create: `app/Services/BedrockService.php`
+- Modify: `composer.json` (add AWS SDK)
+- Modify: `config/services.php`
+- Modify: `app/Services/EmbeddingService.php`
+- Modify: `app/Services/SummarizationService.php`
+- Modify: `.env.example`
+- Create: `tests/Unit/Services/BedrockServiceTest.php`
+
+- [ ] **Step 1: Add AWS SDK dependency**
+
+```bash
+composer require aws/aws-sdk-php
+```
+
+Expected: AWS SDK installed
+
+- [ ] **Step 2: Add Bedrock config to services.php**
+
+```php
+// config/services.php - add bedrock section
+
+'bedrock' => [
+    'enabled' => env('BEDROCK_ENABLED', false),
+    'region' => env('AWS_REGION', 'us-east-1'),
+    'access_key_id' => env('AWS_ACCESS_KEY_ID'),
+    'secret_access_key' => env('AWS_SECRET_ACCESS_KEY'),
+    'embedding_model' => env('BEDROCK_EMBEDDING_MODEL', 'amazon.titan-embed-text-v2:0'),
+    'text_model' => env('BEDROCK_TEXT_MODEL', 'anthropic.claude-3-5-sonnet-20241022-v2:0'),
+],
+```
+
+- [ ] **Step 3: Create BedrockService**
+
+```php
+<?php
+
+namespace App\Services;
+
+use Aws\BedrockRuntime\BedrockRuntimeClient;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+
+class BedrockService
+{
+    private ?BedrockRuntimeClient $client = null;
+    private bool $enabled;
+
+    public function __construct()
+    {
+        $this->enabled = config('services.bedrock.enabled', false);
+
+        if ($this->enabled) {
+            $this->client = new BedrockRuntimeClient([
+                'version' => 'latest',
+                'region' => config('services.bedrock.region'),
+                'credentials' => [
+                    'key' => config('services.bedrock.access_key_id'),
+                    'secret' => config('services.bedrock.secret_access_key'),
+                ],
+            ]);
+        }
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
+    }
+
+    /**
+     * Generate embeddings using Amazon Titan Embeddings
+     *
+     * @param string $text
+     * @return array|null 1024-dimensional vector (Titan v2) or null on failure
+     */
+    public function embed(string $text): ?array
+    {
+        if (! $this->enabled || ! $this->client) {
+            return null;
+        }
+
+        $cacheKey = 'bedrock_embedding_' . hash('sha256', $text);
+
+        return Cache::remember($cacheKey, now()->addDays(30), function () use ($text) {
+            try {
+                $response = $this->client->invokeModel([
+                    'modelId' => config('services.bedrock.embedding_model'),
+                    'contentType' => 'application/json',
+                    'accept' => 'application/json',
+                    'body' => json_encode([
+                        'inputText' => $text,
+                    ]),
+                ]);
+
+                $result = json_decode($response['body'], true);
+                return $result['embedding'] ?? null;
+
+            } catch (\Throwable $e) {
+                Log::error('Bedrock embedding failed', [
+                    'error' => $e->getMessage(),
+                    'text_length' => strlen($text),
+                ]);
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Generate text using Claude on Bedrock
+     *
+     * @param string $prompt
+     * @param int $maxTokens
+     * @return string|null
+     */
+    public function generateText(string $prompt, int $maxTokens = 2000): ?string
+    {
+        if (! $this->enabled || ! $this->client) {
+            return null;
+        }
+
+        try {
+            $response = $this->client->invokeModel([
+                'modelId' => config('services.bedrock.text_model'),
+                'contentType' => 'application/json',
+                'accept' => 'application/json',
+                'body' => json_encode([
+                    'anthropic_version' => 'bedrock-2023-05-31',
+                    'max_tokens' => $maxTokens,
+                    'messages' => [
+                        [
+                            'role' => 'user',
+                            'content' => $prompt,
+                        ],
+                    ],
+                ]),
+            ]);
+
+            $result = json_decode($response['body'], true);
+
+            if (isset($result['content'][0]['text'])) {
+                return $result['content'][0]['text'];
+            }
+
+            return null;
+
+        } catch (\Throwable $e) {
+            Log::error('Bedrock text generation failed', [
+                'error' => $e->getMessage(),
+                'prompt_length' => strlen($prompt),
+            ]);
+            return null;
+        }
+    }
+}
+```
+
+- [ ] **Step 4: Update EmbeddingService to support multiple providers**
+
+```php
+// app/Services/EmbeddingService.php - add Bedrock fallback
+
+public function __construct(
+    private readonly BedrockService $bedrock,
+) {}
+
+public function embed(string $text): ?array
+{
+    // Try Bedrock first if enabled
+    if ($this->bedrock->isEnabled()) {
+        $embedding = $this->bedrock->embed($text);
+        if ($embedding) {
+            // Bedrock Titan v2 returns 1024 dims, need to pad/truncate to 1536 for pgvector
+            return $this->normalizeEmbedding($embedding, 1536);
+        }
+    }
+
+    // Fallback to Gemini (existing logic)
+    $cacheKey = 'embedding_' . hash('sha256', $text);
+
+    return Cache::remember($cacheKey, now()->addDays(30), function () use ($text) {
+        // ... existing Gemini embedding code
+    });
+}
+
+private function normalizeEmbedding(array $embedding, int $targetDim): array
+{
+    $currentDim = count($embedding);
+
+    if ($currentDim === $targetDim) {
+        return $embedding;
+    }
+
+    if ($currentDim > $targetDim) {
+        // Truncate (Matryoshka-style slicing)
+        return array_slice($embedding, 0, $targetDim);
+    }
+
+    // Pad with zeros
+    return array_pad($embedding, $targetDim, 0.0);
+}
+```
+
+- [ ] **Step 5: Update SummarizationService to support Bedrock**
+
+```php
+// app/Services/SummarizationService.php - add Bedrock support
+
+public function __construct(
+    private readonly BedrockService $bedrock,
+) {}
+
+public function summarize(string $text): string
+{
+    // Try Bedrock first if enabled
+    if ($this->bedrock->isEnabled()) {
+        $prompt = "Summarize the following text concisely:\n\n{$text}";
+        $summary = $this->bedrock->generateText($prompt, 500);
+
+        if ($summary) {
+            return $summary;
+        }
+    }
+
+    // Fallback to Gemini (existing callGemini logic)
+    return $this->callGemini($text);
+}
+```
+
+- [ ] **Step 6: Update .env.example**
+
+```bash
+# .env.example - add Bedrock config
+
+# Amazon Bedrock (optional LLM provider)
+BEDROCK_ENABLED=false
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+BEDROCK_EMBEDDING_MODEL=amazon.titan-embed-text-v2:0
+BEDROCK_TEXT_MODEL=anthropic.claude-3-5-sonnet-20241022-v2:0
+```
+
+- [ ] **Step 7: Write tests**
+
+```php
+<?php
+
+use App\Services\BedrockService;
+
+beforeEach(function () {
+    config(['services.bedrock.enabled' => false]);
+});
+
+test('bedrock service is disabled by default', function () {
+    $service = new BedrockService();
+    expect($service->isEnabled())->toBeFalse();
+});
+
+test('bedrock embed returns null when disabled', function () {
+    $service = new BedrockService();
+    expect($service->embed('test text'))->toBeNull();
+});
+
+test('bedrock generateText returns null when disabled', function () {
+    $service = new BedrockService();
+    expect($service->generateText('test prompt'))->toBeNull();
+});
+
+// Add integration tests when credentials are available
+```
+
+- [ ] **Step 8: Register BedrockService in container**
+
+```php
+// app/Providers/AppServiceProvider.php - add to register()
+
+$this->app->singleton(BedrockService::class);
+```
+
+- [ ] **Step 9: Run tests**
+
+```bash
+php artisan test tests/Unit/Services/BedrockServiceTest.php
+```
+
+Expected: All tests pass
+
+- [ ] **Step 10: Manual test with Bedrock enabled**
+
+```bash
+# Set up .env with real AWS credentials
+php artisan tinker
+>>> $bedrock = app(\App\Services\BedrockService::class);
+>>> $embedding = $bedrock->embed('Hello, world!');
+>>> count($embedding)
+=> 1024
+>>> $text = $bedrock->generateText('What is the capital of France?');
+=> "The capital of France is Paris."
+```
+
+Expected: Embeddings and text generation work
+
+- [ ] **Step 11: Commit**
+
+```bash
+git add composer.json composer.lock config/services.php app/Services/BedrockService.php app/Services/EmbeddingService.php app/Services/SummarizationService.php .env.example tests/Unit/Services/BedrockServiceTest.php app/Providers/AppServiceProvider.php
+git commit -m "feat: add Amazon Bedrock as optional LLM provider
+
+Add BedrockService with support for Titan embeddings and Claude text generation.
+Update EmbeddingService and SummarizationService to use Bedrock when enabled.
+Falls back to Gemini when Bedrock is disabled or fails.
+
+Titan v2 embeddings (1024 dims) are normalized to 1536 dims for pgvector compatibility."
+```
 
 ---
 

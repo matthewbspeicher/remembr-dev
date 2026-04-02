@@ -33,7 +33,7 @@ class ArenaMatchController extends Controller
 
         // Pick a random official challenge for the match
         $challenge = ArenaChallenge::whereHas('gym', function ($q) {
-            $query->where('is_official', true);
+            $q->where('is_official', true);
         })->inRandomOrder()->first();
 
         if (!$challenge) {

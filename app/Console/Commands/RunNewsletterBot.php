@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Agent;
 use App\Models\Memory;
+use App\Services\BedrockService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -22,9 +23,9 @@ class RunNewsletterBot extends Command
      *
      * @var string
      */
-    protected $description = 'Generates an automated weekly newsletter of top public memories using Gemini';
+    protected $description = 'Generates an automated weekly newsletter of top public memories';
 
-    private const MODEL = 'gemini-flash-latest'; // Fallback to flash which is confirmed working
+    private const GEMINI_MODEL = 'gemini-flash-latest';
 
     /**
      * Execute the console command.
@@ -74,40 +75,21 @@ class RunNewsletterBot extends Command
         $prompt .= "-----------------------------------\n\n";
         $prompt .= 'Start writing the newsletter now. Do not include preamble, just the markdown text.';
 
-        $this->info('Sending data to Gemini API...');
+        $provider = config('app.ai_provider', 'gemini');
+        $this->info("Generating newsletter via {$provider}...");
 
-        $apiKey = config('services.gemini.key');
-        if (empty($apiKey)) {
-            $this->error('Missing GEMINI_API_KEY in environment.');
-
-            return Command::FAILURE;
-        }
-
-        $response = Http::timeout(60)->post('https://generativelanguage.googleapis.com/v1beta/models/'.self::MODEL.':generateContent?key='.$apiKey, [
-            'contents' => [
-                ['parts' => [['text' => $prompt]]],
-            ],
-            'generationConfig' => [
-                'temperature' => 0.7, // Higher temp for more creative writing
-            ],
-        ]);
-
-        if ($response->failed()) {
-            Log::error('NewsletterBot: Gemini generation API error: '.$response->body());
-            $this->error('Failed to generate newsletter from Gemini.');
+        try {
+            if ($provider === 'bedrock') {
+                $newsletterText = app(BedrockService::class)->generate($prompt, 0.7, 4096);
+            } else {
+                $newsletterText = $this->callGemini($prompt);
+            }
+        } catch (\Exception $e) {
+            Log::error('NewsletterBot: LLM generation failed: '.$e->getMessage());
+            $this->error('Failed to generate newsletter: '.$e->getMessage());
 
             return Command::FAILURE;
         }
-
-        $candidates = $response->json('candidates');
-        if (empty($candidates) || ! isset($candidates[0]['content']['parts'][0]['text'])) {
-            Log::error('NewsletterBot: Unexpected Gemini response format: '.json_encode($response->json()));
-            $this->error('Unexpected Gemini response format.');
-
-            return Command::FAILURE;
-        }
-
-        $newsletterText = trim($candidates[0]['content']['parts'][0]['text']);
 
         Memory::create([
             'agent_id' => $bot->id,
@@ -121,5 +103,33 @@ class RunNewsletterBot extends Command
         $this->info('Successfully published weekly newsletter to the Commons.');
 
         return Command::SUCCESS;
+    }
+
+    private function callGemini(string $prompt): string
+    {
+        $apiKey = config('services.gemini.key');
+        if (empty($apiKey)) {
+            throw new \RuntimeException('Missing GEMINI_API_KEY in environment.');
+        }
+
+        $response = Http::timeout(60)->post('https://generativelanguage.googleapis.com/v1beta/models/'.self::GEMINI_MODEL.':generateContent?key='.$apiKey, [
+            'contents' => [
+                ['parts' => [['text' => $prompt]]],
+            ],
+            'generationConfig' => [
+                'temperature' => 0.7,
+            ],
+        ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException('Gemini API error: '.$response->body());
+        }
+
+        $candidates = $response->json('candidates');
+        if (empty($candidates) || ! isset($candidates[0]['content']['parts'][0]['text'])) {
+            throw new \RuntimeException('Unexpected Gemini response: '.json_encode($response->json()));
+        }
+
+        return trim($candidates[0]['content']['parts'][0]['text']);
     }
 }

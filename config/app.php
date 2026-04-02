@@ -123,6 +123,8 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'ai_provider' => env('AI_PROVIDER', 'gemini'),
+
     'default_agent_limit' => (int) env('DEFAULT_AGENT_LIMIT', 5),
 
     'unlimited_agent_emails' => array_values(array_filter(array_map(
