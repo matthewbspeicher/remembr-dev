@@ -43,4 +43,13 @@ return [
         'key' => env('GEMINI_API_KEY'),
     ],
 
+    'bedrock' => [
+        'enabled' => env('BEDROCK_ENABLED', false),
+        'region' => env('AWS_REGION', 'us-east-1'),
+        'access_key_id' => env('AWS_ACCESS_KEY_ID'),
+        'secret_access_key' => env('AWS_SECRET_ACCESS_KEY'),
+        'embedding_model' => env('BEDROCK_EMBEDDING_MODEL', 'amazon.titan-embed-text-v2:0'),
+        'text_model' => env('BEDROCK_TEXT_MODEL', 'anthropic.claude-3-5-sonnet-20241022-v2:0'),
+    ],
+
 ];

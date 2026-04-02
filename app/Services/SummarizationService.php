@@ -11,13 +11,16 @@ use RuntimeException;
 
 class SummarizationService
 {
-    private const MODEL = 'gemini-flash-latest';
+    private const GEMINI_MODEL = 'gemini-flash-latest';
 
-    private readonly string $apiKey;
+    private readonly string $provider;
 
-    public function __construct()
+    private readonly string $geminiKey;
+
+    public function __construct(private readonly BedrockService $bedrock)
     {
-        $this->apiKey = config('services.gemini.key') ?? '';
+        $this->provider = config('app.ai_provider', 'gemini');
+        $this->geminiKey = config('services.gemini.key') ?? '';
     }
 
     /**
@@ -36,7 +39,7 @@ class SummarizationService
         $prompt .= "Memories to compact:\n".$context."\n\n";
         $prompt .= 'Provide ONLY the final summary text.';
 
-        return $this->callGemini($prompt);
+        return $this->callLlm($prompt);
     }
 
     /**
@@ -55,7 +58,7 @@ class SummarizationService
         $prompt .= "Text: {$value}";
 
         try {
-            return $this->callGemini($prompt, 0.1);
+            return $this->callLlm($prompt, 0.1);
         } catch (\Exception $e) {
             Log::warning('Summary generation failed, storing without summary', ['error' => $e->getMessage()]);
 
@@ -83,7 +86,7 @@ class SummarizationService
         $prompt .= "If nothing worth extracting, return an empty array: []\n\n";
         $prompt .= "Transcript:\n{$transcript}";
 
-        $raw = $this->callGemini($prompt, 0.2);
+        $raw = $this->callLlm($prompt, 0.2);
 
         // Strip any markdown code fences the model might add
         $raw = preg_replace('/^```(?:json)?\s*/i', '', $raw);
@@ -114,11 +117,28 @@ class SummarizationService
     }
 
     /**
+     * Route to the configured LLM provider.
+     */
+    private function callLlm(string $prompt, float $temperature = 0.2): string
+    {
+        // Try Bedrock first if enabled
+        if ($this->bedrock->isEnabled()) {
+            $result = $this->bedrock->generateText($prompt);
+            if ($result) {
+                return $result;
+            }
+        }
+
+        // Fallback to Gemini
+        return $this->callGemini($prompt, $temperature);
+    }
+
+    /**
      * Call the Gemini API with a prompt and return the text response.
      */
-    private function callGemini(string $prompt, float $temperature = 0.2): string
+    public function callGemini(string $prompt, float $temperature = 0.2): string
     {
-        $response = Http::post('https://generativelanguage.googleapis.com/v1beta/models/'.self::MODEL.':generateContent?key='.$this->apiKey, [
+        $response = Http::post('https://generativelanguage.googleapis.com/v1beta/models/'.self::GEMINI_MODEL.':generateContent?key='.$this->geminiKey, [
             'contents' => [
                 ['parts' => [['text' => $prompt]]],
             ],

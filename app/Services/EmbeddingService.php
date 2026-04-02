@@ -18,8 +18,9 @@ class EmbeddingService
 
     private readonly string $apiKey;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly BedrockService $bedrock,
+    ) {
         $this->apiKey = config('services.gemini.key') ?? '';
     }
 
@@ -29,11 +30,38 @@ class EmbeddingService
      */
     public function embed(string $text): array
     {
+        // Try Bedrock first if enabled
+        if ($this->bedrock->isEnabled()) {
+            $embedding = $this->bedrock->embed($text);
+            if ($embedding) {
+                // Bedrock Titan v2 returns 1024 dims, need to pad/truncate to 1536 for pgvector
+                return $this->normalizeEmbedding($embedding, self::DB_DIMENSIONS);
+            }
+        }
+
+        // Fallback to Gemini
         $cacheKey = 'embedding:'.hash('xxh128', $text);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($text) {
             return $this->fetchFromApi($text);
         });
+    }
+
+    private function normalizeEmbedding(array $embedding, int $targetDim): array
+    {
+        $currentDim = count($embedding);
+
+        if ($currentDim === $targetDim) {
+            return $embedding;
+        }
+
+        if ($currentDim > $targetDim) {
+            // Truncate (Matryoshka-style slicing)
+            return array_slice($embedding, 0, $targetDim);
+        }
+
+        // Pad with zeros
+        return array_pad($embedding, $targetDim, 0.0);
     }
 
     /**

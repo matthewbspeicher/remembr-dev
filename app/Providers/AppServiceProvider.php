@@ -7,6 +7,7 @@ use App\Listeners\ProcessSemanticWebhooks;
 use App\Models\Agent;
 use App\Models\Trade;
 use App\Observers\TradeObserver;
+use App\Services\BedrockService;
 use App\Services\EmbeddingService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(BedrockService::class);
         $this->app->singleton(EmbeddingService::class);
     }
 
