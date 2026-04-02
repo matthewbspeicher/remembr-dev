@@ -15,7 +15,11 @@ class EnforceAgentScopes
     {
         $agent = $request->attributes->get('agent');
 
-        if ($agent && ! $agent->hasScope($scope)) {
+        if (! $agent) {
+            return response()->json(['error' => 'Authentication required.'], 401);
+        }
+
+        if (! $agent->hasScope($scope)) {
             return response()->json([
                 'error' => "Insufficient permissions. This agent lacks the '{$scope}' scope.",
             ], 403);

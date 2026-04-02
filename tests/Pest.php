@@ -51,16 +51,20 @@ expect()->extend('toBeOne', function () {
 
 function makeOwner(array $overrides = []): User
 {
+    $token = 'owner_'.Str::random(40);
     return User::factory()->create(array_merge([
-        'api_token' => 'owner_'.Str::random(40),
+        'api_token' => $token,
+        'api_token_hash' => hash('sha256', $token),
     ], $overrides));
 }
 
 function makeAgent(User $owner, array $overrides = []): Agent
 {
+    $token = 'amc_'.Str::random(40);
     return Agent::factory()->create(array_merge([
         'owner_id' => $owner->id,
-        'api_token' => 'amc_'.Str::random(40),
+        'api_token' => $token,
+        'token_hash' => hash('sha256', $token),
     ], $overrides));
 }
 

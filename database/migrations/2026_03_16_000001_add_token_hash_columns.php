@@ -22,6 +22,19 @@ return new class extends Migration
             $table->string('api_token_hash')->nullable()->index()->after('api_token');
         });
 
+        // Make plaintext token columns nullable (Stage 1.2 preparation)
+        Schema::table('agents', function (Blueprint $table) {
+            $table->string('api_token', 80)->nullable()->change();
+        });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('api_token', 80)->nullable()->change();
+        });
+
+        Schema::table('workspaces', function (Blueprint $table) {
+            $table->string('api_token', 80)->nullable()->change();
+        });
+
         // Backfill existing tokens
         DB::table('agents')->whereNotNull('api_token')->orderBy('id')->chunk(100, function ($agents) {
             foreach ($agents as $agent) {

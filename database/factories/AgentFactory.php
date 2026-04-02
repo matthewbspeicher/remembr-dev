@@ -12,11 +12,14 @@ class AgentFactory extends Factory
 
     public function definition(): array
     {
+        $token = Agent::generateToken();
+
         return [
             'owner_id' => User::factory(),
             'name' => fake()->name().' Bot',
             'description' => fake()->sentence(),
-            'api_token' => Agent::generateToken(),
+            'api_token' => $token,
+            'token_hash' => hash('sha256', $token),
         ];
     }
 }

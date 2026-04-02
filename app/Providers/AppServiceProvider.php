@@ -42,7 +42,7 @@ class AppServiceProvider extends ServiceProvider
                 return null;
             }
 
-            return Agent::where('api_token', $token)
+            return Agent::where('token_hash', hash('sha256', $token))
                 ->where('is_active', true)
                 ->first();
         });

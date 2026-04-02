@@ -82,14 +82,12 @@ class Workspace extends Model
 
     public function ensureApiToken(): string
     {
-        if (! $this->api_token) {
-            $token = self::generateToken();
-            $this->update([
-                'api_token' => $token,
-                'api_token_hash' => hash('sha256', $token),
-            ]);
+        if (! $this->api_token_hash) {
+            $token = static::generateToken();
+            $this->update(['api_token_hash' => hash('sha256', $token)]);
+            return $token;
         }
 
-        return $this->api_token;
+        throw new \LogicException('Token already exists — cannot retrieve plaintext after creation');
     }
 }

@@ -25,7 +25,6 @@ class AgentController extends Controller
 
         $tokenHash = hash('sha256', $validated['owner_token']);
         $owner = User::where('api_token_hash', $tokenHash)
-            ->orWhere('api_token', $validated['owner_token'])
             ->first();
 
         if (! $owner) {
@@ -44,7 +43,6 @@ class AgentController extends Controller
             'owner_id' => $owner->id,
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'api_token' => $token,
             'token_hash' => hash('sha256', $token),
         ]);
 
