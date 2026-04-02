@@ -54,14 +54,7 @@ class Agent extends Model implements AuthenticatableContract
      */
     public function hasScope(string $scope): bool
     {
-        // Owners (human session) always have full access
-        if (! request()->attributes->has('agent')) {
-            return true;
-        }
-
-        $scopes = $this->scopes ?? self::DEFAULT_SCOPES;
-
-        return in_array($scope, $scopes) || in_array('*', $scopes);
+        return in_array($scope, $this->scopes ?? []);
     }
 
     public static function generateToken(): string
