@@ -18,31 +18,107 @@ The codebase has grown to 30 API controllers, 23 trading routes (38% of API surf
 
 All items in this phase are deployment-blocking. They must ship before any other work.
 
-### S1: Token Storage Hardening
+### S1: Token Storage Hardening (Staged Rollout Required)
 
 **Problem:** Three places query plaintext tokens with `orWhere('api_token', $token)` fallbacks that defeat the partial hashing implementation. Database compromise exposes all tokens.
 
 **Files:**
-- `app/Providers/AppServiceProvider.php` — agent guard queries `api_token` directly
+- `app/Providers/AppServiceProvider.php:45` — agent guard queries `api_token` directly, missing `str_starts_with($token, 'amc_')` check
 - `app/Http/Middleware/AuthenticateAgent.php:34` — workspace lookup has `orWhere('api_token', $token)`
 - `app/Http/Controllers/Api/AgentController.php:27` — owner lookup has `orWhere('api_token', ...)`
+- `app/Http/Controllers/Api/AgentController.php:47` — `Agent::create(['api_token' => $token, ...])` will break after S5 removes from `$fillable`
+- `app/Models/Workspace.php:85-93` — `ensureApiToken()` stores and returns plaintext `$this->api_token`
 
-**Changes:**
+**This is a STAGED ROLLOUT — three separate deployments with production verification between each:**
 
-1. `AppServiceProvider.php` agent guard: change from `Agent::where('api_token', $token)` to `Agent::where('token_hash', hash('sha256', $token))->where('is_active', true)`.
+#### S1.1: Backfill Hashes (Migration Only)
 
-2. `AuthenticateAgent.php` workspace guard: remove `->orWhere('api_token', $token)`. Query only `Workspace::where('api_token_hash', $tokenHash)`.
+Deploy migration `backfill_token_hashes`:
+```php
+Agent::whereNull('token_hash')->whereNotNull('api_token')
+    ->chunk(100, fn($agents) => $agents->each(fn($agent) =>
+        $agent->update(['token_hash' => hash('sha256', $agent->api_token)])
+    ));
 
-3. `AgentController.php` owner lookup: remove `->orWhere('api_token', $validated['owner_token'])`. Query only by `api_token_hash`.
+User::whereNull('api_token_hash')->whereNotNull('api_token')
+    ->chunk(100, fn($users) => $users->each(fn($user) =>
+        $user->update(['api_token_hash' => hash('sha256', $user->api_token)])
+    ));
 
-4. New migration `drop_plaintext_token_columns`:
-   - Backfill any `agents` rows where `token_hash` is null from `api_token`
-   - Backfill any `users` rows where `api_token_hash` is null from `api_token`
-   - Backfill any `workspaces` rows where `api_token_hash` is null from `api_token`
-   - Assert zero null hash rows remain
-   - Drop `api_token` column from `agents`, `users`, and `workspaces` tables
+Workspace::whereNull('api_token_hash')->whereNotNull('api_token')
+    ->chunk(100, fn($workspaces) => $workspaces->each(fn($ws) =>
+        $ws->update(['api_token_hash' => hash('sha256', $ws->api_token)])
+    ));
 
-**Risk:** Destructive migration. Tokens never hashed become unrecoverable after column drop. The backfill step mitigates this — verify zero null `token_hash` rows before dropping.
+// Assert zero nulls remain
+if (Agent::whereNull('token_hash')->whereNotNull('api_token')->exists()) {
+    throw new \Exception('Some agents still have null token_hash');
+}
+// ... repeat for users and workspaces
+```
+
+**Verify:** `SELECT COUNT(*) FROM agents WHERE token_hash IS NULL AND api_token IS NOT NULL` returns 0.
+
+**Rollback:** No-op — this only adds data, doesn't remove anything.
+
+#### S1.2: Switch to Hash-Only Lookups (Code Change)
+
+Deploy code that reads from hash columns only:
+
+1. **`AppServiceProvider.php:45`** — preserve `amc_` prefix check:
+   ```php
+   if (! str_starts_with($token, 'amc_')) return null;
+   return Agent::where('token_hash', hash('sha256', $token))
+       ->where('is_active', true)->first();
+   ```
+
+2. **`AuthenticateAgent.php:34`** — remove `orWhere`:
+   ```php
+   $workspace = Workspace::where('api_token_hash', $tokenHash)->first();
+   ```
+
+3. **`AgentController.php:27`** — remove `orWhere`:
+   ```php
+   $owner = User::where('api_token_hash', $tokenHash)->first();
+   ```
+
+4. **`AgentController.php:47`** — stop writing `api_token` (before S5 removes from `$fillable`):
+   ```php
+   $agent = Agent::create([
+       'token_hash' => hash('sha256', $token),
+       // Remove 'api_token' => $token
+       // ... other fields
+   ]);
+   ```
+
+5. **`Workspace.php:85-93`** — only return token at creation:
+   ```php
+   if (! $this->api_token_hash) {
+       $token = static::generateToken();
+       $this->update(['api_token_hash' => hash('sha256', $token)]);
+       return $token; // Return immediately, don't store plaintext
+   }
+   throw new \LogicException('Token already exists — cannot retrieve after creation');
+   ```
+
+**Verify:** Monitor auth success rate for 48 hours. All auth works (reads hash, plaintext unused but still in DB).
+
+**Rollback:** Revert code deploy. Plaintext columns still exist.
+
+#### S1.3: Drop Plaintext Columns (Migration)
+
+Deploy migration `drop_plaintext_token_columns`:
+```php
+Schema::table('agents', fn($table) => $table->dropColumn('api_token'));
+Schema::table('users', fn($table) => $table->dropColumn('api_token'));
+Schema::table('workspaces', fn($table) => $table->dropColumn('api_token'));
+```
+
+**Verify:** Full auth flow works for 24 hours.
+
+**Rollback:** Cannot rollback — column drop is permanent.
+
+**Risk:** Staging as three deployments with verification gates dramatically reduces risk. Column drop only happens after 48 hours of proven hash-only auth.
 
 ### S2: Auth Bypass for Non-JSON Requests
 
@@ -72,25 +148,70 @@ All items in this phase are deployment-blocking. They must ship before any other
 
 **Problem:** `Agent.$fillable` includes `api_token`, `token_hash`, `is_active`, `max_memories`, `scopes`. `Workspace.$fillable` includes `api_token`, `api_token_hash`.
 
-**Fix:** Remove security-sensitive fields from `$fillable`. Set them explicitly in registration, token rotation, and admin code paths. Grep all `Agent::create`, `Agent::update`, `$agent->update(`, `Workspace::create`, `Workspace::update` calls to verify none pass these fields from request data.
+**Fix:** Remove from `$fillable`:
+- `Agent`: `api_token`, `token_hash`, `is_active`, `max_memories`, `scopes`
+- `Workspace`: `api_token`, `api_token_hash`
 
-**Files:** `app/Models/Agent.php`, `app/Models/Workspace.php`
+**Callsites requiring updates:**
+- `AgentController::register()` L43-49 — passes `token_hash` via `Agent::create()`, change to:
+  ```php
+  $agent = new Agent($validated);
+  $agent->token_hash = hash('sha256', $token);
+  $agent->save();
+  ```
+- `Agent::touchLastSeen()` L162 — calls `updateQuietly(['last_seen_at' => now()])`. `last_seen_at` must stay in `$fillable` or this breaks. Do NOT remove `last_seen_at`.
+
+Grep all `Agent::create`, `Agent::update`, `$agent->update`, `Workspace::create`, `Workspace::update` for other callsites passing these fields.
+
+**Files:** `app/Models/Agent.php`, `app/Models/Workspace.php`, `app/Http/Controllers/Api/AgentController.php`
 
 ### S6: CSRF Bypass with Fake Token Prefix
 
 **Problem:** `ValidateAgentCsrf.php:16` skips CSRF for any request with a `Bearer` token starting with `amc_` or `wks_`, without validating the token is real.
 
-**Fix:** Remove the token-prefix check entirely. API routes are already CSRF-exempt in Laravel. Web routes should always validate CSRF. If agent API calls are hitting web routes, move those routes to the API middleware group.
+**Fix Options:**
 
-**File:** `app/Http/Middleware/ValidateAgentCsrf.php`
+**Option A (Recommended):** Audit which routes actually use this middleware. If all agent API calls are in the `api` middleware group (which is CSRF-exempt by default), delete `ValidateAgentCsrf` entirely and remove it from `bootstrap/app.php`.
+
+**Option B:** If some legitimate web routes need agent bearer token support (e.g., Inertia endpoints with agent auth), move the CSRF skip to AFTER token validation. The middleware becomes:
+```php
+// Validate token first via AuthenticateAgent
+if (request()->attributes->has('agent')) {
+    return $next($request); // Valid agent, skip CSRF
+}
+// Fall through to normal CSRF validation
+return parent::handle($request, $next);
+```
+
+**Action:** Audit `routes/web.php` for agent-authenticated endpoints. If none exist, choose Option A. If they do, choose Option B.
+
+**File:** `app/Http/Middleware/ValidateAgentCsrf.php`, `bootstrap/app.php`
 
 ### S7: `hasScope()` HTTP Coupling
 
 **Problem:** `Agent::hasScope()` reads `request()->attributes->has('agent')` to grant humans full access. Couples the model to the HTTP cycle.
 
-**Fix:** Remove the `request()` call from the model. The method becomes pure: `return in_array($scope, $this->scopes ?? [])`. The `EnforceAgentScopes` middleware already handles the "is this an agent?" question — it only fires on agent-authenticated routes.
+**Fix:** The method becomes pure, but we must audit all callsites outside middleware first:
 
-**File:** `app/Models/Agent.php`
+```php
+public function hasScope(string $scope): bool
+{
+    return in_array($scope, $this->scopes ?? []);
+}
+```
+
+**BEFORE applying this fix, audit all `hasScope()` callsites:**
+- Grep for `->hasScope(` across the codebase
+- Any calls outside of `EnforceAgentScopes` middleware that expect humans to pass need alternative handling
+- If found, those callsites should check `Auth::guard('web')->check()` explicitly before calling `hasScope()`
+
+**Current behavior:** Human session users bypass all scope checks. After this fix, calling `$agent->hasScope()` on behalf of a human will check the actual `scopes` array, which may deny access the human previously had.
+
+**Mitigation:** The `EnforceAgentScopes` middleware (which calls `hasScope()`) only fires on routes where it's explicitly applied. If a route is agent-authenticated, it won't have a human session. So this is safe IF no controller code calls `hasScope()` directly for human users.
+
+**Action:** Audit before implementation. If human-context `hasScope()` calls exist, refactor them first.
+
+**File:** `app/Models/Agent.php` plus any controllers calling `hasScope()` directly
 
 ---
 
@@ -143,13 +264,23 @@ Also fix `pnl == 0` edge case (I15): change `if ($pnl > 0) ... else` to `if ($pn
 
 **Files:** New migration, `app/Services/TradingService.php`, any ArenaProfile consumers
 
-### I14: Remove Dead `EnforcePlanLimits` Middleware
+### I14: `EnforcePlanLimits` Middleware Decision
 
 **Problem:** No-op middleware — `handle()` immediately returns `$next($request)`. Applied to every authenticated route, giving false confidence.
 
-**Fix:** Remove from route stack in `routes/api.php` and alias from `bootstrap/app.php`. Add `// TODO: Implement plan limits middleware` comment. Reimplementation is a future feature.
+**Decision:** Since billing exists (`BillingController`, Stripe integration), this should be **implemented**, not deleted. But implementation is separate feature scope.
 
-**Files:** `routes/api.php`, `bootstrap/app.php`, `app/Http/Middleware/EnforcePlanLimits.php` (keep file for future implementation)
+**Fix:** Remove the middleware from routes AND delete the alias. Don't keep a dangling file with no registration — confuses future developers.
+
+**Action:**
+1. Remove `plan.limits` middleware from all routes in `routes/api.php`
+2. Remove alias from `bootstrap/app.php`
+3. Delete `app/Http/Middleware/EnforcePlanLimits.php`
+4. Add comment in `routes/api.php`: `// TODO: Implement plan limits enforcement as new middleware when needed`
+
+Reimplementation is a future feature — start fresh with correct design rather than keep broken skeleton.
+
+**Files:** `routes/api.php`, `bootstrap/app.php`, `app/Http/Middleware/EnforcePlanLimits.php` (delete)
 
 ---
 
@@ -159,14 +290,29 @@ Also fix `pnl == 0` edge case (I15): change `if ($pnl > 0) ... else` to `if ($pn
 
 **C1 + C2: Task update/assign/status authorization**
 
-Add creator/assignee guard in `TaskController::update`, `assign`, and `updateStatus`:
+Add TWO checks: (1) agent is in task's workspace, (2) agent is creator or assignee.
+
+In `TaskController::update`, `assign`, and `updateStatus` — after existing workspace membership check:
 ```php
+// Verify task belongs to the workspace being accessed
+if ($task->workspace_id !== $workspace->id) {
+    return response()->json(['error' => 'Task not found in this workspace.'], 404);
+}
+
+// Verify agent has permission to modify this task
 if ($task->created_by_agent_id !== $agent->id && $task->assigned_agent_id !== $agent->id) {
     return response()->json(['error' => 'Only the task creator or assignee can modify this task.'], 403);
 }
 ```
 
-For `updateStatus`: restrict `completed`/`failed` to assignee only; `cancelled` can be set by creator.
+For `updateStatus`: restrict `completed`/`failed` to assignee only; `cancelled` can be set by creator:
+```php
+if ($status === 'completed' || $status === 'failed') {
+    if ($task->assigned_agent_id !== $agent->id) {
+        return response()->json(['error' => 'Only the assignee can mark a task as completed/failed.'], 403);
+    }
+}
+```
 
 **File:** `app/Http/Controllers/Api/TaskController.php`
 
@@ -218,13 +364,65 @@ Wrap both updates: `(int) round($elo1 + $k * ($actual1 - $expected1))`.
 
 Wrap `joinTournament` in `DB::transaction` + `lockForUpdate`. Add participant capacity validation inside lock.
 
-**File:** `app/Services/BattleArenaService.php`
+**Capacity tracking:** Tournament capacity is not currently stored. Options:
+1. Add `max_participants` column to `arena_tournaments` table (recommended)
+2. Use a constant (e.g., 32 for single-elimination bracket sizes)
+
+**Fix with Option 1:**
+```php
+DB::transaction(function () use ($tournament, $agent) {
+    $tournament = ArenaTournament::lockForUpdate()->findOrFail($tournament->id);
+    if ($tournament->status !== 'open') {
+        abort(422, 'Tournament is not open for registration.');
+    }
+    $currentCount = $tournament->participants()->count();
+    if ($tournament->max_participants && $currentCount >= $tournament->max_participants) {
+        abort(422, 'Tournament is full.');
+    }
+    $agent->arenaTournaments()->syncWithoutDetaching([$tournament->id]);
+});
+```
+
+**Files:** `app/Services/BattleArenaService.php`, new migration for `max_participants` column
 
 **A3: Tournament state corruption**
 
 Validate participant count before setting status to `in_progress`. Add max-rounds safeguard (10 rounds) — after max, highest cumulative score wins.
 
-**File:** `app/Services/BattleArenaService.php`
+```php
+public function processTournamentRound(ArenaTournament $tournament): void
+{
+    $participants = $tournament->participants()->where('status', 'active')->get();
+
+    if ($participants->count() < 2) {
+        $tournament->update(['status' => 'completed']);
+        return;
+    }
+
+    $tournament->update(['status' => 'in_progress']);
+
+    // Track rounds to prevent infinite all-draw stall
+    $currentRound = $tournament->current_round ?? 0;
+    if ($currentRound >= 10) {
+        // Force termination: highest score wins
+        $winner = $tournament->participants()
+            ->where('status', 'active')
+            ->orderBy('score', 'desc')
+            ->first();
+        if ($winner) {
+            $winner->pivot->update(['status' => 'winner']);
+        }
+        $tournament->update(['status' => 'completed']);
+        return;
+    }
+
+    $tournament->update(['current_round' => $currentRound + 1]);
+
+    // ... existing match logic
+}
+```
+
+**Files:** `app/Services/BattleArenaService.php`, migration to add `current_round` column to `arena_tournaments`
 
 **A4: Tournament uses unofficial challenges**
 
@@ -251,11 +449,13 @@ Extract `callGemini` as a public method on `SummarizationService` (or a new `Gem
 
 **Files:** `app/Services/BattleArenaService.php`, `app/Services/SummarizationService.php` (or new `GeminiClient`)
 
-**I11: Unbounded `ArenaGym::all()`**
+**I11: Unbounded `ArenaGym::all()` on WEB controller**
 
-Change to `ArenaGym::where('is_official', true)->get()`. Fix `recentMatches` stub to query actual recent matches.
+**Note:** This is in the WEB controller (`app/Http/Controllers/ArenaController.php`), NOT the API controller. The API controller (`app/Http/Controllers/Api/ArenaGymController.php`) correctly filters to `is_official`.
 
-**File:** `app/Http/Controllers/ArenaController.php`
+Change web controller to `ArenaGym::where('is_official', true)->get()`. Fix `recentMatches` stub to query actual recent matches.
+
+**File:** `app/Http/Controllers/ArenaController.php` (web controller)
 
 **I12: `show` exposes unofficial gyms**
 
@@ -322,7 +522,15 @@ Change workspace routes from `{id}` to `{workspace}` in `routes/api.php`. Type-h
 
 ### 4C: `$request->boolean()` Replacement
 
-Replace all 9 instances of `filter_var($request->input('paper', ...), FILTER_VALIDATE_BOOLEAN)` with `$request->boolean('paper', true)` in: `TradingStatsController` (3x), `TradingPositionController` (2x), `PortfolioController`, `TradeExportController`, `RiskController`, `ReplayController`.
+Replace all 15 instances of `filter_var($request->input('paper', ...), FILTER_VALIDATE_BOOLEAN)` with `$request->boolean('paper', true)` in:
+- `TradingController.php` (1)
+- `TradingStatsController.php` (5)
+- `TradingLeaderboardController.php` (2)
+- `TradingPositionController.php` (2)
+- `PortfolioController.php` (1)
+- `TradeExportController.php` (1)
+- `ReplayController.php` (1)
+- `RiskController.php` (2)
 
 ### 4D: Response Envelope Standardization
 
@@ -458,6 +666,69 @@ Move trading tests to `tests/Feature/Trading/`:
 - `Agent.php` keeps trading relationship methods (standard Eloquent)
 - SDK files stay in respective `sdk-*` directories
 - Migrations stay in `database/migrations/` (Laravel convention)
+
+---
+
+## Deployment Strategy & Breaking Changes
+
+### Deployment Ordering Within Phases
+
+**Phase 1 (Security):**
+- **Deploy 1:** S1.1 migration (backfill hashes) + S2-S4 fixes + S7 audit
+- **Verify:** Wait 24 hours, monitor auth success rate
+- **Deploy 2:** S1.2 code changes (hash-only lookups) + S5 (remove from `$fillable`) + S6 audit
+- **Verify:** Wait 48 hours, monitor auth success rate
+- **Deploy 3:** S1.3 migration (drop plaintext columns)
+- **Verify:** Wait 24 hours, full auth flow
+
+**Phase 2 (Broken Functionality):**
+- **Deploy:** All T1-T4 + I14 together (listener wiring, auto-compact fix, trading score migration, remove dead middleware)
+- **Verify:** Run `php artisan memories:auto-compact --threshold=50` manually, trigger trade alerts, verify webhook listener
+
+**Phase 3 (Auth & Integrity):**
+- **Deploy:** All collab auth + arena + trading fixes together
+- **Verify:** Run test suite, manual testing of task auth, tournament joins, ELO updates
+
+**Phase 4 (Deduplication):**
+- **Deploy:** Can deploy 4A-4I incrementally or together (low risk, no behavior changes)
+- **Verify:** Run test suite after each step
+
+**Phase 5 (Module Boundary):**
+- **Deploy:** All namespace moves + route file split + webhook split together in one deploy
+- **Verify:** Hit all trading routes, verify same responses
+
+### Breaking Changes & API Versioning
+
+**Breaking changes in this spec:**
+1. **S1.3 (Phase 1):** Plaintext token columns dropped — any code reading `api_token` directly (outside this project) breaks
+2. **4D (Phase 4):** Response envelope standardization — if applied, changes response shape for some endpoints
+3. **4H (Phase 4):** Python SDK HTTP method fixes — existing SDK users sending `PUT` will get 405s
+
+**Mitigation:**
+- **S1.3:** Staged rollout with 48-hour verification before column drop
+- **4D:** Audit which endpoints currently wrap vs don't wrap. Document any changes in release notes. Consider versioning (`/v2/`) if breaking many clients.
+- **4H:** Bump SDK major version (e.g., `1.x` → `2.0`), document migration in SDK changelog
+
+**No API versioning is introduced in this spec.** All fixes maintain backward compatibility except where noted above. If 4D is applied broadly, consider API versioning strategy before deploy.
+
+### Rollback Procedures
+
+**Phase 1:**
+- S1.1: No rollback needed (only adds data)
+- S1.2: Revert code deploy, plaintext columns still exist
+- S1.3: **Cannot rollback** — must recreate columns and repopulate (no source of truth)
+
+**Phase 2:**
+- Revert code deploy, run `php artisan migrate:rollback` for T4 migration
+
+**Phase 3:**
+- Revert code deploy (migrations for A2/A3 column additions can rollback)
+
+**Phase 4:**
+- Revert code deploy (no DB changes)
+
+**Phase 5:**
+- Revert code deploy (no DB changes, but namespace changes may require Composer autoload refresh)
 
 ---
 
