@@ -20,7 +20,9 @@ class DashboardController extends Controller
         $actingAgent = RequestIdentity::agent();
 
         if ($actingAgent) {
-            $agents = collect([$actingAgent->loadCount('memories')->load('arenaProfile')]);
+            $actingAgent->loadCount('memories');
+            $actingAgent->load('arenaProfile');
+            $agents = collect([$actingAgent]);
         } else {
             $agents = $user->agents()->withCount('memories')->with('arenaProfile')->latest()->get();
         }
