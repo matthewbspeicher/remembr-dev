@@ -30,9 +30,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // T2: Register correct webhook listener
         Event::listen(
             MemoryCreated::class,
-            ProcessSemanticWebhooks::class,
+            EvaluateSemanticWebhooks::class,
         );
 
         // T1: Register trade alert listeners
