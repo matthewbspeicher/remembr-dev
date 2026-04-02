@@ -280,52 +280,35 @@ class MemoryController extends Controller
     // POST /v1/memories/compact
     // -------------------------------------------------------------------------
 
-    public function compact(Request $request, SummarizationService $summarizer): JsonResponse
+    public function compact(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'agent_id' => ['sometimes', 'uuid'],
-            'keys' => ['required', 'array', 'min:2', 'max:50'],
-            'keys.*' => ['string'],
-            'summary_key' => ['required', 'string', 'max:255'],
-        ]);
-
-        $agent = $this->resolveAgent($request, $validated);
+        $agent = $this->resolveAgent($request);
         if ($agent instanceof JsonResponse) {
             return $agent;
         }
 
-        $memories = Memory::where('agent_id', $agent->id)
-            ->whereIn('key', $validated['keys'])
-            ->get();
-
-        if ($memories->count() < 2) {
-            return response()->json(['error' => 'Not enough valid memories found to compact.'], 422);
-        }
-
-        try {
-            $summaryText = $summarizer->summarize($memories, $agent);
-        } catch (\Exception $e) {
-            Log::error('Compact failed', ['exception' => $e]);
-
-            return response()->json(['error' => 'Failed to generate summary. Please try again later.'], 500);
-        }
-
-        $relations = $memories->map(fn ($m) => ['id' => $m->id, 'type' => 'compacted_from'])->toArray();
-
-        $summaryMemory = $this->memories->store($agent, [
-            'key' => $validated['summary_key'],
-            'value' => $summaryText,
-            'importance' => 8, // Summaries are usually important
-            'visibility' => 'private',
-            'relations' => $relations,
+        $validated = $request->validate([
+            'memory_ids' => ['required', 'array', 'min:2'],
+            'memory_ids.*' => ['uuid', 'exists:memories,id'],
+            'summary_key' => ['required', 'string', 'max:255'],
         ]);
 
-        /** @var Memory $memory */
-        foreach ($memories as $memory) {
-            $this->memories->update($memory, ['visibility' => 'archived']);
-        }
+        try {
+            // T3: Call service method
+            $summaryMemory = $this->memories->compact(
+                $agent,
+                $validated['memory_ids'],
+                $validated['summary_key']
+            );
 
-        return response()->json($this->formatMemory($summaryMemory), 201);
+            return response()->json([
+                'message' => 'Memories compacted successfully.',
+                'data' => $summaryMemory,
+            ]);
+
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
     }
 
     // -------------------------------------------------------------------------

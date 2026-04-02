@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Events\MemoryCreated;
 use App\Events\MemoryShared;
+use App\Jobs\SummarizeMemory;
 use App\Models\Agent;
 use App\Models\Memory;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -375,6 +376,42 @@ class MemoryService
     public function revokeShare(Memory $memory, Agent $recipient): void
     {
         $memory->sharedWith()->detach($recipient->id);
+    }
+
+    // -------------------------------------------------------------------------
+    // Compaction
+    // -------------------------------------------------------------------------
+
+    public function compact(Agent $agent, array $memoryIds, string $summaryKey): Memory
+    {
+        // Fetch the memories to compact
+        $memories = Memory::whereIn('id', $memoryIds)
+            ->where('agent_id', $agent->id)
+            ->get();
+
+        if ($memories->isEmpty()) {
+            throw new \InvalidArgumentException('No memories found to compact');
+        }
+
+        // Combine all memory values
+        $combinedValue = $memories->pluck('value')->join("\n\n---\n\n");
+
+        // Create the summary memory
+        $summaryMemory = Memory::create([
+            'agent_id' => $agent->id,
+            'key' => $summaryKey,
+            'value' => $combinedValue,
+            'type' => 'summary',
+            'visibility' => 'private',
+        ]);
+
+        // Dispatch job to generate the actual summary
+        SummarizeMemory::dispatch($summaryMemory);
+
+        // Delete the original memories
+        Memory::whereIn('id', $memoryIds)->delete();
+
+        return $summaryMemory;
     }
 
     // -------------------------------------------------------------------------
