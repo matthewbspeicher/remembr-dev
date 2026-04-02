@@ -7,6 +7,9 @@ echo "[entrypoint] Starting application..."
 echo "[entrypoint] Running migrations..."
 php artisan migrate --force 2>&1 || echo "[entrypoint] WARNING: Migration failed, continuing anyway"
 
+echo "[entrypoint] Seeding Arena gyms..."
+php artisan db:seed --class=ArenaGymSeeder --force 2>&1 || echo "[entrypoint] WARNING: Arena Seeding failed"
+
 # Clear and rebuild caches
 echo "[entrypoint] Caching config..."
 php artisan config:clear 2>/dev/null
