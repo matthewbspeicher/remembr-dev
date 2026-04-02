@@ -20,8 +20,6 @@ class Workspace extends Model
         'owner_id',
         'is_guild',
         'guild_elo',
-        'api_token',
-        'api_token_hash',
     ];
 
     protected $hidden = [

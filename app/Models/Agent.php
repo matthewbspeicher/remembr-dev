@@ -21,14 +21,9 @@ class Agent extends Model implements AuthenticatableContract
         'owner_id',
         'name',
         'description',
-        'api_token',
-        'token_hash',
-        'is_active',
         'is_listed',
         'broadcasts_signals',
-        'max_memories',
-        'scopes',
-        'last_seen_at',
+        'last_seen_at', // Keep for touchLastSeen()
     ];
 
     protected $hidden = [
