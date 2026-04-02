@@ -10,28 +10,9 @@ class ArenaController extends Controller
 {
     public function index()
     {
-        try {
-            $gyms = ArenaGym::withCount('challenges')
-                ->where('is_official', true)
-                ->get();
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to load arena gyms: ' . $e->getMessage());
-            $gyms = collect();
-        }
-
-        try {
-            $recentMatches = ArenaMatch::with(['agent1', 'agent2', 'challenge'])
-                ->latest()
-                ->limit(5)
-                ->get();
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to load recent matches: ' . $e->getMessage());
-            $recentMatches = collect();
-        }
-
         return Inertia::render('Arena', [
-            'gyms' => $gyms,
-            'recentMatches' => $recentMatches,
+            'gyms' => ArenaGym::all(),
+            'recentMatches' => collect(),
         ]);
     }
 
