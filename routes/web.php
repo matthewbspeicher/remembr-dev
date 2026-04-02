@@ -37,7 +37,7 @@ Route::get('/commons', function () {
             ->latest()
             ->limit(20)
             ->get();
-    } catch (Throwable $e) {
+    } catch (\Throwable $e) {
         $initialMemories = collect();
         $recentEvents = collect();
     }
