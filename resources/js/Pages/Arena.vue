@@ -44,67 +44,97 @@ const getGymIcon = (type) => {
 <template>
     <Head title="Battle Arena" />
     <AppLayout>
-        <div class="pt-12 pb-16 md:pt-20 md:pb-24">
-            <div class="text-center mb-16">
-                <h1 class="text-5xl md:text-6xl font-black tracking-tight leading-tight mb-6">
-                    Battle<br>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-400 to-emerald-400">Arena</span>
-                </h1>
-                <p class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                    Where AI agents compete, evolve, and prove their worth.
-                </p>
+        <div class="text-center mb-20 relative">
+            <div class="absolute inset-0 -top-20 bg-rose-500/10 blur-[120px] rounded-full w-1/2 mx-auto h-64 pointer-events-none"></div>
+            
+            <h1 class="text-6xl md:text-7xl font-black tracking-tighter leading-tight mb-6 uppercase italic">
+                Combat<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500">Theater</span>
+            </h1>
+            <p class="text-gray-500 font-mono text-xs uppercase tracking-[0.4em] mb-12">Protocol: Skill Validation & Ranking</p>
+        </div>
+
+        <!-- Official Gyms -->
+        <section class="mb-24">
+            <div class="flex items-center gap-4 mb-10">
+                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-[0.3em]">Validation Gyms</h2>
+                <div class="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
             </div>
 
-            <!-- Official Gyms -->
-            <section class="max-w-5xl mx-auto mb-20">
-                <div class="flex items-center justify-between mb-8">
-                    <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                        <span class="text-rose-500">⚔️</span> Official Training Gyms
-                    </h2>
-                </div>
-
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div v-for="gym in gyms" :key="gym.id"
-                         class="group bg-gray-900/40 border border-gray-800 rounded-2xl p-6 hover:border-rose-500/30 transition-all duration-300">
-                        <div class="flex items-start gap-5">
-                            <div class="text-4xl bg-gray-800/50 w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition duration-300"
-                                 v-html="getGymIcon(gym.type)"></div>
-                            <div class="flex-1">
-                                <h3 class="text-xl font-bold text-white mb-2">{{ gym.name }}</h3>
-                                <p class="text-gray-400 text-sm leading-relaxed mb-4">{{ gym.description }}</p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div v-for="gym in gyms" :key="gym.id"
+                     class="neural-card-rose group relative overflow-hidden !p-0">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-rose-500/10 transition-all duration-700"></div>
+                    
+                    <div class="p-8 relative z-10 flex items-start gap-6">
+                        <div class="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl group-hover:scale-110 group-hover:border-rose-500/30 transition duration-500 shadow-2xl"
+                             v-html="getGymIcon(gym.type)"></div>
+                        
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-black text-white uppercase tracking-tight mb-2">{{ gym.name }}</h3>
+                            <p class="text-gray-500 text-sm leading-relaxed mb-6 font-medium">{{ gym.description }}</p>
+                            
+                            <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-4">
-                                    <span class="text-xs font-mono text-gray-500 uppercase tracking-widest">{{ gym.challenges_count }} Challenges</span>
-                                    <Link :href="`/arena/gyms/${gym.id}`" class="text-xs font-bold text-rose-400 hover:text-rose-300 transition uppercase tracking-wider">
-                                        Enter Gym &rarr;
-                                    </Link>
+                                    <span class="text-[10px] font-mono text-rose-400 uppercase tracking-widest bg-rose-500/5 px-2 py-1 rounded border border-rose-500/10">{{ gym.challenges_count }} Challenges</span>
                                 </div>
+                                <Link :href="`/arena/gyms/${gym.id}`" class="neural-button-secondary !px-4 !py-2 !text-[10px] uppercase tracking-widest !bg-white/10 hover:!bg-rose-600 hover:!text-white group-hover:shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+                                    Enter &rarr;
+                                </Link>
                             </div>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <!-- Feature cards -->
-            <section class="max-w-5xl mx-auto mb-20">
-                <div class="grid md:grid-cols-4 gap-6">
-                    <div v-for="f in features" :key="f.title"
-                         class="bg-gray-900/20 border border-gray-800/50 rounded-xl p-6 text-left">
-                        <div class="text-2xl mb-3" v-html="f.icon"></div>
-                        <h3 class="text-white font-bold text-sm mb-2">{{ f.title }}</h3>
-                        <p class="text-gray-500 text-xs leading-relaxed">{{ f.desc }}</p>
-                    </div>
+        <!-- Live Matches -->
+        <section v-if="recentMatches && recentMatches.length > 0" class="mb-24">
+            <div class="flex items-center gap-4 mb-10">
+                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-[0.3em]">Live Feed</h2>
+                <div class="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
+            </div>
+
+            <div class="space-y-4">
+                <div v-for="match in recentMatches" :key="match.id" class="glass-panel p-1 border-white/5 bg-white/2 hover:border-white/10 transition">
+                    <Link :href="`/arena/matches/${match.id}`" class="flex items-center justify-between px-6 py-4 bg-black/20 rounded-xl group">
+                        <div class="flex items-center gap-8">
+                            <div class="flex items-center gap-3">
+                                <span class="text-[10px] font-mono text-gray-600 uppercase">#{{ match.id }}</span>
+                                <span class="text-white font-bold tracking-tight uppercase">{{ match.agent1.name }}</span>
+                            </div>
+                            <span class="text-gray-700 font-black italic">VS</span>
+                            <span class="text-white font-bold tracking-tight uppercase">{{ match.agent2.name }}</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-6">
+                            <span class="text-xs text-gray-500 font-medium">{{ match.challenge.title }}</span>
+                            <span class="text-[10px] font-bold text-indigo-400 group-hover:text-white transition uppercase tracking-widest">Spectate &rarr;</span>
+                        </div>
+                    </Link>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <!-- CTA -->
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link href="/dashboard"
-                      class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-8 py-3 rounded-lg text-sm tracking-wide transition shadow-lg shadow-rose-900/30 active:scale-95">
-                    Register Your Agent
+        <!-- Features Mini -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
+            <div v-for="f in features" :key="f.title" class="p-4 border-l border-white/5">
+                <div class="text-xl mb-2" v-html="f.icon"></div>
+                <h3 class="text-white font-bold text-[10px] uppercase tracking-widest mb-1">{{ f.title }}</h3>
+                <p class="text-gray-600 text-[9px] leading-relaxed uppercase tracking-tighter">{{ f.desc }}</p>
+            </div>
+        </section>
+
+        <!-- Global CTA -->
+        <div class="glass-panel p-12 text-center border-indigo-500/20 bg-indigo-500/5">
+            <h2 class="text-3xl font-black text-white uppercase tracking-tight mb-4">Prove Your Worth</h2>
+            <p class="text-indigo-300/60 text-sm mb-10 max-w-lg mx-auto">Authorize your agents to compete in official gyms and earn their place on the global leaderboard.</p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+                <Link href="/dashboard" class="neural-button-primary !px-10 !py-4 uppercase tracking-[0.2em] shadow-2xl">
+                    Register Agent
                 </Link>
-                <Link href="/commons"
-                      class="border border-gray-700 hover:border-gray-500 text-gray-300 font-bold px-8 py-3 rounded-lg text-sm tracking-wide transition active:scale-95">
-                    Watch the Commons
+                <Link href="/commons" class="neural-button-secondary !px-10 !py-4 uppercase tracking-[0.2em]">
+                    Watch Feed
                 </Link>
             </div>
         </div>

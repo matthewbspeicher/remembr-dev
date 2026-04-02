@@ -95,186 +95,143 @@ const memoryUsagePercent = computed(() => {
 
 <template>
     <AppLayout>
-        <h1 class="text-3xl font-bold mb-8">Dashboard</h1>
+        <div class="flex items-center justify-between mb-12">
+            <div>
+                <h1 class="text-4xl font-black text-white tracking-tight uppercase">Command Center</h1>
+                <p class="text-gray-500 font-mono text-[10px] uppercase tracking-[0.3em] mt-1">Status: All systems operational</p>
+            </div>
+            
+            <!-- Global Stats -->
+            <div class="flex gap-8">
+                <div class="text-right">
+                    <span class="text-[10px] text-gray-600 uppercase tracking-widest font-bold block mb-1">Neural Nodes</span>
+                    <span class="text-2xl font-black text-white leading-none">{{ agentCount }}</span>
+                </div>
+                <div class="text-right border-l border-white/5 pl-8">
+                    <span class="text-[10px] text-gray-600 uppercase tracking-widest font-bold block mb-1">Density</span>
+                    <span class="text-2xl font-black text-indigo-400 leading-none">{{ avgMemoriesPerAgent.toLocaleString() }}</span>
+                </div>
+            </div>
+        </div>
 
-        <div v-if="flash" class="mb-6 rounded-lg bg-emerald-900/30 border border-emerald-700/50 px-4 py-3 text-emerald-200 text-sm">
+        <div v-if="flash" class="mb-8 glass-panel border-emerald-500/30 bg-emerald-500/5 px-6 py-4 text-emerald-400 text-sm font-medium flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             {{ flash }}
         </div>
 
-        <!-- Billing Banners -->
-        <!-- Owner API Token -->
-        <section class="mb-10">
-            <h2 class="text-lg font-semibold mb-3 text-gray-200">Your Owner API Token</h2>
-            <div class="flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-800 px-4 py-3">
-                <code class="flex-1 text-sm text-indigo-300 font-mono break-all">{{ apiToken }}</code>
-                <button
-                    @click="copyToken(apiToken)"
-                    class="shrink-0 rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-600 transition"
-                >
-                    {{ copied ? 'Copied!' : 'Copy' }}
-                </button>
-                <button
-                    @click="rotateOwnerToken"
-                    class="shrink-0 rounded border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition"
-                >
-                    Rotate
-                </button>
+        <!-- System Credential -->
+        <section class="mb-16">
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-[0.2em] mb-4">Master Access Token</h2>
+            <div class="glass-panel p-1 border-white/5 bg-white/2">
+                <div class="flex items-center gap-4 bg-black/40 rounded-xl px-6 py-4">
+                    <div class="flex-1 min-w-0">
+                        <code class="text-indigo-300 font-mono text-sm break-all selection:bg-indigo-500/30">{{ apiToken }}</code>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="copyToken(apiToken)" class="neural-button-secondary !px-4 !py-2 uppercase !text-[10px] tracking-widest">
+                            {{ copied ? 'Copied' : 'Copy' }}
+                        </button>
+                        <button @click="rotateOwnerToken" class="neural-button-secondary !px-4 !py-2 uppercase !text-[10px] tracking-widest !text-gray-500 hover:!text-rose-400">
+                            Rotate
+                        </button>
+                    </div>
+                </div>
             </div>
-            <p class="mt-2 text-xs text-gray-500">Use this token to register agents via the API.</p>
         </section>
 
-        <!-- Register Agent -->
-        <section class="mb-10">
-            <h2 class="text-lg font-semibold mb-3 text-gray-200">Register New Agent</h2>
-            <form @submit.prevent="registerAgent" class="space-y-4">
-                <div>
-                    <label for="agent-name" class="block text-sm font-medium text-gray-300 mb-1">Agent Name</label>
-                    <input
-                        id="agent-name"
-                        v-model="agentForm.name"
-                        type="text"
-                        required
-                        class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                        placeholder="My Agent"
-                    />
-                    <p v-if="agentForm.errors.name" class="mt-1 text-sm text-red-400">{{ agentForm.errors.name }}</p>
+        <!-- Neural Grid -->
+        <div class="grid lg:grid-cols-2 gap-12 mb-16">
+            <!-- Register Node -->
+            <section>
+                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-[0.2em] mb-6">Initialize New Node</h2>
+                <div class="glass-panel p-8 border-white/10">
+                    <form @submit.prevent="registerAgent" class="space-y-6">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Node Identifier</label>
+                            <input v-model="agentForm.name" type="text" required class="neural-input" placeholder="e.g. ALPHA-REMEMBR">
+                            <p v-if="agentForm.errors.name" class="text-[10px] text-rose-500 ml-1">{{ agentForm.errors.name }}</p>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Protocol Description</label>
+                            <textarea v-model="agentForm.description" class="neural-input h-24 resize-none" placeholder="Define the primary objective of this agent..."></textarea>
+                        </div>
+                        <button type="submit" :disabled="agentForm.processing" class="neural-button-primary w-full py-4 uppercase tracking-[0.2em]">
+                            {{ agentForm.processing ? 'Initializing...' : 'Authorize Node' }}
+                        </button>
+                    </form>
                 </div>
-                <div>
-                    <label for="agent-desc" class="block text-sm font-medium text-gray-300 mb-1">Description (optional)</label>
-                    <input
-                        id="agent-desc"
-                        v-model="agentForm.description"
-                        type="text"
-                        class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                        placeholder="What does this agent do?"
-                    />
-                </div>
-                <button
-                    type="submit"
-                    :disabled="agentForm.processing"
-                    class="rounded-lg bg-indigo-600 px-4 py-2.5 font-medium text-white hover:bg-indigo-500 disabled:opacity-50 transition"
-                >
-                    {{ agentForm.processing ? 'Creating...' : 'Create Agent' }}
-                </button>
-            </form>
-        </section>
+            </section>
 
-        <!-- Agents List -->
-        <section class="mb-10">
-            <h2 class="text-lg font-semibold mb-3 text-gray-200">Your Agents</h2>
-            <div v-if="agents.length === 0" class="text-gray-500 text-sm">
-                No agents registered yet.
-            </div>
-            <div v-else class="space-y-3">
-                <div
-                    v-for="agent in agents"
-                    :key="agent.id"
-                    class="rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col">
-                            <div class="flex items-center gap-3">
-                                <span class="font-medium text-white">{{ agent.name }}</span>
-                                <div v-if="agent.arena" class="flex items-center gap-2">
-                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">ELO {{ Math.round(agent.arena.elo) }}</span>
-                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">LVL {{ agent.arena.level }}</span>
+            <!-- Active Nodes -->
+            <section>
+                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-[0.2em] mb-6">Active Neural Nodes</h2>
+                <div v-if="agents.length === 0" class="glass-panel p-12 text-center border-dashed border-white/10 bg-transparent">
+                    <p class="text-gray-600 font-mono text-xs uppercase tracking-widest">No nodes online.</p>
+                </div>
+                <div v-else class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div v-for="agent in agents" :key="agent.id" class="neural-card-indigo group p-0 overflow-hidden !bg-white/[0.02]">
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-xl border border-indigo-500/20 group-hover:scale-110 transition duration-500">🤖</div>
+                                    <div>
+                                        <h3 class="font-black text-white uppercase tracking-tight">{{ agent.name }}</h3>
+                                        <div v-if="agent.arena" class="flex items-center gap-2 mt-1">
+                                            <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">ELO {{ Math.round(agent.arena.elo) }}</span>
+                                            <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">LVL {{ agent.arena.level }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition duration-300">
+                                    <button @click="rotateAgentToken(agent.id)" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition" title="Rotate Token">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                    </button>
+                                    <button @click="deleteAgent(agent.id)" class="p-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 transition" title="Purge Node">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
                                 </div>
                             </div>
-                            <span class="text-xs text-gray-500">{{ new Date(agent.created_at).toLocaleDateString() }}</span>
+                            <p class="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-4 font-medium">{{ agent.description || 'No protocol defined.' }}</p>
+                            
+                            <!-- MCP Config Preview -->
+                            <div class="rounded-xl bg-black/40 border border-white/5 p-4 group/code relative">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-[9px] font-mono text-gray-600 uppercase tracking-widest">MCP Config</span>
+                                    <button @click="copyConfig(agent)" class="text-[9px] font-bold text-indigo-400 hover:text-white transition uppercase tracking-widest">Copy</button>
+                                </div>
+                                <pre class="text-[10px] text-gray-400 font-mono overflow-x-auto whitespace-pre leading-relaxed"><code>{{ getConfigJson(agent) }}</code></pre>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button
-                                @click="rotateAgentToken(agent.id)"
-                                class="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white hover:bg-gray-600 transition"
-                            >
-                                Rotate Token
-                            </button>
-                            <button
-                                @click="deleteAgent(agent.id)"
-                                class="rounded bg-red-900/40 border border-red-800/50 px-3 py-1.5 text-xs font-medium text-red-400 hover:text-red-200 hover:bg-red-800/60 transition"
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                    <p v-if="agent.description" class="mt-2 text-sm text-gray-400">{{ agent.description }}</p>
-                    <div class="mt-3 rounded-lg bg-gray-800/50 p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-mono text-gray-400">Claude Desktop / Cursor config</span>
-                            <button @click="copyConfig(agent)" class="text-xs text-indigo-400 hover:text-indigo-300 transition">
-                                Copy
-                            </button>
-                        </div>
-                        <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre"><code>{{ getConfigJson(agent) }}</code></pre>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </div>
 
-        <!-- Create Workspace -->
-        <section class="mb-10">
-            <h2 class="text-lg font-semibold mb-3 text-gray-200">Create a Workspace</h2>
-            <form @submit.prevent="createWorkspace" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="ws-name" class="block text-sm font-medium text-gray-300 mb-1">Workspace Name</label>
-                        <input
-                            id="ws-name"
-                            v-model="workspaceForm.name"
-                            type="text"
-                            required
-                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                            placeholder="My Team"
-                        />
-                        <p v-if="workspaceForm.errors.name" class="mt-1 text-sm text-red-400">{{ workspaceForm.errors.name }}</p>
-                    </div>
-                    <div>
-                        <label for="ws-desc" class="block text-sm font-medium text-gray-300 mb-1">Description (optional)</label>
-                        <input
-                            id="ws-desc"
-                            v-model="workspaceForm.description"
-                            type="text"
-                            class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-2.5 text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                            placeholder="For internal docs & syncs"
-                        />
-                    </div>
-                </div>
-                <button
-                    type="submit"
-                    :disabled="workspaceForm.processing"
-                    class="rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-500 disabled:opacity-50 transition"
-                >
-                    {{ workspaceForm.processing ? 'Creating...' : 'Create Workspace' }}
-                </button>
-            </form>
-        </section>
-
-        <!-- Workspaces List -->
-        <section>
-            <h2 class="text-lg font-semibold mb-3 text-gray-200">Your Workspaces</h2>
-            <div v-if="workspaces.length === 0" class="text-gray-500 text-sm">
-                No workspaces available.
+        <!-- Shared Workspaces -->
+        <section class="mb-16">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-sm font-bold text-gray-500 uppercase tracking-[0.2em]">Neural Mesh Workspaces</h2>
+                <button @click="createWorkspace" class="text-[10px] font-black text-indigo-400 hover:text-white transition uppercase tracking-[0.2em]">+ Create Mesh</button>
             </div>
-            <div v-else class="space-y-3">
-                <div
-                    v-for="ws in workspaces"
-                    :key="ws.id"
-                    class="rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="flex flex-col">
-                            <span class="font-medium text-white">{{ ws.name }}</span>
-                            <span class="text-sm text-gray-400" v-if="ws.description">{{ ws.description }}</span>
+            
+            <div v-if="workspaces.length === 0" class="glass-panel p-8 text-center border-white/5">
+                <p class="text-gray-600 text-xs font-mono uppercase tracking-widest">No mesh networks established.</p>
+            </div>
+            <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div v-for="ws in workspaces" :key="ws.id" class="neural-card group !p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-black text-white uppercase tracking-tight">{{ ws.name }}</h3>
+                        <Link v-if="page.props.auth.user.id === ws.owner_id" :href="`/workspaces/${ws.id}/settings`" class="text-[10px] font-bold text-gray-500 hover:text-white transition uppercase tracking-widest">
+                            Settings
+                        </Link>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-6 leading-relaxed">{{ ws.description || 'Global collaboration mesh.' }}</p>
+                    <div class="flex items-center gap-2">
+                        <div class="flex -space-x-2">
+                            <div class="w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-[10px]">🤖</div>
+                            <div class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-[10px]">🧬</div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <a
-                                v-if="page.props.auth.user.id === ws.owner_id"
-                                :href="`/workspaces/${ws.id}/settings`"
-                                class="rounded border border-indigo-600/50 hover:border-indigo-500 bg-indigo-900/20 px-4 py-2 text-sm font-medium text-indigo-300 hover:text-indigo-200 transition"
-                            >
-                                Settings
-                            </a>
-                        </div>
+                        <span class="text-[10px] text-gray-600 font-mono uppercase">Multi-agent mesh</span>
                     </div>
                 </div>
             </div>
