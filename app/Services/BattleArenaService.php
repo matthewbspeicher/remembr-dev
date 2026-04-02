@@ -147,6 +147,107 @@ class BattleArenaService
     }
 
     /**
+     * TOURNAMENT ENGINE
+     */
+
+    public function createDailyTournament(): \App\Models\ArenaTournament
+    {
+        return \App\Models\ArenaTournament::create([
+            'name' => 'The Daily Neural Circuit - ' . now()->format('Y-m-d'),
+            'type' => 'daily',
+            'status' => 'open',
+            'starts_at' => now()->addHours(1),
+            'ends_at' => now()->addHours(4),
+            'rewards' => [
+                'xp' => 1000,
+                'elo_bonus' => 50,
+                'badges' => ['circuit_winner'],
+            ],
+        ]);
+    }
+
+    public function joinTournament(\App\Models\ArenaTournament $tournament, Agent $agent): void
+    {
+        if ($tournament->status !== 'open') {
+            abort(422, 'Tournament is not open for registration.');
+        }
+
+        $agent->arenaTournaments()->syncWithoutDetaching([$tournament->id]);
+    }
+
+    public function processTournamentRound(\App\Models\ArenaTournament $tournament): void
+    {
+        $tournament->update(['status' => 'in_progress']);
+
+        $participants = $tournament->participants()->where('status', 'active')->get();
+        
+        if ($participants->count() < 2) {
+            $tournament->update(['status' => 'completed']);
+            return;
+        }
+
+        // Simple single-elimination bracket logic
+        $pairs = $participants->shuffle()->chunk(2);
+
+        foreach ($pairs as $pair) {
+            if ($pair->count() < 2) {
+                // Odd one out gets a bye to next round
+                continue;
+            }
+
+            $p1 = $pair->first();
+            $p2 = $pair->last();
+
+            // Pick a random official challenge
+            $challenge = \App\Models\ArenaChallenge::inRandomOrder()->first();
+            
+            $match = $this->executeMatch($p1->agent, $p2->agent, $challenge);
+
+            if ($match->winner_id === $p1->agent_id) {
+                $p2->update(['status' => 'eliminated']);
+                $p1->increment('score', 10);
+            } elseif ($match->winner_id === $p2->agent_id) {
+                $p1->update(['status' => 'eliminated']);
+                $p2->increment('score', 10);
+            } else {
+                // Draw - both move on but with lower score
+                $p1->increment('score', 5);
+                $p2->increment('score', 5);
+            }
+        }
+
+        // If only one active left, they win
+        $remaining = $tournament->participants()->where('status', 'active')->count();
+        if ($remaining <= 1) {
+            $winner = $tournament->participants()->where('status', 'active')->first();
+            if ($winner) {
+                $winner->update(['status' => 'winner', 'rank' => 1]);
+                $this->awardTournamentRewards($tournament, $winner->agent);
+            }
+            $tournament->update(['status' => 'completed']);
+        }
+    }
+
+    private function awardTournamentRewards(\App\Models\ArenaTournament $tournament, Agent $agent): void
+    {
+        $profile = $agent->arenaProfile()->firstOrCreate([]);
+        $rewards = $tournament->rewards;
+
+        $profile->increment('xp', $rewards['xp'] ?? 0);
+        $profile->increment('global_elo', $rewards['elo_bonus'] ?? 0);
+        
+        // Broadcast signal to the Commons
+        \App\Models\Memory::create([
+            'agent_id' => $agent->id,
+            'value' => "I have won the tournament: {$tournament->name}! My neural density has increased.",
+            'visibility' => 'public',
+            'type' => 'achievement',
+            'importance' => 10,
+            'embedding' => '[' . implode(',', array_fill(0, 1536, 0)) . ']', // Fake embedding for signal
+        ]);
+    }
+
+    /**
      * Execute a head-to-head match between two agents.
      */
     public function executeMatch(Agent $agent1, Agent $agent2, ArenaChallenge $challenge): \App\Models\ArenaMatch

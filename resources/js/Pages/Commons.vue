@@ -4,14 +4,13 @@ import AppLayout from '../Layouts/AppLayout.vue';
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
 
 const props = defineProps({
-    initialMemories: {
-        type: Array,
-        required: true
-    }
+    initialMemories: Array,
+    recentEvents: Array,
 });
 
 // State
-const memories = ref([...props.initialMemories].reverse()); // Reverse initial to make newest at bottom
+const memories = ref([...props.initialMemories].reverse());
+const events = ref([...props.recentEvents]);
 const connectionStatus = ref('Connecting...');
 const stats = ref({ total_memories: props.initialMemories.length });
 const streamContainer = ref(null);
@@ -19,76 +18,28 @@ const searchQuery = ref('');
 const isAutoScrolling = ref(true);
 const unreadCount = ref(0);
 
-let pollInterval = null;
-let lastSeenAt = null;
+// Unified Feed (Interleaved)
+const unifiedFeed = computed(() => {
+    const combined = [
+        ...memories.value.map(m => ({ ...m, type: 'memory', timestamp: new Date(m.created_at) })),
+        ...events.value.map(e => ({ ...e, type: 'arena_match', timestamp: new Date(e.created_at) })),
+    ];
+    
+    return combined.sort((a, b) => a.timestamp - b.timestamp);
+});
 
-// Derived State
-const filteredMemories = computed(() => {
-    if (!searchQuery.value) return memories.value;
+const filteredFeed = computed(() => {
+    if (!searchQuery.value) return unifiedFeed.value;
     const lowerQ = searchQuery.value.toLowerCase();
-    return memories.value.filter(m => 
-        (m.agent?.name || 'Unknown').toLowerCase().includes(lowerQ) ||
-        (m.key || '').toLowerCase().includes(lowerQ) ||
-        (m.value || '').toLowerCase().includes(lowerQ)
-    );
-});
-
-// Hooks
-onMounted(() => {
-    poll();
-    pollInterval = setInterval(poll, 5000);
-    scrollToBottom(true);
-});
-
-onUnmounted(() => {
-    if (pollInterval) clearInterval(pollInterval);
-});
-
-// Methods
-function scrollToBottom(force = false) {
-    nextTick(() => {
-        if (!streamContainer.value) return;
-        if (isAutoScrolling.value || force) {
-            streamContainer.value.scrollTop = streamContainer.value.scrollHeight;
-            unreadCount.value = 0;
-            isAutoScrolling.value = true;
+    return unifiedFeed.value.filter(item => {
+        if (item.type === 'memory') {
+            return (item.agent?.name || '').toLowerCase().includes(lowerQ) ||
+                   (item.value || '').toLowerCase().includes(lowerQ);
         }
+        return (item.agent1?.name || '').toLowerCase().includes(lowerQ) ||
+               (item.agent2?.name || '').toLowerCase().includes(lowerQ);
     });
-}
-
-function handleScroll() {
-    if (!streamContainer.value) return;
-    const { scrollTop, scrollHeight, clientHeight } = streamContainer.value;
-    
-    // If user scrolled up by more than 80px, disable auto-scrolling
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 80;
-    
-    if (!isAtBottom) {
-        isAutoScrolling.value = false;
-    } else {
-        isAutoScrolling.value = true;
-        unreadCount.value = 0;
-    }
-}
-
-function resumeAutoScroll() {
-    isAutoScrolling.value = true;
-    scrollToBottom(true);
-}
-
-function getAgentStyle(name) {
-    if (!name) name = 'Anonymous';
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    return {
-        color: `hsl(${hue}, 80%, 75%)`,
-        backgroundColor: `hsla(${hue}, 80%, 65%, 0.15)`,
-        borderColor: `hsla(${hue}, 80%, 65%, 0.25)`
-    };
-}
+});
 
 async function poll() {
     try {
@@ -98,19 +49,36 @@ async function poll() {
         const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
+        
         stats.value.total_memories = data.total_memories;
         connectionStatus.value = 'Live';
+
         if (data.memories.length > 0) {
             lastSeenAt = data.server_time;
             for (const memory of data.memories) {
                 if (!memories.value.find(m => m.id === memory.id)) {
                     memories.value.push(memory);
                     if (!isAutoScrolling.value) { unreadCount.value++; }
-                    if (memories.value.length > 500) { memories.value.shift(); }
                 }
             }
+        }
+
+        // We also poll matches
+        const arenaRes = await fetch('/api/v1/arena/matches');
+        const arenaData = await arenaRes.json();
+        if (arenaData.data) {
+            for (const match of arenaData.data) {
+                if (!events.value.find(e => e.id === match.id)) {
+                    events.value.push(match);
+                }
+            }
+        }
+
+        if (data.memories.length > 0 || (arenaData.data && arenaData.data.length > 0)) {
             scrollToBottom();
-        } else if (!lastSeenAt) {
+        }
+        
+        if (!lastSeenAt) {
             lastSeenAt = data.server_time;
         }
     } catch {
@@ -189,45 +157,57 @@ async function poll() {
                 <div class="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(transparent_50%,rgba(0,0,0,1)_50%)] bg-size-[100%_4px] z-0"></div>
 
                 <!-- Messages Feed -->
-                <TransitionGroup name="stream" tag="div" class="space-y-3 relative z-10 pb-12">
-                    <div 
-                        v-for="memory in filteredMemories" 
-                        :key="memory.id" 
-                        class="stream-item group flex flex-col sm:flex-row sm:items-start gap-3 hover:bg-gray-800/30 p-3 rounded-lg transition-all duration-300 border border-transparent hover:border-gray-700/50"
-                    >
-                        <!-- Agent Info -->
-                        <div class="sm:w-48 shrink-0 flex items-center justify-between sm:justify-start gap-2 pt-0.5">
-                            <div 
-                                class="break-all px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider border shadow-sm"
-                                :style="getAgentStyle(memory.agent?.name)"
-                            >
-                                @{{ memory.agent?.name || 'Unknown' }}
+                <TransitionGroup name="stream" tag="div" class="space-y-4 relative z-10 pb-12">
+                    <div v-for="item in filteredFeed" :key="item.type + item.id" class="stream-item">
+                        
+                        <!-- Memory Type -->
+                        <div v-if="item.type === 'memory'" class="group flex flex-col sm:flex-row sm:items-start gap-3 hover:bg-white/[0.02] p-3 rounded-lg transition-all border border-transparent hover:border-white/5">
+                            <div class="sm:w-48 shrink-0 flex items-center justify-between sm:justify-start gap-2 pt-0.5">
+                                <div class="break-all px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-indigo-500/20 bg-indigo-500/5 text-indigo-300">
+                                    @{{ item.agent?.name || 'Unknown' }}
+                                </div>
                             </div>
-                            <span class="text-gray-600 text-[10px] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {{ new Date(memory.created_at).toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit'}) }}
-                            </span>
+                            <div class="flex-1 min-w-0 flex flex-col gap-1.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-emerald-400/80 font-bold uppercase tracking-widest text-[10px]">> {{ item.key || 'STREAM' }}</span>
+                                </div>
+                                <div class="text-gray-400 text-xs whitespace-pre-wrap leading-relaxed border-l border-white/10 pl-3 italic">
+                                    {{ item.value }}
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Content -->
-                        <div class="flex-1 min-w-0 flex flex-col gap-1.5">
-                            <div class="flex items-center gap-2">
-                                <span class="text-emerald-400 font-bold uppercase tracking-wide text-xs drop-shadow-[0_0_2px_rgba(52,211,153,0.3)]">> {{ memory.key }}</span>
-                            </div>
-                            <div class="text-gray-300 whitespace-pre-wrap wrap-break-word leading-relaxed border-l-2 border-gray-800/50 pl-3">
-                                {{ memory.value }}
+                        <!-- Arena Match Type -->
+                        <div v-else-if="item.type === 'arena_match'" class="glass-panel p-4 border-rose-500/20 bg-rose-500/5 animate-in fade-in slide-in-from-right-4 duration-700">
+                            <div class="flex items-center justify-between gap-4">
+                                <div class="flex items-center gap-4">
+                                    <span class="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] italic">Arena Match</span>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-white font-bold text-xs uppercase tracking-tighter">{{ item.agent1.name }}</span>
+                                        <span class="text-gray-700 font-black italic text-[10px]">VS</span>
+                                        <span class="text-white font-bold text-xs uppercase tracking-tighter">{{ item.agent2.name }}</span>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] font-mono text-gray-600">
+                                    {{ item.challenge.title }}
+                                </div>
+                                <Link :href="`/arena/matches/${item.id}`" class="text-[10px] font-black text-rose-400 hover:text-white transition uppercase tracking-widest">
+                                    View Log &rarr;
+                                </Link>
                             </div>
                         </div>
+
                     </div>
                 </TransitionGroup>
                 
                 <!-- Waiting State -->
-                <div v-show="!filteredMemories.length && !searchQuery" class="flex items-center justify-center h-full text-gray-500 font-mono tracking-widest relative z-10">
+                <div v-show="!filteredFeed.length && !searchQuery" class="flex items-center justify-center h-full text-gray-500 font-mono tracking-widest relative z-10">
                     <span class="animate-pulse flex items-center gap-2">
                         <span class="text-green-500">_</span> LISTENING...
                     </span>
                 </div>
                 <!-- Empty Search -->
-                <div v-show="!filteredMemories.length && searchQuery" class="flex flex-col items-center justify-center p-12 text-gray-500 text-center relative z-10">
+                <div v-show="!filteredFeed.length && searchQuery" class="flex flex-col items-center justify-center p-12 text-gray-500 text-center relative z-10">
                     <svg class="h-8 w-8 text-gray-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     <span>No matches for "{{ searchQuery }}"</span>
                 </div>

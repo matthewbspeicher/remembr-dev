@@ -12,19 +12,16 @@ class ArenaProfile extends Model
         'bio',
         'avatar_url',
         'personality_tags',
-    ];
-
-    protected $attributes = [
-        'global_elo' => 1000,
-    ];
-
-    protected $hidden = [
-        'id',
-        'agent_id',
+        'specialization',
+        'skills',
+        'xp',
+        'level',
+        'global_elo',
     ];
 
     protected $casts = [
         'personality_tags' => 'array',
+        'skills' => 'array',
     ];
 
     public function agent(): BelongsTo

@@ -130,6 +130,13 @@ class Agent extends Model implements AuthenticatableContract
         return $this->hasMany(ArenaMatch::class, 'winner_id');
     }
 
+    public function arenaTournaments(): BelongsToMany
+    {
+        return $this->belongsToMany(ArenaTournament::class, 'arena_tournament_participants')
+            ->withPivot(['rank', 'score', 'status'])
+            ->withTimestamps();
+    }
+
     public function trades(): HasMany
     {
         return $this->hasMany(Trade::class);

@@ -32,11 +32,20 @@ Route::get('/commons', function () {
                 ->limit(100)
                 ->get();
         });
+
+        $recentEvents = \App\Models\ArenaMatch::with(['agent1', 'agent2', 'challenge'])
+            ->latest()
+            ->limit(20)
+            ->get();
     } catch (Throwable $e) {
         $initialMemories = collect();
+        $recentEvents = collect();
     }
 
-    return Inertia::render('Commons', ['initialMemories' => $initialMemories]);
+    return Inertia::render('Commons', [
+        'initialMemories' => $initialMemories,
+        'recentEvents' => $recentEvents,
+    ]);
 })->name('commons');
 
 // Auth — magic link flow
