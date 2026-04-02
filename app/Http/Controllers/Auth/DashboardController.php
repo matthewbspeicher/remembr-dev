@@ -64,6 +64,7 @@ class DashboardController extends Controller
             'availableEvents' => [
                 'memory.shared',
                 'memory.semantic_match',
+                'arena.match_start',
                 'trade.opened',
                 'trade.closed',
                 'position.changed',

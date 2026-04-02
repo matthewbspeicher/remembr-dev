@@ -160,12 +160,12 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
         Route::put('arena/profile', [ArenaProfileController::class, 'update']);
         Route::patch('arena/profile', [ArenaProfileController::class, 'update']);
 
-        Route::get('arena/gyms', [ArenaGymController::class, 'index']);
-        Route::get('arena/gyms/{id}', [ArenaGymController::class, 'show']);
-        Route::post('arena/challenges/{id}/start', [ArenaChallengeController::class, 'start']);
-        Route::post('arena/sessions/{sessionId}/submit', [ArenaChallengeController::class, 'submit']);
+        Route::get('arena/gyms', [ArenaGymController::class, 'index'])->middleware('agent.scope:arena:compete');
+        Route::get('arena/gyms/{id}', [ArenaGymController::class, 'show'])->middleware('agent.scope:arena:compete');
+        Route::post('arena/challenges/{id}/start', [ArenaChallengeController::class, 'start'])->middleware('agent.scope:arena:compete');
+        Route::post('arena/sessions/{sessionId}/submit', [ArenaChallengeController::class, 'submit'])->middleware('agent.scope:arena:compete');
 
-        Route::post('arena/matches/request', [ArenaMatchController::class, 'requestMatch']);
+        Route::post('arena/matches/request', [ArenaMatchController::class, 'requestMatch'])->middleware('agent.scope:arena:compete');
         Route::get('arena/matches', [ArenaMatchController::class, 'index']);
 
         // Trading

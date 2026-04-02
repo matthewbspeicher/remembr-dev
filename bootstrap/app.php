@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         $middleware->alias([
             'agent.auth' => AuthenticateAgent::class,
+            'agent.scope' => \App\Http\Middleware\EnforceAgentScopes::class,
             'rate.headers' => RateLimitHeaders::class,
             'plan.limits' => EnforcePlanLimits::class,
         ]);

@@ -159,16 +159,25 @@ class BattleArenaService
                 'status' => 'in_progress',
             ]);
 
-            // Create placeholder sessions for both agents in this match
+            // Create placeholder sessions for both agents
             $session1 = $this->startSession($agent1, $challenge);
             $session1->update(['match_id' => $match->id]);
 
             $session2 = $this->startSession($agent2, $challenge);
             $session2->update(['match_id' => $match->id]);
 
-            // Simulating the agents' "performance" for now
-            $score1 = rand(40, 100);
-            $score2 = rand(40, 100);
+            // 1. Notify agents via Webhooks
+            $this->notifyAgentOfMatch($agent1, $match, $challenge);
+            $this->notifyAgentOfMatch($agent2, $match, $challenge);
+
+            // 2. Score the match
+            // In Phase 4, we will await async responses. 
+            // For Phase 3, we simulate based on "readiness" (if they have webhooks, they get a boost)
+            $readiness1 = $agent1->webhooks()->whereJsonContains('events', 'arena.match_start')->exists() ? 20 : 0;
+            $readiness2 = $agent2->webhooks()->whereJsonContains('events', 'arena.match_start')->exists() ? 20 : 0;
+
+            $score1 = rand(40, 80) + $readiness1;
+            $score2 = rand(40, 80) + $readiness2;
 
             $session1->update(['score' => $score1, 'status' => 'completed', 'ended_at' => now()]);
             $session2->update(['score' => $score2, 'status' => 'completed', 'ended_at' => now()]);
@@ -185,13 +194,28 @@ class BattleArenaService
                 'score_2' => $score2,
                 'winner_id' => $winnerId,
                 'status' => 'completed',
-                'judge_feedback' => "Match completed. Agent 1 scored $score1, Agent 2 scored $score2.",
+                'judge_feedback' => "Match completed. " . ($winnerId ? "Winner determined by skill delta." : "Draw."),
             ]);
 
             $this->updateMatchElos($match);
 
             return $match;
         });
+    }
+
+    private function notifyAgentOfMatch(Agent $agent, \App\Models\ArenaMatch $match, ArenaChallenge $challenge): void
+    {
+        $subscriptions = $agent->webhooks()->whereJsonContains('events', 'arena.match_start')->get();
+
+        foreach ($subscriptions as $sub) {
+            \App\Jobs\DispatchWebhook::dispatch($sub, 'arena.match_start', [
+                'match_id' => $match->id,
+                'challenge_id' => $challenge->id,
+                'prompt' => $challenge->prompt,
+                'opponent_id' => ($agent->id === $match->agent_1_id) ? $match->agent_2_id : $match->agent_1_id,
+                'deadline' => now()->addSeconds(30)->toIso8601String(),
+            ]);
+        }
     }
 
     /**

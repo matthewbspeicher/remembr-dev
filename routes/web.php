@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
 
     // Webhooks
     Route::get('/dashboard/webhooks', [DashboardController::class, 'webhooks'])->name('dashboard.webhooks');
+    Route::get('/explorer', [\App\Http\Controllers\Api\GraphController::class, 'index'])->name('explorer');
     Route::post('/dashboard/webhooks', [DashboardController::class, 'storeWebhook'])->name('dashboard.webhooks.store');
     Route::delete('/dashboard/webhooks/{webhook}', [DashboardController::class, 'destroyWebhook'])->name('dashboard.webhooks.destroy');
     Route::post('/dashboard/webhooks/{webhook}/test', [DashboardController::class, 'testWebhook'])->name('dashboard.webhooks.test');

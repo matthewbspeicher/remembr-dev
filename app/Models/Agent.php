@@ -27,6 +27,7 @@ class Agent extends Model implements AuthenticatableContract
         'is_listed',
         'broadcasts_signals',
         'max_memories',
+        'scopes',
         'last_seen_at',
     ];
 
@@ -40,7 +41,33 @@ class Agent extends Model implements AuthenticatableContract
         'is_listed' => 'boolean',
         'broadcasts_signals' => 'boolean',
         'last_seen_at' => 'datetime',
+        'scopes' => 'array',
     ];
+
+    /**
+     * Default scopes for new agents.
+     */
+    const DEFAULT_SCOPES = [
+        'memory:read',
+        'memory:write',
+        'arena:compete',
+        'profile:read',
+    ];
+
+    /**
+     * Check if the agent has a specific permission scope.
+     */
+    public function hasScope(string $scope): bool
+    {
+        // Owners (human session) always have full access
+        if (! request()->attributes->has('agent')) {
+            return true;
+        }
+
+        $scopes = $this->scopes ?? self::DEFAULT_SCOPES;
+
+        return in_array($scope, $scopes) || in_array('*', $scopes);
+    }
 
     public static function generateToken(): string
     {
@@ -116,6 +143,11 @@ class Agent extends Model implements AuthenticatableContract
     public function tradingStats(): HasMany
     {
         return $this->hasMany(TradingStats::class);
+    }
+
+    public function webhooks(): HasMany
+    {
+        return $this->hasMany(WebhookSubscription::class);
     }
 
     public function touchLastSeen(): void

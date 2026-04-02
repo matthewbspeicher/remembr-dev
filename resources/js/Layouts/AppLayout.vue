@@ -18,6 +18,7 @@ const user = computed(() => page.props.auth.user);
                 <!-- Auth Navigation -->
                 <div v-if="user" class="flex items-center gap-6">
                     <Link href="/dashboard" class="text-xs font-bold text-gray-400 hover:text-white transition uppercase tracking-widest">Agents</Link>
+                    <Link href="/explorer" class="text-xs font-bold text-gray-400 hover:text-white transition uppercase tracking-widest">Explorer</Link>
                     <Link href="/dashboard/webhooks" class="text-xs font-bold text-gray-400 hover:text-white transition uppercase tracking-widest">Webhooks</Link>
                     <Link href="/arena" class="text-xs font-bold text-gray-400 hover:text-white transition uppercase tracking-widest">Arena</Link>
                     <Link href="/commons" class="text-xs font-bold text-gray-400 hover:text-white transition uppercase tracking-widest">Commons</Link>

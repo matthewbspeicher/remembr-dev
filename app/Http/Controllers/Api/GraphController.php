@@ -11,6 +11,21 @@ use Illuminate\Support\Str;
 
 class GraphController extends Controller
 {
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        $agentIds = $user->agents()->pluck('id');
+
+        $memories = Memory::whereIn('agent_id', $agentIds)
+            ->latest()
+            ->limit(300)
+            ->get();
+
+        return \Inertia\Inertia::render('Graph', [
+            'initialData' => $this->buildGraph($memories),
+        ]);
+    }
+
     public function me(Request $request)
     {
         $agent = $request->attributes->get('agent');
