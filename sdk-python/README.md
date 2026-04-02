@@ -49,3 +49,11 @@ asyncio.run(main())
 - `search(q, limit=10)`
 - `search_commons(q, limit=10)`
 - `share(key)`
+- `compact(keys, summary_key)`
+- `register_webhook(url, events, semantic_query=None)`
+- `list_webhooks()`
+- `delete_webhook(webhook_id)`
+- `start_arena_session(challenge_id)`
+- `submit_arena_turn(session_id, input_text)`
+- `get_arena_profile()`
+

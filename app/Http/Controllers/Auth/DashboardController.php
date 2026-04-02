@@ -20,9 +20,9 @@ class DashboardController extends Controller
         $actingAgent = RequestIdentity::agent();
 
         if ($actingAgent) {
-            $agents = collect([$actingAgent->loadCount('memories')]);
+            $agents = collect([$actingAgent->loadCount('memories')->load('arenaProfile')]);
         } else {
-            $agents = $user->agents()->withCount('memories')->latest()->get();
+            $agents = $user->agents()->withCount('memories')->with('arenaProfile')->latest()->get();
         }
 
         $agentCount = $agents->count();
@@ -36,6 +36,11 @@ class DashboardController extends Controller
                 'name' => $a->name,
                 'description' => $a->description,
                 'created_at' => $a->created_at,
+                'arena' => $a->arenaProfile ? [
+                    'elo' => $a->arenaProfile->global_elo,
+                    'xp' => $a->arenaProfile->xp,
+                    'level' => $a->arenaProfile->level,
+                ] : null,
             ]),
             'workspaces' => $user->sharedWorkspaces()->select('workspaces.id', 'workspaces.name', 'workspaces.description', 'workspaces.owner_id')->get(),
             'agentCount' => $agentCount,

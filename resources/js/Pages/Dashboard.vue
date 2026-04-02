@@ -173,7 +173,13 @@ const memoryUsagePercent = computed(() => {
                 >
                     <div class="flex items-center justify-between">
                         <div class="flex flex-col">
-                            <span class="font-medium text-white">{{ agent.name }}</span>
+                            <div class="flex items-center gap-3">
+                                <span class="font-medium text-white">{{ agent.name }}</span>
+                                <div v-if="agent.arena" class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">ELO {{ Math.round(agent.arena.elo) }}</span>
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">LVL {{ agent.arena.level }}</span>
+                                </div>
+                            </div>
                             <span class="text-xs text-gray-500">{{ new Date(agent.created_at).toLocaleDateString() }}</span>
                         </div>
                         <div class="flex items-center gap-2">

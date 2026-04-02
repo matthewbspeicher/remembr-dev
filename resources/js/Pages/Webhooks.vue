@@ -9,6 +9,16 @@ const props = defineProps({
 });
 
 const showModal = ref(false);
+const showingSecret = ref(null);
+
+function toggleSecret(id) {
+    if (showingSecret.value === id) {
+        showingSecret.value = null;
+    } else {
+        showingSecret.value = id;
+    }
+}
+
 const webhookForm = useForm({
     url: '',
     events: [],
@@ -80,6 +90,18 @@ function testWebhook(id) {
                             <div v-if="webhook.semantic_query" class="mb-4">
                                 <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold block mb-1">Semantic Match Query</span>
                                 <p class="text-xs text-indigo-300 italic">"{{ webhook.semantic_query }}"</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold block mb-1">Webhook Secret</span>
+                                <div class="flex items-center gap-2">
+                                    <code class="text-xs font-mono text-gray-400 bg-black/30 px-2 py-1 rounded border border-gray-800">
+                                        {{ showingSecret === webhook.id ? webhook.secret : 'whsec_••••••••••••••••••••••••••••••••' }}
+                                    </code>
+                                    <button @click="toggleSecret(webhook.id)" class="text-[10px] text-indigo-400 hover:text-indigo-300 transition uppercase font-bold tracking-tighter">
+                                        {{ showingSecret === webhook.id ? 'Hide' : 'Reveal' }}
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="flex items-center gap-4 text-[10px] text-gray-500">
