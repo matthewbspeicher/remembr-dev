@@ -35,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
             ProcessSemanticWebhooks::class,
         );
 
+        // T1: Register trade alert listeners
+        Event::listen(\App\Events\TradeClosed::class, [\App\Listeners\EvaluateTradeAlerts::class, 'handleTradeClosed']);
+        Event::listen(\App\Events\TradeOpened::class, [\App\Listeners\EvaluateTradeAlerts::class, 'handleTradeOpened']);
+
         Auth::viaRequest('agent-token', function (Request $request) {
             $token = $request->bearerToken();
 

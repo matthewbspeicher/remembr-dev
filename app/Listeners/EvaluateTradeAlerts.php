@@ -33,9 +33,10 @@ class EvaluateTradeAlerts implements ShouldQueue
             $pnl = (float) $event->trade->pnl;
             if ($pnl > 0) {
                 $this->evaluatePnl('pnl_above', $pnl, $event->trade);
-            } else {
+            } elseif ($pnl < 0) {  // I15: Change from 'else' to 'elseif' so zero doesn't trigger pnl_below
                 $this->evaluatePnl('pnl_below', $pnl, $event->trade);
             }
+            // Break-even trades (pnl == 0) trigger neither condition
         }
     }
 
