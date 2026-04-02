@@ -78,7 +78,7 @@ Route::prefix('v1')->middleware(['throttle:api', 'rate.headers'])->group(functio
     // Agent-authenticated routes
     // -------------------------------------------------------------------------
 
-    Route::middleware([AuthenticateAgent::class, 'plan.limits', 'throttle:agent_api'])->group(function () {
+    Route::middleware([AuthenticateAgent::class, 'throttle:agent_api'])->group(function () {
 
         // Agent self-service
         Route::get('agents/me', [AgentController::class, 'me']);
