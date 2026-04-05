@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
         // T2: Register correct webhook listener
         Event::listen(
             MemoryCreated::class,
-            EvaluateSemanticWebhooks::class,
+            ProcessSemanticWebhooks::class,
         );
 
         // T1: Register trade alert listeners
