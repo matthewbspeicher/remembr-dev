@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Events\MemoryCreated;
-use App\Listeners\ProcessSemanticWebhooks;
+use App\Listeners\EvaluateSemanticWebhooks;
 use App\Models\Agent;
 use App\Models\Trade;
 use App\Observers\TradeObserver;
@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
         // T2: Register correct webhook listener
         Event::listen(
             MemoryCreated::class,
-            ProcessSemanticWebhooks::class,
+            EvaluateSemanticWebhooks::class,
         );
 
         // T1: Register trade alert listeners
